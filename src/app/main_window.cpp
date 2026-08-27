@@ -8,6 +8,7 @@
 #include "doc/commands_pixels.hpp"
 #include "doc/selection.hpp"
 #include "io/image_io.hpp"
+#include "io/ora.hpp"
 #include "raster/transform.hpp"
 #include "ui/dialogs_image.hpp"
 #include "ui/dialogs_new.hpp"
@@ -499,6 +500,49 @@ void MainWindow::action_open() {
   if (path.empty()) {
     return;
   }
+  if (active_tool_ != nullptr) {
+    active_tool_->on_cancel();
+  }
+  if (format_from_path(path) == ImageFormat::Ora) {
+    LoadedOra loaded = load_ora(path);
+    if (!loaded.ok()) {
+      Gtk::MessageDialog err(*this, "Could not open OpenRaster file.", false, Gtk::MESSAGE_ERROR,
+                             Gtk::BUTTONS_OK, true);
+      err.set_secondary_text(loaded.error);
+      err.run();
+      return;
+    }
+    if (loaded.warn_size) {
+      Gtk::MessageDialog warn(*this,
+                              "This image is larger than 8192 pixels on a side and may use a lot of memory.",
+                              false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
+      if (warn.run() != Gtk::RESPONSE_OK) {
+        return;
+      }
+    }
+    if (loaded.warn_layers) {
+      Gtk::MessageDialog warn(*this, "This file has more than 64 layers and may use a lot of memory.",
+                              false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
+      if (warn.run() != Gtk::RESPONSE_OK) {
+        return;
+      }
+    }
+    std::vector<std::unique_ptr<Layer>> layers;
+    layers.reserve(loaded.layers.size());
+    for (const auto& snap : loaded.layers) {
+      layers.push_back(layer_from_snapshot(snap));
+    }
+    document_ = Document::create(loaded.width, loaded.height, Color::transparent(),
+                                 loaded.layers.front().name);
+    document_->replace_stack(loaded.width, loaded.height, std::move(layers),
+                             static_cast<int>(loaded.layers.size()) - 1);
+    document_->set_path(path);
+    document_->mark_clean();
+    bind_document();
+    update_chrome();
+    show_status("Opened " + Glib::path_get_basename(path));
+    return;
+  }
   LoadedImage loaded = load_flat_image(path);
   if (!loaded.ok()) {
     Gtk::MessageDialog err(*this, "Could not open image.", false, Gtk::MESSAGE_ERROR,
@@ -514,9 +558,6 @@ void MainWindow::action_open() {
     if (warn.run() != Gtk::RESPONSE_OK) {
       return;
     }
-  }
-  if (active_tool_ != nullptr) {
-    active_tool_->on_cancel();
   }
   document_ = Document::create(loaded.width, loaded.height, Color::transparent(), loaded.layer_name);
   document_->layers().active_layer().write_rect(Rect{0, 0, loaded.width, loaded.height},
@@ -542,11 +583,41 @@ void MainWindow::action_save() {
 
 void MainWindow::action_save_as() {
   std::string path;
-  ImageFormat format = ImageFormat::Png;
+  ImageFormat format = ImageFormat::Ora;
   if (!choose_save_path(path, format)) {
     return;
   }
+  bool also_ora = false;
+  if (format != ImageFormat::Ora && document_->layers().count() > 1 && !flatten_ora_offered_) {
+    Gtk::MessageDialog warn(*this,
+                            "This document has multiple layers. Saving a flat file will flatten visible layers.",
+                            false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_NONE, true);
+    warn.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
+    warn.add_button("Flatten only", Gtk::RESPONSE_NO);
+    warn.add_button("Flatten and keep .ora", Gtk::RESPONSE_YES);
+    const int response = warn.run();
+    if (response == Gtk::RESPONSE_CANCEL) {
+      return;
+    }
+    also_ora = response == Gtk::RESPONSE_YES;
+    flatten_ora_offered_ = true;
+  }
   if (save_to_path(path, format)) {
+    if (also_ora) {
+      std::string ora_path = path;
+      auto dot = ora_path.find_last_of('.');
+      if (dot != std::string::npos) {
+        ora_path = ora_path.substr(0, dot);
+      }
+      ora_path += ".ora";
+      std::string error;
+      if (!save_ora(ora_path, *document_, error)) {
+        Gtk::MessageDialog err(*this, "Saved the flat file, but could not write the .ora copy.",
+                               false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK, true);
+        err.set_secondary_text(error);
+        err.run();
+      }
+    }
     document_->set_path(path);
     document_->mark_clean();
     update_chrome();
@@ -586,38 +657,67 @@ bool MainWindow::confirm_lose_changes() {
 }
 
 bool MainWindow::layer_has_transparency() const {
-  const Layer& layer = document_->layers().active_layer();
-  const std::uint8_t* p = layer.pixels();
-  const int n = layer.width() * layer.height();
+  std::vector<std::uint8_t> flat;
+  composite_visible(flat);
+  const int n = document_->width() * document_->height();
   for (int i = 0; i < n; ++i) {
-    if (p[static_cast<std::size_t>(i) * 4 + 3] != 255) {
+    if (flat[static_cast<std::size_t>(i) * 4 + 3] != 255) {
       return true;
     }
   }
   return false;
 }
 
+void MainWindow::composite_visible(std::vector<std::uint8_t>& dest) const {
+  const int w = document_->width();
+  const int h = document_->height();
+  dest.assign(static_cast<std::size_t>(w) * static_cast<std::size_t>(h) * 4, 0);
+  document_->layers().composite_rect(dest.data(), w * 4, Rect{0, 0, w, h});
+}
+
 bool MainWindow::save_to_path(const std::string& path, ImageFormat format) {
-  if (format == ImageFormat::Jpeg && layer_has_transparency()) {
+  if (format == ImageFormat::Ora) {
+    std::string error;
+    if (!save_ora(path, *document_, error)) {
+      Gtk::MessageDialog err(*this, "Could not save OpenRaster file.", false, Gtk::MESSAGE_ERROR,
+                             Gtk::BUTTONS_OK, true);
+      err.set_secondary_text(error);
+      err.run();
+      return false;
+    }
+    return true;
+  }
+
+  const bool multi = document_->layers().count() > 1;
+  if (multi && format == ImageFormat::Png) {
     Gtk::MessageDialog warn(*this,
-                            "JPEG cannot store transparency. The image will be flattened onto white.",
+                            "PNG will flatten visible layers (alpha is kept).",
                             false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
     if (warn.run() != Gtk::RESPONSE_OK) {
       return false;
     }
   }
-  if (format == ImageFormat::Bmp && layer_has_transparency()) {
+  if (format == ImageFormat::Jpeg && (layer_has_transparency() || multi)) {
     Gtk::MessageDialog warn(*this,
-                            "BMP cannot store transparency. The image will be flattened onto white.",
+                            "JPEG cannot store transparency or layers. The image will be flattened onto white.",
                             false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
     if (warn.run() != Gtk::RESPONSE_OK) {
       return false;
     }
   }
-  const Layer& layer = document_->layers().active_layer();
+  if (format == ImageFormat::Bmp && (layer_has_transparency() || multi)) {
+    Gtk::MessageDialog warn(*this,
+                            "BMP cannot store transparency or layers. The image will be flattened onto white.",
+                            false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
+    if (warn.run() != Gtk::RESPONSE_OK) {
+      return false;
+    }
+  }
+  std::vector<std::uint8_t> flat;
+  composite_visible(flat);
   std::string error;
-  if (!save_flat_image(path, format, layer.pixels(), layer.width(), layer.height(), layer.stride(),
-                       90, error)) {
+  if (!save_flat_image(path, format, flat.data(), document_->width(), document_->height(),
+                       document_->width() * 4, 90, error)) {
     Gtk::MessageDialog err(*this, "Could not save image.", false, Gtk::MESSAGE_ERROR,
                            Gtk::BUTTONS_OK, true);
     err.set_secondary_text(error);
@@ -633,11 +733,16 @@ std::string MainWindow::choose_open_path() {
   dialog.add_button("_Open", Gtk::RESPONSE_ACCEPT);
   auto all = Gtk::FileFilter::create();
   all->set_name("Images");
+  all->add_pattern("*.ora");
   all->add_pattern("*.png");
   all->add_pattern("*.jpg");
   all->add_pattern("*.jpeg");
   all->add_pattern("*.bmp");
   dialog.add_filter(all);
+  auto ora = Gtk::FileFilter::create();
+  ora->set_name("OpenRaster (*.ora)");
+  ora->add_pattern("*.ora");
+  dialog.add_filter(ora);
   auto png = Gtk::FileFilter::create();
   png->set_name("PNG");
   png->add_pattern("*.png");
@@ -662,6 +767,10 @@ bool MainWindow::choose_save_path(std::string& path, ImageFormat& format) {
   dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
   dialog.add_button("_Save", Gtk::RESPONSE_ACCEPT);
   dialog.set_do_overwrite_confirmation(true);
+  auto ora = Gtk::FileFilter::create();
+  ora->set_name("OpenRaster project (*.ora)");
+  ora->add_pattern("*.ora");
+  dialog.add_filter(ora);
   auto png = Gtk::FileFilter::create();
   png->set_name("PNG image (*.png)");
   png->add_pattern("*.png");
@@ -678,21 +787,51 @@ bool MainWindow::choose_save_path(std::string& path, ImageFormat& format) {
   if (!document_->path().empty()) {
     dialog.set_filename(document_->path());
   } else {
-    dialog.set_current_name("untitled.png");
+    dialog.set_current_name("untitled.ora");
   }
   if (dialog.run() != Gtk::RESPONSE_ACCEPT) {
     return false;
   }
   path = dialog.get_filename();
   format = format_from_path(path);
+  ImageFormat forced = ImageFormat::Unknown;
+  auto filter = dialog.get_filter();
+  if (filter) {
+    const Glib::ustring name = filter->get_name();
+    if (name.find("JPEG") != Glib::ustring::npos) {
+      forced = ImageFormat::Jpeg;
+    } else if (name.find("BMP") != Glib::ustring::npos) {
+      forced = ImageFormat::Bmp;
+    } else if (name.find("PNG") != Glib::ustring::npos) {
+      forced = ImageFormat::Png;
+    } else if (name.find("OpenRaster") != Glib::ustring::npos) {
+      forced = ImageFormat::Ora;
+    }
+  }
   if (format == ImageFormat::Unknown) {
-    auto filter = dialog.get_filter();
-    if (filter && filter->get_name().find("JPEG") != Glib::ustring::npos) {
-      format = ImageFormat::Jpeg;
-    } else if (filter && filter->get_name().find("BMP") != Glib::ustring::npos) {
-      format = ImageFormat::Bmp;
-    } else {
-      format = ImageFormat::Png;
+    format = forced == ImageFormat::Unknown ? ImageFormat::Ora : forced;
+    path += format_extension(format);
+  } else if (forced != ImageFormat::Unknown && forced != format) {
+    format = forced;
+    auto dot = path.find_last_of('.');
+    if (dot != std::string::npos) {
+      path = path.substr(0, dot);
+    }
+    path += format_extension(format);
+  }
+  // Never write a flat image over an existing .ora path.
+  if (format != ImageFormat::Ora && format_from_path(path) == ImageFormat::Ora) {
+    auto dot = path.find_last_of('.');
+    if (dot != std::string::npos) {
+      path = path.substr(0, dot);
+    }
+    path += format_extension(format);
+  }
+  if (format != ImageFormat::Ora && !document_->path().empty() &&
+      format_from_path(document_->path()) == ImageFormat::Ora && path == document_->path()) {
+    auto dot = path.find_last_of('.');
+    if (dot != std::string::npos) {
+      path = path.substr(0, dot);
     }
     path += format_extension(format);
   }

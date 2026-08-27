@@ -101,6 +101,9 @@ ImageFormat format_from_path(const std::string& path) {
   if (ext == ".bmp") {
     return ImageFormat::Bmp;
   }
+  if (ext == ".ora") {
+    return ImageFormat::Ora;
+  }
   return ImageFormat::Unknown;
 }
 
@@ -112,6 +115,8 @@ std::string format_extension(ImageFormat format) {
       return ".jpg";
     case ImageFormat::Bmp:
       return ".bmp";
+    case ImageFormat::Ora:
+      return ".ora";
     default:
       return ".png";
   }
@@ -180,6 +185,82 @@ bool save_flat_image(const std::string& path, ImageFormat format, const std::uin
     return false;
   }
   return true;
+}
+
+bool encode_png_memory(const std::uint8_t* rgba, int width, int height, int stride,
+                       std::vector<std::uint8_t>& out, std::string& error) {
+  GdkPixbuf* pixbuf = pixbuf_from_rgba(rgba, width, height, stride, false);
+  if (pixbuf == nullptr) {
+    error = "Could not allocate PNG buffer";
+    return false;
+  }
+  gchar* buf = nullptr;
+  gsize size = 0;
+  GError* gerror = nullptr;
+  const gboolean ok = gdk_pixbuf_save_to_buffer(pixbuf, &buf, &size, "png", &gerror, nullptr);
+  g_object_unref(pixbuf);
+  if (!ok || buf == nullptr) {
+    error = gerror != nullptr ? gerror->message : "PNG encode failed";
+    if (gerror != nullptr) {
+      g_error_free(gerror);
+    }
+    return false;
+  }
+  out.assign(reinterpret_cast<std::uint8_t*>(buf), reinterpret_cast<std::uint8_t*>(buf) + size);
+  g_free(buf);
+  return true;
+}
+
+bool decode_png_memory(const std::uint8_t* data, std::size_t size, LoadedImage& out) {
+  out = {};
+  if (data == nullptr || size == 0) {
+    out.error = "Empty PNG";
+    return false;
+  }
+  GError* error = nullptr;
+  GdkPixbufLoader* loader = gdk_pixbuf_loader_new_with_type("png", &error);
+  if (loader == nullptr) {
+    out.error = error != nullptr ? error->message : "PNG loader failed";
+    if (error != nullptr) {
+      g_error_free(error);
+    }
+    return false;
+  }
+  if (!gdk_pixbuf_loader_write(loader, data, size, &error)) {
+    out.error = error != nullptr ? error->message : "Truncated or corrupt PNG";
+    if (error != nullptr) {
+      g_error_free(error);
+    }
+    gdk_pixbuf_loader_close(loader, nullptr);
+    g_object_unref(loader);
+    return false;
+  }
+  if (!gdk_pixbuf_loader_close(loader, &error)) {
+    out.error = error != nullptr ? error->message : "Truncated or corrupt PNG";
+    if (error != nullptr) {
+      g_error_free(error);
+    }
+    g_object_unref(loader);
+    return false;
+  }
+  GdkPixbuf* pixbuf = gdk_pixbuf_loader_get_pixbuf(loader);
+  if (pixbuf == nullptr) {
+    out.error = "PNG contained no image";
+    g_object_unref(loader);
+    return false;
+  }
+  g_object_ref(pixbuf);
+  g_object_unref(loader);
+  out.width = gdk_pixbuf_get_width(pixbuf);
+  out.height = gdk_pixbuf_get_height(pixbuf);
+  if (out.width > kHardMaxSide || out.height > kHardMaxSide) {
+    out.error = "Image is larger than 16384 on a side";
+    g_object_unref(pixbuf);
+    return false;
+  }
+  copy_pixbuf_to_rgba(pixbuf, out.rgba, out.width, out.height);
+  g_object_unref(pixbuf);
+  return out.ok();
 }
 
 }  // namespace brushpad

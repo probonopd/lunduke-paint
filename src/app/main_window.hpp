@@ -106,6 +106,7 @@ private:
   std::string choose_open_path();
   bool choose_save_path(std::string& path, ImageFormat& format);
   bool layer_has_transparency() const;
+  void composite_visible(std::vector<std::uint8_t>& dest) const;
   bool on_delete_event(GdkEventAny* event) override;
   void commit_buffer_change(const char* name, int new_w, int new_h, const std::uint8_t* rgba,
                             int stride);
@@ -134,6 +135,7 @@ private:
   int stroke_size_{1};
   bool brush_aa_{true};
   int fill_tolerance_{0};
+  bool flatten_ora_offered_{false};
   Glib::RefPtr<Gio::SimpleAction> undo_action_;
   Glib::RefPtr<Gio::SimpleAction> redo_action_;
   Glib::RefPtr<Gio::SimpleAction> cut_action_;

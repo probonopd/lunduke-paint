@@ -15,6 +15,8 @@ project(
 gtkmm_dep = dependency('gtkmm-3.0', version: '>=3.24')
 cairomm_dep = dependency('cairomm-1.0')
 gdkpixbuf_dep = dependency('gdk-pixbuf-2.0')
+libarchive_dep = dependency('libarchive')
+pugixml_dep = dependency('pugixml')
 
 gnome = import('gnome')
 brushpad_resources = gnome.compile_resources(
@@ -40,12 +42,15 @@ brushpad_core_sources = files(
   'src/raster/shapes.cpp',
   'src/raster/blend.cpp',
   'src/doc/commands_layers.cpp',
+  'src/io/image_io.cpp',
+  'src/io/ora.cpp',
 )
 
 brushpad_core = static_library(
   'brushpad_core',
   brushpad_core_sources,
   include_directories: brushpad_inc,
+  dependencies: [gdkpixbuf_dep, libarchive_dep, pugixml_dep],
 )
 
 brushpad_sources = files(
@@ -72,7 +77,6 @@ brushpad_sources = files(
   'src/tools/tool_rectangle.cpp',
   'src/tools/tool_ellipse.cpp',
   'src/ui/dialogs_image.cpp',
-  'src/io/image_io.cpp',
 )
 
 executable(
@@ -136,6 +140,16 @@ test_blend = executable(
   install: false,
 )
 test('blend', test_blend)
+
+test_ora = executable(
+  'test_ora',
+  files('tests/test_ora.cpp'),
+  include_directories: brushpad_inc,
+  link_with: brushpad_core,
+  dependencies: [gdkpixbuf_dep, libarchive_dep, pugixml_dep],
+  install: false,
+)
+test('ora', test_ora)
 
 install_data(
   'data/org.brushpad.Brushpad.desktop',

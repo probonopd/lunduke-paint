@@ -4,6 +4,7 @@
 
 #include "raster/types.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -19,7 +20,7 @@ struct LoadedImage {
   bool ok() const { return error.empty() && width > 0 && height > 0; }
 };
 
-enum class ImageFormat { Png, Jpeg, Bmp, Unknown };
+enum class ImageFormat { Png, Jpeg, Bmp, Ora, Unknown };
 
 ImageFormat format_from_path(const std::string& path);
 std::string format_extension(ImageFormat format);
@@ -28,6 +29,10 @@ LoadedImage load_flat_image(const std::string& path);
 
 bool save_flat_image(const std::string& path, ImageFormat format, const std::uint8_t* rgba,
                      int width, int height, int stride, int jpeg_quality, std::string& error);
+
+bool encode_png_memory(const std::uint8_t* rgba, int width, int height, int stride,
+                       std::vector<std::uint8_t>& out, std::string& error);
+bool decode_png_memory(const std::uint8_t* data, std::size_t size, LoadedImage& out);
 
 }  // namespace brushpad
 
