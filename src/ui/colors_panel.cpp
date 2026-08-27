@@ -30,7 +30,7 @@ ColorsPanel::ColorsPanel() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 2) {
   hint_.set_text("L:FG  R:BG");
   hint_.set_xalign(0.0f);
   hint_.set_line_wrap(true);
-  hint_.set_max_width_chars(10);
+  hint_.set_max_width_chars(14);
   grid_.set_row_spacing(1);
   grid_.set_column_spacing(1);
   pack_start(heading_, Gtk::PACK_SHRINK);
@@ -48,7 +48,7 @@ void ColorsPanel::set_colors(Color fg, Color bg) {
 
 void ColorsPanel::add_swatch(Color color, const char* tip) {
   auto* area = Gtk::manage(new Gtk::DrawingArea());
-  area->set_size_request(14, 14);
+  area->set_size_request(16, 16);
   area->set_tooltip_text(tip);
   area->add_events(Gdk::BUTTON_PRESS_MASK);
   area->signal_draw().connect(
@@ -59,7 +59,7 @@ void ColorsPanel::add_swatch(Color color, const char* tip) {
       [this, color](GdkEventButton* event) { return on_swatch_press(event, color); });
   grid_.attach(*area, col_, row_, 1, 1);
   col_ += 1;
-  if (col_ >= 4) {
+  if (col_ >= 8) {
     col_ = 0;
     row_ += 1;
   }

@@ -57,8 +57,8 @@ CanvasView::CanvasView() {
   set_shadow_type(Gtk::SHADOW_IN);
 
   area_.set_can_focus(true);
-  area_.set_hexpand(true);
-  area_.set_vexpand(true);
+  area_.set_hexpand(false);
+  area_.set_vexpand(false);
   area_.add_events(Gdk::POINTER_MOTION_MASK | Gdk::LEAVE_NOTIFY_MASK | Gdk::BUTTON_PRESS_MASK |
                    Gdk::BUTTON_RELEASE_MASK | Gdk::SCROLL_MASK | Gdk::SMOOTH_SCROLL_MASK |
                    Gdk::BUTTON_MOTION_MASK);
@@ -74,7 +74,10 @@ CanvasView::CanvasView() {
       sigc::mem_fun(*this, &CanvasView::on_area_button_release), false);
   area_.signal_scroll_event().connect(sigc::mem_fun(*this, &CanvasView::on_area_scroll), false);
 
-  add(area_);
+  layout_.set_hexpand(true);
+  layout_.set_vexpand(true);
+  layout_.put(area_, 0, 0);
+  add(layout_);
   update_area_size();
 }
 
@@ -103,10 +106,11 @@ void CanvasView::invalidate_rect(Rect rect) {
     invalidate_all();
     return;
   }
-  const int m = margin();
+  const int ox = origin_x();
+  const int oy = origin_y();
   const double z = zoom_;
-  const int x = static_cast<int>(std::floor(m + rect.x * z)) - 2;
-  const int y = static_cast<int>(std::floor(m + rect.y * z)) - 2;
+  const int x = static_cast<int>(std::floor(ox + rect.x * z)) - 2;
+  const int y = static_cast<int>(std::floor(oy + rect.y * z)) - 2;
   const int w = static_cast<int>(std::ceil(rect.w * z)) + 4;
   const int h = static_cast<int>(std::ceil(rect.h * z)) + 4;
   area_.queue_draw_area(x, y, w, h);
@@ -189,11 +193,11 @@ void CanvasView::zoom_to(double zoom, double widget_x, double widget_y) {
 
   // Keep the canvas point under the pointer after the size change.
   if (hadj) {
-    const double new_widget_x = margin() + canvas_x * zoom_;
+    const double new_widget_x = origin_x() + canvas_x * zoom_;
     hadj->set_value(new_widget_x - widget_x);
   }
   if (vadj) {
-    const double new_widget_y = margin() + canvas_y * zoom_;
+    const double new_widget_y = origin_y() + canvas_y * zoom_;
     vadj->set_value(new_widget_y - widget_y);
   }
 
@@ -235,13 +239,13 @@ Color CanvasView::sample_pixel(int canvas_x, int canvas_y) const {
 
 void CanvasView::widget_to_canvas(double widget_x, double widget_y, double& canvas_x,
                                  double& canvas_y) const {
-  canvas_x = (widget_x - margin()) / zoom_;
-  canvas_y = (widget_y - margin()) / zoom_;
+  canvas_x = (widget_x - origin_x()) / zoom_;
+  canvas_y = (widget_y - origin_y()) / zoom_;
 }
 
 bool CanvasView::canvas_to_screen(int canvas_x, int canvas_y, int& screen_x, int& screen_y) const {
-  const double wx = static_cast<double>(margin()) + static_cast<double>(canvas_x) * zoom_;
-  const double wy = static_cast<double>(margin()) + static_cast<double>(canvas_y) * zoom_;
+  const double wx = static_cast<double>(origin_x()) + static_cast<double>(canvas_x) * zoom_;
+  const double wy = static_cast<double>(origin_y()) + static_cast<double>(canvas_y) * zoom_;
   const auto win = area_.get_window();
   if (!win) {
     return false;
@@ -254,10 +258,56 @@ bool CanvasView::canvas_to_screen(int canvas_x, int canvas_y, int& screen_x, int
   return true;
 }
 
+int CanvasView::content_pixel_width() const {
+  return static_cast<int>(std::ceil(canvas_width() * zoom_));
+}
+
+int CanvasView::content_pixel_height() const {
+  return static_cast<int>(std::ceil(canvas_height() * zoom_));
+}
+
+int CanvasView::origin_x() const {
+  return margin();
+}
+
+int CanvasView::origin_y() const {
+  return margin();
+}
+
+void CanvasView::on_size_allocate(Gtk::Allocation& allocation) {
+  Gtk::ScrolledWindow::on_size_allocate(allocation);
+  update_area_size();
+}
+
 void CanvasView::update_area_size() {
-  const int w = static_cast<int>(std::ceil(canvas_width() * zoom_)) + margin() * 2;
-  const int h = static_cast<int>(std::ceil(canvas_height() * zoom_)) + margin() * 2;
-  area_.set_size_request(w, h);
+  if (updating_size_) {
+    return;
+  }
+  const int aw = content_pixel_width() + margin() * 2;
+  const int ah = content_pixel_height() + margin() * 2;
+  int vw = 0;
+  int vh = 0;
+  if (const auto hadj = get_hadjustment()) {
+    vw = static_cast<int>(hadj->get_page_size());
+  }
+  if (const auto vadj = get_vadjustment()) {
+    vh = static_cast<int>(vadj->get_page_size());
+  }
+  if (vw < 2) {
+    vw = get_allocated_width();
+  }
+  if (vh < 2) {
+    vh = get_allocated_height();
+  }
+  const int lw = std::max(aw, vw);
+  const int lh = std::max(ah, vh);
+  const int x = std::max(0, (lw - aw) / 2);
+  const int y = std::max(0, (lh - ah) / 2);
+  updating_size_ = true;
+  area_.set_size_request(aw, ah);
+  layout_.set_size(static_cast<guint>(lw), static_cast<guint>(lh));
+  layout_.move(area_, x, y);
+  updating_size_ = false;
 }
 
 unsigned CanvasView::modifiers_from_state(guint state) const {
@@ -314,16 +364,17 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
   cr->set_source_rgb(bg.get_red(), bg.get_green(), bg.get_blue());
   cr->paint();
 
-  const int m = margin();
+  const int ox = origin_x();
+  const int oy = origin_y();
   const int cw = canvas_width();
   const int ch = canvas_height();
-  const int dw = static_cast<int>(std::ceil(cw * zoom_));
-  const int dh = static_cast<int>(std::ceil(ch * zoom_));
+  const int dw = content_pixel_width();
+  const int dh = content_pixel_height();
 
   cr->save();
-  cr->rectangle(m, m, dw, dh);
+  cr->rectangle(ox, oy, dw, dh);
   cr->clip();
-  draw_checker(cr, m, m, dw, dh, checker_light_, checker_dark_);
+  draw_checker(cr, ox, oy, dw, dh, checker_light_, checker_dark_);
 
   if (document_ == nullptr) {
     cr->restore();
@@ -336,10 +387,10 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
   double clip_y2 = 0;
   cr->get_clip_extents(clip_x1, clip_y1, clip_x2, clip_y2);
 
-  const int vis_x0 = std::max(0, static_cast<int>(std::floor((clip_x1 - m) / zoom_)));
-  const int vis_y0 = std::max(0, static_cast<int>(std::floor((clip_y1 - m) / zoom_)));
-  const int vis_x1 = std::min(cw, static_cast<int>(std::ceil((clip_x2 - m) / zoom_)));
-  const int vis_y1 = std::min(ch, static_cast<int>(std::ceil((clip_y2 - m) / zoom_)));
+  const int vis_x0 = std::max(0, static_cast<int>(std::floor((clip_x1 - ox) / zoom_)));
+  const int vis_y0 = std::max(0, static_cast<int>(std::floor((clip_y1 - oy) / zoom_)));
+  const int vis_x1 = std::min(cw, static_cast<int>(std::ceil((clip_x2 - ox) / zoom_)));
+  const int vis_y1 = std::min(ch, static_cast<int>(std::ceil((clip_y2 - oy) / zoom_)));
   if (vis_x1 <= vis_x0 || vis_y1 <= vis_y0) {
     cr->restore();
     return true;
@@ -367,8 +418,8 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
 
   const bool integer_up = zoom_ >= 1.0 - 1e-9;
   if (integer_up) {
-    const int dest_x = static_cast<int>(std::floor(m + vis_x0 * zoom_));
-    const int dest_y = static_cast<int>(std::floor(m + vis_y0 * zoom_));
+    const int dest_x = static_cast<int>(std::floor(ox + vis_x0 * zoom_));
+    const int dest_y = static_cast<int>(std::floor(oy + vis_y0 * zoom_));
     const int dest_w = static_cast<int>(std::ceil((vis_x1 - vis_x0) * zoom_));
     const int dest_h = static_cast<int>(std::ceil((vis_y1 - vis_y0) * zoom_));
     if (dest_w > 0 && dest_h > 0) {
@@ -420,7 +471,7 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     }
     surface->mark_dirty();
     cr->save();
-    cr->translate(m + vis_x0 * zoom_, m + vis_y0 * zoom_);
+    cr->translate(ox + vis_x0 * zoom_, oy + vis_y0 * zoom_);
     cr->scale(zoom_, zoom_);
     cr->set_source(surface, 0, 0);
     cr->paint();
@@ -428,9 +479,9 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
   }
 
   if (grid_visible_ && zoom_ + 1e-9 >= static_cast<double>(grid_threshold_) / 100.0) {
-    draw_pixel_grid(cr, m, vis_x0, vis_y0, vis_x1, vis_y1);
+    draw_pixel_grid(cr, ox, oy, vis_x0, vis_y0, vis_x1, vis_y1);
   }
-  draw_marching_ants(cr, m);
+  draw_marching_ants(cr, ox, oy);
   ensure_ants_timer();
 
   cr->restore();
@@ -601,26 +652,26 @@ void CanvasView::zoom_fit() {
   set_zoom(std::min(vw / cw, vh / ch));
 }
 
-void CanvasView::draw_pixel_grid(const Cairo::RefPtr<Cairo::Context>& cr, int m, int vis_x0,
+void CanvasView::draw_pixel_grid(const Cairo::RefPtr<Cairo::Context>& cr, int ox, int oy, int vis_x0,
                                 int vis_y0, int vis_x1, int vis_y1) {
   cr->save();
   cr->set_line_width(1.0);
   cr->set_source_rgba(0.0, 0.0, 0.0, 0.28);
   for (int x = vis_x0; x <= vis_x1; ++x) {
-    const double wx = m + x * zoom_ + 0.5;
-    cr->move_to(wx, m + vis_y0 * zoom_);
-    cr->line_to(wx, m + vis_y1 * zoom_);
+    const double wx = ox + x * zoom_ + 0.5;
+    cr->move_to(wx, oy + vis_y0 * zoom_);
+    cr->line_to(wx, oy + vis_y1 * zoom_);
   }
   for (int y = vis_y0; y <= vis_y1; ++y) {
-    const double wy = m + y * zoom_ + 0.5;
-    cr->move_to(m + vis_x0 * zoom_, wy);
-    cr->line_to(m + vis_x1 * zoom_, wy);
+    const double wy = oy + y * zoom_ + 0.5;
+    cr->move_to(ox + vis_x0 * zoom_, wy);
+    cr->line_to(ox + vis_x1 * zoom_, wy);
   }
   cr->stroke();
   cr->restore();
 }
 
-void CanvasView::draw_marching_ants(const Cairo::RefPtr<Cairo::Context>& cr, int m) {
+void CanvasView::draw_marching_ants(const Cairo::RefPtr<Cairo::Context>& cr, int ox, int oy) {
   if (document_ == nullptr) {
     return;
   }
@@ -632,8 +683,8 @@ void CanvasView::draw_marching_ants(const Cairo::RefPtr<Cairo::Context>& cr, int
     if (r.empty()) {
       return;
     }
-    const double x = m + r.x * zoom_ + 0.5;
-    const double y = m + r.y * zoom_ + 0.5;
+    const double x = ox + r.x * zoom_ + 0.5;
+    const double y = oy + r.y * zoom_ + 0.5;
     const double w = r.w * zoom_;
     const double h = r.h * zoom_;
     cr->save();
@@ -675,8 +726,8 @@ void CanvasView::draw_marching_ants(const Cairo::RefPtr<Cairo::Context>& cr, int
         if (!inside(x, y)) {
           continue;
         }
-        const double px = m + (b.x + x) * zoom_;
-        const double py = m + (b.y + y) * zoom_;
+        const double px = ox + (b.x + x) * zoom_;
+        const double py = oy + (b.y + y) * zoom_;
         if (!inside(x, y - 1)) {
           cr->move_to(px, py + 0.5);
           cr->line_to(px + zoom_, py + 0.5);
@@ -703,8 +754,8 @@ void CanvasView::draw_marching_ants(const Cairo::RefPtr<Cairo::Context>& cr, int
         if (!inside(x, y)) {
           continue;
         }
-        const double px = m + (b.x + x) * zoom_;
-        const double py = m + (b.y + y) * zoom_;
+        const double px = ox + (b.x + x) * zoom_;
+        const double py = oy + (b.y + y) * zoom_;
         if (!inside(x, y - 1)) {
           cr->move_to(px, py + 0.5);
           cr->line_to(px + zoom_, py + 0.5);

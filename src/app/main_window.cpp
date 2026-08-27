@@ -200,21 +200,26 @@ void MainWindow::build_ui() {
     }
   };
 
-  right_dock_.append_page(layers_panel_, "Lyr");
-  right_dock_.append_page(history_panel_, "Hist");
-  right_dock_.set_scrollable(true);
+  auto* layers_tab = Gtk::make_managed<Gtk::Label>("Layers");
+  auto* history_tab = Gtk::make_managed<Gtk::Label>("History");
+  right_dock_.append_page(layers_panel_, *layers_tab);
+  right_dock_.append_page(history_panel_, *history_tab);
+  right_dock_.set_scrollable(false);
   right_dock_.set_hexpand(true);
   right_dock_.set_vexpand(true);
 
   colors_panel_.set_hexpand(true);
   colors_panel_.set_valign(Gtk::ALIGN_END);
 
+  // Wide enough for the "Layers" and "History" tab labels, and no wider.
+  constexpr int kRightDockWidth = 160;
+  right_sidebar_.set_size_request(kRightDockWidth, -1);
+  right_dock_.set_size_request(kRightDockWidth, -1);
+  colors_panel_.set_size_request(kRightDockWidth, -1);
+
   right_sidebar_.set_spacing(0);
-  right_sidebar_.set_size_request(80, -1);
   right_sidebar_.set_hexpand(false);
   right_sidebar_.set_halign(Gtk::ALIGN_FILL);
-  right_dock_.set_size_request(80, -1);
-  colors_panel_.set_size_request(80, -1);
   right_sidebar_.pack_start(right_dock_, Gtk::PACK_EXPAND_WIDGET);
   right_sidebar_.pack_start(colors_panel_, Gtk::PACK_SHRINK);
 

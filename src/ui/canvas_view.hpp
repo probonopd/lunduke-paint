@@ -7,6 +7,7 @@
 
 #include <glibmm/refptr.h>
 #include <gtkmm/drawingarea.h>
+#include <gtkmm/layout.h>
 #include <gtkmm/scrolledwindow.h>
 #include <sigc++/connection.h>
 #include <sigc++/signal.h>
@@ -58,6 +59,9 @@ public:
   sigc::signal<void>& signal_pointer_left() { return signal_pointer_left_; }
   sigc::signal<void>& signal_view_changed() { return signal_view_changed_; }
 
+protected:
+  void on_size_allocate(Gtk::Allocation& allocation) override;
+
 private:
   bool on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr);
   bool on_area_motion(GdkEventMotion* event);
@@ -74,13 +78,18 @@ private:
   double snapped_zoom(double zoom) const;
   void visible_center(double& x, double& y) const;
   int margin() const { return 24; }
+  int content_pixel_width() const;
+  int content_pixel_height() const;
+  int origin_x() const;
+  int origin_y() const;
   Color display_pixel(Color color, int x, int y) const;
-  void draw_pixel_grid(const Cairo::RefPtr<Cairo::Context>& cr, int m, int vis_x0, int vis_y0,
-                       int vis_x1, int vis_y1);
-  void draw_marching_ants(const Cairo::RefPtr<Cairo::Context>& cr, int m);
+  void draw_pixel_grid(const Cairo::RefPtr<Cairo::Context>& cr, int ox, int oy, int vis_x0,
+                       int vis_y0, int vis_x1, int vis_y1);
+  void draw_marching_ants(const Cairo::RefPtr<Cairo::Context>& cr, int ox, int oy);
   void ensure_ants_timer();
   void invalidate_ants();
 
+  Gtk::Layout layout_;
   Gtk::DrawingArea area_;
   Document* document_{nullptr};
   Tool* tool_{nullptr};
@@ -97,6 +106,7 @@ private:
   double pan_start_y_{0};
   double pan_hadj_{0};
   double pan_vadj_{0};
+  bool updating_size_{false};
 
   sigc::signal<void, double, double> signal_pointer_moved_;
   sigc::signal<void> signal_pointer_left_;
