@@ -1,7 +1,7 @@
-# Brushpad
+# Lunduke Paint
 
-Brushpad is a traditional Linux X11 paint program built with GTK 3.24 and
-gtkmm-3.0. Look and feel: classic MS Paint + KolourPaint, with Pinta-style
+Lunduke Paint is a traditional Linux X11 paint program built with GTK 3.24 and
+gtkmm-3.0. The product name is Lunduke Paint; the project/code name is Brushpad. Look and feel: classic MS Paint + KolourPaint, with Pinta-style
 user layers.
 
 - Application id: `org.brushpad.Brushpad`

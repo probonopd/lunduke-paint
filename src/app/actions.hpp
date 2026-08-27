@@ -7,7 +7,7 @@ namespace actions {
 
 constexpr const char* kAppId = "org.brushpad.Brushpad";
 constexpr const char* kVersion = "0.1.0";
-constexpr const char* kProductName = "Brushpad";
+constexpr const char* kProductName = "Lunduke Paint";
 
 
 constexpr const char* kNew = "new";

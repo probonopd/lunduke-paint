@@ -1,4 +1,4 @@
-# Publishing Brushpad to GitHub
+# Publishing Lunduke Paint to GitHub
 
 This working tree is not published yet. Do not invent a remote URL.
 

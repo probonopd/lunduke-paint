@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=Brushpad
+Name=Lunduke Paint
 GenericName=Paint Program
-Comment=Paint images on Linux X11
+Comment=Layered bitmap paint program for Linux X11
 Exec=brushpad
 Icon=org.brushpad.Brushpad
 Terminal=false
