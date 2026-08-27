@@ -23,6 +23,7 @@
 #include <memory>
 #include <vector>
 #include <gtk/gtk.h>
+#include <gtkmm/cellrenderertext.h>
 
 namespace brushpad {
 namespace {
@@ -58,13 +59,13 @@ public:
 
 }  // namespace
 
-LayersPanel::LayersPanel() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
-  set_border_width(6);
+LayersPanel::LayersPanel() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 2) {
+  set_border_width(3);
   list_.set_selection_mode(Gtk::SELECTION_SINGLE);
   list_.set_activate_on_single_click(true);
   list_.signal_row_selected().connect(sigc::mem_fun(*this, &LayersPanel::on_row_selected));
   scroll_.set_policy(Gtk::POLICY_NEVER, Gtk::POLICY_AUTOMATIC);
-  scroll_.set_min_content_height(160);
+  scroll_.set_min_content_height(120);
   scroll_.add(list_);
 
   for (int i = 0; i < kBlendModeCount; ++i) {
@@ -72,6 +73,15 @@ LayersPanel::LayersPanel() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
     blend_.append(blend_mode_label(mode));
   }
   blend_.set_active(0);
+  blend_.set_tooltip_text("Blend");
+  blend_.set_size_request(76, -1);
+  blend_.set_hexpand(false);
+  {
+    auto* cell = blend_.get_first_cell();
+    if (auto* text = dynamic_cast<Gtk::CellRendererText*>(cell)) {
+      text->property_ellipsize() = Pango::ELLIPSIZE_END;
+    }
+  }
   blend_.signal_changed().connect([this]() {
     if (refreshing_ || document_ == nullptr) {
       return;
@@ -79,21 +89,26 @@ LayersPanel::LayersPanel() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
     document_->set_layer_blend(document_->layers().active_index(),
                                blend_mode_from_index(blend_.get_active_row_number()));
   });
-  blend_row_.pack_start(blend_label_, Gtk::PACK_SHRINK);
-  blend_row_.pack_start(blend_, Gtk::PACK_EXPAND_WIDGET);
 
-  auto pack_btn = [this](Gtk::Button& b, const char* tip) {
+  buttons_.set_row_spacing(1);
+  buttons_.set_column_spacing(1);
+  buttons_.set_hexpand(true);
+  auto pack_btn = [this](Gtk::Button& b, const char* icon, const char* tip, int col, int row) {
+    b.set_label("");
+    b.set_image_from_icon_name(icon, Gtk::ICON_SIZE_MENU);
     b.set_tooltip_text(tip);
     b.set_can_focus(false);
-    buttons_.pack_start(b, Gtk::PACK_EXPAND_WIDGET);
+    b.set_relief(Gtk::RELIEF_NONE);
+    b.set_hexpand(true);
+    buttons_.attach(b, col, row, 1, 1);
   };
-  pack_btn(new_, "New layer");
-  pack_btn(dup_, "Duplicate layer");
-  pack_btn(del_, "Delete layer");
-  pack_btn(up_, "Raise layer");
-  pack_btn(down_, "Lower layer");
-  pack_btn(merge_, "Merge down");
-  pack_btn(flatten_, "Flatten");
+  pack_btn(new_, "list-add-symbolic", "New layer", 0, 0);
+  pack_btn(dup_, "edit-copy-symbolic", "Duplicate layer", 1, 0);
+  pack_btn(del_, "edit-delete-symbolic", "Delete layer", 0, 1);
+  pack_btn(up_, "go-up-symbolic", "Raise layer", 1, 1);
+  pack_btn(down_, "go-down-symbolic", "Lower layer", 0, 2);
+  pack_btn(merge_, "go-bottom-symbolic", "Merge down", 1, 2);
+  pack_btn(flatten_, "view-restore-symbolic", "Flatten", 0, 3);
 
   new_.signal_clicked().connect([this]() {
     if (document_ == nullptr) {
@@ -143,7 +158,7 @@ LayersPanel::LayersPanel() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
   });
 
   pack_start(scroll_, Gtk::PACK_EXPAND_WIDGET);
-  pack_start(blend_row_, Gtk::PACK_SHRINK);
+  pack_start(blend_, Gtk::PACK_SHRINK);
   pack_start(buttons_, Gtk::PACK_SHRINK);
 }
 
@@ -179,17 +194,18 @@ void LayersPanel::add_row(int stack_index) {
   }
   Layer& layer = document_->layers().at(stack_index);
   auto* row = Gtk::manage(new LayerRow(stack_index));
-  auto* box = Gtk::manage(new Gtk::Box(Gtk::ORIENTATION_HORIZONTAL, 4));
-  box->set_border_width(2);
+  auto* box = Gtk::manage(new Gtk::Box(Gtk::ORIENTATION_VERTICAL, 1));
+  box->set_border_width(1);
 
   auto* image = Gtk::manage(new Gtk::Image());
-  image->set(thumb_pixbuf(layer));
-  image->set_size_request(kThumbWidth, kThumbHeight);
+  auto full = thumb_pixbuf(layer);
+  image->set(full->scale_simple(24, 18, Gdk::INTERP_NEAREST));
+  image->set_halign(Gtk::ALIGN_START);
 
   auto* name = Gtk::manage(new Gtk::Label(layer.name()));
   name->set_xalign(0.0f);
   name->set_ellipsize(Pango::ELLIPSIZE_END);
-  name->set_hexpand(true);
+  name->set_max_width_chars(8);
 
   auto* eye = Gtk::manage(new Gtk::ToggleButton());
   eye->set_image_from_icon_name("view-reveal-symbolic", Gtk::ICON_SIZE_MENU);
@@ -215,33 +231,13 @@ void LayersPanel::add_row(int stack_index) {
     document_->set_layer_locked(stack_index, lock->get_active());
   });
 
-  auto* opacity = Gtk::manage(new Gtk::SpinButton());
-  opacity->set_range(0, 100);
-  opacity->set_increments(1, 10);
-  opacity->set_digits(0);
-  opacity->set_value(static_cast<int>(layer.opacity() * 100.0f + 0.5f));
-  opacity->set_tooltip_text("Opacity");
-  opacity->set_width_chars(3);
-  auto commit_opacity = [this, stack_index, opacity]() {
-    if (refreshing_ || document_ == nullptr) {
-      return;
-    }
-    document_->set_layer_opacity(stack_index,
-                                 static_cast<float>(opacity->get_value_as_int()) / 100.0f);
-  };
-  opacity->signal_focus_out_event().connect(
-      [commit_opacity](GdkEventFocus*) {
-        commit_opacity();
-        return false;
-      },
-      false);
-  opacity->signal_activate().connect(commit_opacity);
+  auto* toggles = Gtk::manage(new Gtk::Box(Gtk::ORIENTATION_HORIZONTAL, 1));
+  toggles->pack_start(*eye, Gtk::PACK_SHRINK);
+  toggles->pack_start(*lock, Gtk::PACK_SHRINK);
 
   box->pack_start(*image, Gtk::PACK_SHRINK);
-  box->pack_start(*name, Gtk::PACK_EXPAND_WIDGET);
-  box->pack_start(*eye, Gtk::PACK_SHRINK);
-  box->pack_start(*lock, Gtk::PACK_SHRINK);
-  box->pack_start(*opacity, Gtk::PACK_SHRINK);
+  box->pack_start(*name, Gtk::PACK_SHRINK);
+  box->pack_start(*toggles, Gtk::PACK_SHRINK);
   row->add(*box);
   row->add_events(Gdk::BUTTON_PRESS_MASK);
   row->signal_button_press_event().connect(

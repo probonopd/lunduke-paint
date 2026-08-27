@@ -5,6 +5,7 @@
 #include <gtkmm/box.h>
 #include <gtkmm/button.h>
 #include <gtkmm/comboboxtext.h>
+#include <gtkmm/grid.h>
 #include <gtkmm/label.h>
 #include <gtkmm/listbox.h>
 #include <gtkmm/scrolledwindow.h>
@@ -34,10 +35,8 @@ private:
 
   Gtk::ScrolledWindow scroll_;
   Gtk::ListBox list_;
-  Gtk::Box blend_row_{Gtk::ORIENTATION_HORIZONTAL, 6};
-  Gtk::Label blend_label_{"Blend"};
   Gtk::ComboBoxText blend_;
-  Gtk::Box buttons_{Gtk::ORIENTATION_HORIZONTAL, 2};
+  Gtk::Grid buttons_;
   Gtk::Button new_{"New"};
   Gtk::Button dup_{"Dup"};
   Gtk::Button del_{"Del"};

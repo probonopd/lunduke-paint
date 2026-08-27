@@ -33,7 +33,7 @@ public:
 }  // namespace
 
 HistoryPanel::HistoryPanel() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
-  set_border_width(8);
+  set_border_width(3);
   list_.set_selection_mode(Gtk::SELECTION_SINGLE);
   list_.set_activate_on_single_click(true);
   list_.signal_row_activated().connect(sigc::mem_fun(*this, &HistoryPanel::on_row_activated));

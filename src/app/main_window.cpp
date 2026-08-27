@@ -200,8 +200,9 @@ void MainWindow::build_ui() {
     }
   };
 
-  right_dock_.append_page(layers_panel_, "Layers");
-  right_dock_.append_page(history_panel_, "History");
+  right_dock_.append_page(layers_panel_, "Lyr");
+  right_dock_.append_page(history_panel_, "Hist");
+  right_dock_.set_scrollable(true);
   right_dock_.set_hexpand(true);
   right_dock_.set_vexpand(true);
 
@@ -209,9 +210,11 @@ void MainWindow::build_ui() {
   colors_panel_.set_valign(Gtk::ALIGN_END);
 
   right_sidebar_.set_spacing(0);
-  right_sidebar_.set_size_request(156, -1);
+  right_sidebar_.set_size_request(80, -1);
   right_sidebar_.set_hexpand(false);
-  right_sidebar_.set_halign(Gtk::ALIGN_END);
+  right_sidebar_.set_halign(Gtk::ALIGN_FILL);
+  right_dock_.set_size_request(80, -1);
+  colors_panel_.set_size_request(80, -1);
   right_sidebar_.pack_start(right_dock_, Gtk::PACK_EXPAND_WIDGET);
   right_sidebar_.pack_start(colors_panel_, Gtk::PACK_SHRINK);
 
@@ -220,7 +223,7 @@ void MainWindow::build_ui() {
   work_area_.pack_start(toolbox_, Gtk::PACK_SHRINK);
   work_area_.pack_start(*left_sep, Gtk::PACK_SHRINK);
   work_area_.pack_start(canvas_, Gtk::PACK_EXPAND_WIDGET);
-  work_area_.pack_end(right_sidebar_, Gtk::PACK_SHRINK);
+  work_area_.pack_start(right_sidebar_, Gtk::PACK_SHRINK);
   work_area_.set_hexpand(true);
   work_area_.set_vexpand(true);
 
