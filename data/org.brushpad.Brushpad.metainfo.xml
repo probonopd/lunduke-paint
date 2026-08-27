@@ -4,14 +4,35 @@
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <name>Lunduke Paint</name>
-  <summary>A traditional X11 paint program</summary>
+  <summary>Layered bitmap paint program for Linux X11</summary>
   <description>
     <p>
-      Lunduke Paint is a GTK 3 paint program for Linux X11. It uses a window-manager
-      title bar, a menu bar, and toolbars. The project code name is Brushpad.
+      Lunduke Paint is a traditional GTK 3 paint program for Linux X11.
+      Look and feel: classic MS Paint plus KolourPaint, with user layers
+      and a visible history list. The project code name is Brushpad.
+    </p>
+    <p>
+      It uses a window-manager title bar, a menu bar, and toolbars. The
+      native project format is OpenRaster (.ora). Flat export to PNG,
+      JPEG, and BMP is supported.
     </p>
   </description>
   <launchable type="desktop-id">org.brushpad.Brushpad.desktop</launchable>
+  <provides>
+    <binary>brushpad</binary>
+  </provides>
   <developer_name>Lunduke Paint</developer_name>
   <content_rating type="oars-1.1"/>
+  <categories>
+    <category>Graphics</category>
+    <category>2DGraphics</category>
+    <category>RasterGraphics</category>
+  </categories>
+  <releases>
+    <release version="1.0.0" date="2026-08-27">
+      <description>
+        <p>First 1.0 release: adjustments, effects, preferences, print, and help.</p>
+      </description>
+    </release>
+  </releases>
 </component>

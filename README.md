@@ -1,9 +1,12 @@
 # Lunduke Paint
 
 Lunduke Paint is a traditional Linux X11 paint program built with GTK 3.24 and
-gtkmm-3.0. The product name is Lunduke Paint; the project/code name is Brushpad. Look and feel: classic MS Paint + KolourPaint, with Pinta-style
+gtkmm-3.0. Look and feel: classic MS Paint + KolourPaint, with Pinta-style
 user layers.
 
+The **product name** is Lunduke Paint. The **project/code name** is Brushpad.
+
+- Binary: `brushpad`
 - Application id: `org.brushpad.Brushpad`
 - License: GPL-3.0-or-later
 - Language: C++17
@@ -12,10 +15,11 @@ user layers.
   decorations, no HeaderBar as main chrome)
 - Theme: follows the active GTK3 theme; the app is not skinned
 - Native project file: OpenRaster `.ora` (libarchive + pugixml)
+- Config: `$XDG_CONFIG_HOME/brushpad/brushpad.ini` via GKeyFile
 
-## Phase 4 is done
+## 1.0 is done
 
-What works (Phase 1–4):
+What works (Phase 0–5):
 
 - One or more user layers (bottom → top in storage; Layers list is reversed
   so the top of the list is the top of the stack)
@@ -24,7 +28,7 @@ What works (Phase 1–4):
 - Internal ToolLayer + SelectionLayer stay out of the Layers list
 - Compositor draws the visible viewport only with v1 blends: Normal,
   Multiply, Screen, Overlay, Darken, Lighten
-- Paint/effects still affect **active layer ∩ selection**
+- Paint/effects affect **active layer ∩ selection**
 - Locked layer refuses pixel edits (status hint); hidden layers stay in the
   stack but are omitted from the composite
 - Layers dock: thumbnail, name, eye, lock, opacity; blend combo; New /
@@ -49,20 +53,41 @@ What works (Phase 1–4):
 - History dock: named list, click an older row to undo there, a newer row to redo
 - Transparent is a first-class FG/BG color (palette last cell + toolbox checker)
 - Canvas size / scale / crop / rotate / flip apply to every user layer
+- Adjustments (active layer, clipped to selection): Brightness/Contrast,
+  Invert, Grayscale, Hue/Saturation, Posterize — each one undoable Command
+- Effects (active layer, clipped to selection): box blur, Sharpen, Emboss —
+  each one undoable Command
+- Preferences: default new-document size, undo limit (default 50, cap 200),
+  checker colors, grid threshold (default 400%)
+- Help: Keyboard Shortcuts window; About (Lunduke Paint, GPL-3.0-or-later,
+  app id `org.brushpad.Brushpad`)
+- Print: Gtk::PrintOperation, fit-to-page, Ctrl+P
+- AppStream metainfo, `.desktop` (Name=Lunduke Paint), hicolor icon placeholder
 - Headless tests: `dummy`, `fill`, `history`, `selection`, `transform`,
-  `blend`, `ora`, `stroke`
+  `blend`, `ora`, `stroke`, `effects`
 
-Not in this phase: adjustments, effects, prefs dialog, print, About /
-shortcuts window, extra packaging polish (Phase 5).
+## Leftover TODO (not in 1.0)
+
+Do not treat these as missing 1.0 work. They stay out until someone asks.
+
+- Nicer text-as-object (live editable text instead of rasterize-on-commit)
+- Gradient tool
+- Clone stamp
+- Autosave journal
+- ICO load/save
+- Tablet pressure
 
 ## Development
 
-Development happens in the agent environment. This tree is the working
-copy. Publishing to GitHub is a later joint step (see `PUBLISH.md`). You
-do not need to install a toolchain on your own machine for day-to-day
-work.
+Development happens in the agent environment; this repo is the published
+source. This tree is the working copy. Publishing to GitHub is a later joint
+step (see `PUBLISH.md`). You do not need to install a toolchain or an IDE on
+your own machine for day-to-day work.
 
-## How to build on X11 (Debian / Ubuntu)
+## How you build on X11 (Debian / Ubuntu)
+
+These are the commands the agent runs. They also document how a human can
+optionally test-build after clone.
 
 ```sh
 sudo apt install -y build-essential meson ninja-build \
@@ -78,9 +103,14 @@ GDK_BACKEND=x11 ./build/brushpad
 
 On Debian 13 the pixbuf development package is `libgdk-pixbuf-2.0-dev`.
 
-Optional: after a clone, run the same commands on an X11 machine if you
-want a local test-build. A missing `DISPLAY` is fine for compile and
-`meson test`; the GUI is not required for Phase 4 checks.
+A missing `DISPLAY` is fine for compile and `meson test`. The GUI is not
+required for the 1.0 headless gate.
+
+## Optional human test-build
+
+After GitHub publish, a human may clone and run the same commands on an X11
+machine if they want a local test-build. That is optional verification, not
+part of the development loop. Target runtime: Linux X11 / XLibre + XFCE.
 
 ## Decisions
 
@@ -100,7 +130,7 @@ want a local test-build. A missing `DISPLAY` is fine for compile and
 - Autocrop trims any outer row/column that is a single uniform color.
 - Rotate 90 is clockwise.
 - Scale dialog defaults to nearest neighbor and keep-aspect.
-- Pixel grid is on by default and only drawn at zoom ≥ 400%.
+- Pixel grid is on by default and drawn at zoom ≥ the configured threshold (default 400%).
 - Blend onto a fully transparent destination uses the source color (Paint/Pinta-like; Multiply does not go black).
 - Flatten discards hidden layers and composites the visible ones into one Background layer.
 - Merge down blends the active layer onto the one below using the upper layer’s blend and opacity.
@@ -117,6 +147,13 @@ want a local test-build. A missing `DISPLAY` is fine for compile and
 - Lasso and ellipse selections store an 8-bit mask; invert is still “canvas minus that region.”
 - Text is a popup Entry; Pango rasterizes onto the layer on Enter or click-away (not a live object).
 - Toolbox checker under the wells sets Transparent FG (left) or BG (right); painting with it punches alpha.
+- Brightness (−100..100) adds a channel offset; contrast (−100..100) scales around 128.
+- Hue/Saturation is a basic RGB↔HSV shift (hue ±180°, saturation ±100).
+- Posterize quantizes each RGB channel to 2–16 levels.
+- Box blur is separable with edge clamp; radius 1–16. Sharpen is a 3×3 unsharp kernel. Emboss is a 3×3 relief kernel with a +128 bias.
+- Preferences are `$XDG_CONFIG_HOME/brushpad/brushpad.ini` via GKeyFile (default size, undo limit, checker colors, grid threshold).
+- Print is a single fit-to-page `Gtk::PrintOperation` of the visible composite, painted on white.
+- Unready menu items (Recent, Export, Revert, Copy Merged, Rulers, Fullscreen) are omitted rather than shown disabled.
 
 ## Layout
 
