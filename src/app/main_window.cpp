@@ -200,19 +200,27 @@ void MainWindow::build_ui() {
     }
   };
 
-  right_dock_.append_page(colors_panel_, "Colors");
   right_dock_.append_page(layers_panel_, "Layers");
   right_dock_.append_page(history_panel_, "History");
-  right_dock_.set_size_request(220, -1);
+  right_dock_.set_hexpand(true);
+  right_dock_.set_vexpand(true);
+
+  colors_panel_.set_hexpand(true);
+  colors_panel_.set_valign(Gtk::ALIGN_END);
+
+  right_sidebar_.set_spacing(0);
+  right_sidebar_.set_size_request(156, -1);
+  right_sidebar_.set_hexpand(false);
+  right_sidebar_.set_halign(Gtk::ALIGN_END);
+  right_sidebar_.pack_start(right_dock_, Gtk::PACK_EXPAND_WIDGET);
+  right_sidebar_.pack_start(colors_panel_, Gtk::PACK_SHRINK);
 
   auto* left_sep = Gtk::make_managed<Gtk::Separator>(Gtk::ORIENTATION_VERTICAL);
-  auto* right_sep = Gtk::make_managed<Gtk::Separator>(Gtk::ORIENTATION_VERTICAL);
 
   work_area_.pack_start(toolbox_, Gtk::PACK_SHRINK);
   work_area_.pack_start(*left_sep, Gtk::PACK_SHRINK);
   work_area_.pack_start(canvas_, Gtk::PACK_EXPAND_WIDGET);
-  work_area_.pack_start(*right_sep, Gtk::PACK_SHRINK);
-  work_area_.pack_start(right_dock_, Gtk::PACK_SHRINK);
+  work_area_.pack_end(right_sidebar_, Gtk::PACK_SHRINK);
   work_area_.set_hexpand(true);
   work_area_.set_vexpand(true);
 
@@ -561,7 +569,7 @@ bool MainWindow::on_key_release(GdkEventKey* event) {
 }
 
 void MainWindow::on_toggle_right_dock() {
-  right_dock_.set_visible(!right_dock_.get_visible());
+  right_sidebar_.set_visible(!right_sidebar_.get_visible());
 }
 
 void MainWindow::action_new() {
@@ -1274,7 +1282,7 @@ void MainWindow::action_layer_new() {
     }
   }
   document().add_layer();
-  right_dock_.set_current_page(1);
+  right_dock_.set_current_page(0);
   show_status("Added layer");
 }
 

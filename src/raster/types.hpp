@@ -87,8 +87,8 @@ inline Rect rect_clamp(Rect r, int width, int height) {
 
 constexpr int kSoftMaxSide = 8192;
 constexpr int kHardMaxSide = 16384;
-constexpr int kDefaultWidth = 800;
-constexpr int kDefaultHeight = 600;
+constexpr int kDefaultWidth = 640;
+constexpr int kDefaultHeight = 480;
 constexpr int kDefaultUndoDepth = 50;
 constexpr int kMaxUndoDepth = 200;
 constexpr int kPatchTile = 32;

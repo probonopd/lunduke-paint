@@ -151,6 +151,7 @@ private:
   Gtk::Box work_area_{Gtk::ORIENTATION_HORIZONTAL};
   Toolbox toolbox_;
   CanvasView canvas_;
+  Gtk::Box right_sidebar_{Gtk::ORIENTATION_VERTICAL};
   Gtk::Notebook right_dock_;
   ColorsPanel colors_panel_;
   LayersPanel layers_panel_;

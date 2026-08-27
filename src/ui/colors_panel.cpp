@@ -24,14 +24,14 @@ const Color kPalette[48] = {
 }  // namespace
 
 ColorsPanel::ColorsPanel() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 6) {
-  set_border_width(8);
+  set_border_width(4);
   heading_.set_text("Palette");
   heading_.set_xalign(0.0f);
   hint_.set_text("Left: FG   Right: BG");
   hint_.set_xalign(0.0f);
   hint_.set_line_wrap(true);
-  grid_.set_row_spacing(2);
-  grid_.set_column_spacing(2);
+  grid_.set_row_spacing(1);
+  grid_.set_column_spacing(1);
   pack_start(heading_, Gtk::PACK_SHRINK);
   pack_start(grid_, Gtk::PACK_SHRINK);
   pack_start(hint_, Gtk::PACK_SHRINK);
@@ -47,7 +47,7 @@ void ColorsPanel::set_colors(Color fg, Color bg) {
 
 void ColorsPanel::add_swatch(Color color, const char* tip) {
   auto* area = Gtk::manage(new Gtk::DrawingArea());
-  area->set_size_request(22, 22);
+  area->set_size_request(16, 16);
   area->set_tooltip_text(tip);
   area->add_events(Gdk::BUTTON_PRESS_MASK);
   area->signal_draw().connect(
