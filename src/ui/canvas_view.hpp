@@ -28,6 +28,8 @@ public:
 
   double zoom() const { return zoom_; }
   void set_zoom(double zoom);
+  void zoom_in();
+  void zoom_out();
   void zoom_in_at(double widget_x, double widget_y);
   void zoom_out_at(double widget_x, double widget_y);
   void zoom_to(double zoom, double widget_x, double widget_y);
@@ -59,6 +61,7 @@ private:
   void begin_pan(double widget_x, double widget_y);
   void update_pan(double widget_x, double widget_y);
   double snapped_zoom(double zoom) const;
+  void visible_center(double& x, double& y) const;
   int margin() const { return 24; }
 
   Gtk::DrawingArea area_;
@@ -71,7 +74,6 @@ private:
   double pan_start_y_{0};
   double pan_hadj_{0};
   double pan_vadj_{0};
-  bool stroking_{false};
 
   sigc::signal<void, double, double> signal_pointer_moved_;
   sigc::signal<void> signal_pointer_left_;

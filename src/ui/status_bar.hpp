@@ -22,16 +22,11 @@ public:
   void show_message(const Glib::ustring& message);
 
 private:
-  void refresh();
-
   Gtk::Label hint_;
   Gtk::Label coords_;
   Gtk::Label size_;
   Gtk::Label zoom_;
   Gtk::Label modified_;
-  bool have_coords_{false};
-  double x_{0};
-  double y_{0};
 };
 
 }  // namespace brushpad

@@ -22,7 +22,7 @@ void Application::on_startup() {
   add_action(actions::kNew, sigc::mem_fun(*this, &Application::on_action_new));
   add_action(actions::kOpen, sigc::mem_fun(*this, &Application::on_action_open));
   add_action(actions::kSave, sigc::mem_fun(*this, &Application::on_action_save));
-  add_action(actions::kSaveAs, sigc::mem_fun(*this, &Application::on_action_save));
+  add_action(actions::kSaveAs, sigc::mem_fun(*this, &Application::on_action_save_as));
   add_action(actions::kQuit, sigc::mem_fun(*this, &Application::on_action_quit));
 
   set_accels_for_action("app.new", {"<Primary>n"});
@@ -53,24 +53,32 @@ void Application::on_activate() {
 
 void Application::on_action_new() {
   if (window_ != nullptr) {
-    window_->reset_canvas();
-    window_->show_status("New canvas");
+    window_->action_new();
   }
 }
 
 void Application::on_action_open() {
   if (window_ != nullptr) {
-    window_->show_status("Open is not implemented yet");
+    window_->action_open();
   }
 }
 
 void Application::on_action_save() {
   if (window_ != nullptr) {
-    window_->show_status("Save is not implemented yet");
+    window_->action_save();
+  }
+}
+
+void Application::on_action_save_as() {
+  if (window_ != nullptr) {
+    window_->action_save_as();
   }
 }
 
 void Application::on_action_quit() {
+  if (window_ != nullptr && !window_->confirm_close()) {
+    return;
+  }
   quit();
 }
 

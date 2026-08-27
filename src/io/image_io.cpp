@@ -1,0 +1,185 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "io/image_io.hpp"
+
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
+#include <algorithm>
+#include <cstdio>
+#include <cctype>
+#include <cstring>
+
+namespace brushpad {
+namespace {
+
+std::string lower_ext(const std::string& path) {
+  auto slash = path.find_last_of("/\\");
+  auto name = slash == std::string::npos ? path : path.substr(slash + 1);
+  auto dot = name.find_last_of('.');
+  if (dot == std::string::npos) {
+    return {};
+  }
+  std::string ext = name.substr(dot);
+  std::transform(ext.begin(), ext.end(), ext.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return ext;
+}
+
+std::string basename_no_ext(const std::string& path) {
+  auto slash = path.find_last_of("/\\");
+  std::string name = slash == std::string::npos ? path : path.substr(slash + 1);
+  auto dot = name.find_last_of('.');
+  if (dot != std::string::npos) {
+    name.resize(dot);
+  }
+  return name.empty() ? "Background" : name;
+}
+
+void copy_pixbuf_to_rgba(const GdkPixbuf* pixbuf, std::vector<std::uint8_t>& rgba, int width,
+                         int height) {
+  const int n = gdk_pixbuf_get_n_channels(pixbuf);
+  const int stride = gdk_pixbuf_get_rowstride(pixbuf);
+  const guint8* src = gdk_pixbuf_get_pixels(pixbuf);
+  const gboolean has_alpha = gdk_pixbuf_get_has_alpha(pixbuf);
+  rgba.assign(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4, 0);
+  for (int y = 0; y < height; ++y) {
+    const guint8* row = src + static_cast<std::size_t>(y) * stride;
+    std::uint8_t* dst = rgba.data() + static_cast<std::size_t>(y) * width * 4;
+    for (int x = 0; x < width; ++x) {
+      const guint8* p = row + static_cast<std::size_t>(x) * n;
+      dst[0] = p[0];
+      dst[1] = p[1];
+      dst[2] = p[2];
+      dst[3] = (has_alpha && n >= 4) ? p[3] : 255;
+      dst += 4;
+    }
+  }
+}
+
+GdkPixbuf* pixbuf_from_rgba(const std::uint8_t* rgba, int width, int height, int stride,
+                            bool flatten_white) {
+  GdkPixbuf* pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, width, height);
+  if (pixbuf == nullptr) {
+    return nullptr;
+  }
+  guint8* dst = gdk_pixbuf_get_pixels(pixbuf);
+  const int dst_stride = gdk_pixbuf_get_rowstride(pixbuf);
+  for (int y = 0; y < height; ++y) {
+    const std::uint8_t* srow = rgba + static_cast<std::size_t>(y) * stride;
+    guint8* drow = dst + static_cast<std::size_t>(y) * dst_stride;
+    for (int x = 0; x < width; ++x) {
+      const std::uint8_t* s = srow + static_cast<std::size_t>(x) * 4;
+      guint8* d = drow + static_cast<std::size_t>(x) * 4;
+      if (flatten_white && s[3] != 255) {
+        const int a = s[3];
+        const int ia = 255 - a;
+        d[0] = static_cast<guint8>((s[0] * a + 255 * ia + 127) / 255);
+        d[1] = static_cast<guint8>((s[1] * a + 255 * ia + 127) / 255);
+        d[2] = static_cast<guint8>((s[2] * a + 255 * ia + 127) / 255);
+        d[3] = 255;
+      } else {
+        d[0] = s[0];
+        d[1] = s[1];
+        d[2] = s[2];
+        d[3] = s[3];
+      }
+    }
+  }
+  return pixbuf;
+}
+
+}  // namespace
+
+ImageFormat format_from_path(const std::string& path) {
+  const std::string ext = lower_ext(path);
+  if (ext == ".png") {
+    return ImageFormat::Png;
+  }
+  if (ext == ".jpg" || ext == ".jpeg") {
+    return ImageFormat::Jpeg;
+  }
+  if (ext == ".bmp") {
+    return ImageFormat::Bmp;
+  }
+  return ImageFormat::Unknown;
+}
+
+std::string format_extension(ImageFormat format) {
+  switch (format) {
+    case ImageFormat::Png:
+      return ".png";
+    case ImageFormat::Jpeg:
+      return ".jpg";
+    case ImageFormat::Bmp:
+      return ".bmp";
+    default:
+      return ".png";
+  }
+}
+
+LoadedImage load_flat_image(const std::string& path) {
+  LoadedImage out;
+  GError* error = nullptr;
+  GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file(path.c_str(), &error);
+  if (pixbuf == nullptr) {
+    out.error = error != nullptr ? error->message : "Could not open image";
+    if (error != nullptr) {
+      g_error_free(error);
+    }
+    return out;
+  }
+  out.width = gdk_pixbuf_get_width(pixbuf);
+  out.height = gdk_pixbuf_get_height(pixbuf);
+  if (out.width > kHardMaxSide || out.height > kHardMaxSide) {
+    out.error = "Image is larger than 16384 on a side";
+    g_object_unref(pixbuf);
+    return out;
+  }
+  copy_pixbuf_to_rgba(pixbuf, out.rgba, out.width, out.height);
+  out.layer_name = basename_no_ext(path);
+  g_object_unref(pixbuf);
+  return out;
+}
+
+bool save_flat_image(const std::string& path, ImageFormat format, const std::uint8_t* rgba,
+                     int width, int height, int stride, int jpeg_quality, std::string& error) {
+  if (rgba == nullptr || width < 1 || height < 1) {
+    error = "Nothing to save";
+    return false;
+  }
+  const bool flatten = format == ImageFormat::Jpeg || format == ImageFormat::Bmp;
+  GdkPixbuf* pixbuf = pixbuf_from_rgba(rgba, width, height, stride, flatten);
+  if (pixbuf == nullptr) {
+    error = "Could not allocate image buffer";
+    return false;
+  }
+
+  GError* gerror = nullptr;
+  gboolean ok = FALSE;
+  if (format == ImageFormat::Jpeg) {
+    if (jpeg_quality < 1) {
+      jpeg_quality = 1;
+    }
+    if (jpeg_quality > 100) {
+      jpeg_quality = 100;
+    }
+    char quality[8];
+    std::snprintf(quality, sizeof(quality), "%d", jpeg_quality);
+    ok = gdk_pixbuf_save(pixbuf, path.c_str(), "jpeg", &gerror, "quality", quality, nullptr);
+  } else if (format == ImageFormat::Bmp) {
+    ok = gdk_pixbuf_save(pixbuf, path.c_str(), "bmp", &gerror, nullptr);
+  } else {
+    ok = gdk_pixbuf_save(pixbuf, path.c_str(), "png", &gerror, nullptr);
+  }
+  g_object_unref(pixbuf);
+  if (!ok) {
+    error = gerror != nullptr ? gerror->message : "Save failed";
+    if (gerror != nullptr) {
+      g_error_free(gerror);
+    }
+    return false;
+  }
+  return true;
+}
+
+}  // namespace brushpad

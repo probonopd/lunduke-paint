@@ -3,6 +3,8 @@
 #include "app/main_window.hpp"
 
 #include "app/actions.hpp"
+#include "io/image_io.hpp"
+#include "ui/dialogs_new.hpp"
 #include "tools/tools.hpp"
 
 #include <glibmm/error.h>
@@ -12,6 +14,9 @@
 #include <gtk/gtk.h>
 #include <gtkmm/button.h>
 #include <gtkmm/colorchooserdialog.h>
+#include <gtkmm/filechooserdialog.h>
+#include <gtkmm/filefilter.h>
+#include <gtkmm/messagedialog.h>
 #include <gtkmm/menubar.h>
 #include <gtkmm/separator.h>
 #include <iostream>
@@ -40,8 +45,8 @@ MainWindow::MainWindow() {
   add_action(actions::kToggleRightDock, sigc::mem_fun(*this, &MainWindow::on_toggle_right_dock));
   undo_action_ = add_action(actions::kUndo, sigc::mem_fun(*this, &MainWindow::on_undo));
   redo_action_ = add_action(actions::kRedo, sigc::mem_fun(*this, &MainWindow::on_redo));
-  add_action(actions::kZoomIn, [this]() { canvas_.zoom_in_at(0, 0); });
-  add_action(actions::kZoomOut, [this]() { canvas_.zoom_out_at(0, 0); });
+  add_action(actions::kZoomIn, [this]() { canvas_.zoom_in(); });
+  add_action(actions::kZoomOut, [this]() { canvas_.zoom_out(); });
   add_action(actions::kZoom100, [this]() { canvas_.set_zoom(1.0); });
 
   tools_.emplace_back(create_pencil_tool());
@@ -360,6 +365,245 @@ bool MainWindow::on_key_release(GdkEventKey* event) {
 
 void MainWindow::on_toggle_right_dock() {
   right_dock_.set_visible(!right_dock_.get_visible());
+}
+
+void MainWindow::action_new() {
+  if (!confirm_lose_changes()) {
+    return;
+  }
+  NewImageDialog dialog(*this);
+  if (dialog.run() != Gtk::RESPONSE_OK) {
+    return;
+  }
+  const int width = dialog.image_width();
+  const int height = dialog.image_height();
+  if (width < 1 || height < 1) {
+    return;
+  }
+  if (width > kHardMaxSide || height > kHardMaxSide) {
+    Gtk::MessageDialog refuse(*this, "Images cannot be larger than 16384 pixels on a side.", false,
+                              Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+    refuse.run();
+    return;
+  }
+  if (dialog.oversized()) {
+    Gtk::MessageDialog warn(*this,
+                            "This canvas is larger than 8192 pixels on a side and may use a lot of memory.",
+                            false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
+    if (warn.run() != Gtk::RESPONSE_OK) {
+      return;
+    }
+  }
+  new_document(width, height, dialog.background_color());
+  show_status("New canvas");
+}
+
+void MainWindow::action_open() {
+  if (!confirm_lose_changes()) {
+    return;
+  }
+  const std::string path = choose_open_path();
+  if (path.empty()) {
+    return;
+  }
+  LoadedImage loaded = load_flat_image(path);
+  if (!loaded.ok()) {
+    Gtk::MessageDialog err(*this, "Could not open image.", false, Gtk::MESSAGE_ERROR,
+                           Gtk::BUTTONS_OK, true);
+    err.set_secondary_text(loaded.error);
+    err.run();
+    return;
+  }
+  if (loaded.width > kSoftMaxSide || loaded.height > kSoftMaxSide) {
+    Gtk::MessageDialog warn(*this,
+                            "This image is larger than 8192 pixels on a side and may use a lot of memory.",
+                            false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
+    if (warn.run() != Gtk::RESPONSE_OK) {
+      return;
+    }
+  }
+  if (active_tool_ != nullptr) {
+    active_tool_->on_cancel();
+  }
+  document_ = Document::create(loaded.width, loaded.height, Color::transparent(), loaded.layer_name);
+  document_->layers().active_layer().write_rect(Rect{0, 0, loaded.width, loaded.height},
+                                                loaded.rgba.data());
+  document_->set_path(path);
+  document_->mark_clean();
+  bind_document();
+  update_chrome();
+  show_status("Opened " + Glib::path_get_basename(path));
+}
+
+void MainWindow::action_save() {
+  if (document_->path().empty() || format_from_path(document_->path()) == ImageFormat::Unknown) {
+    action_save_as();
+    return;
+  }
+  if (save_to_path(document_->path(), format_from_path(document_->path()))) {
+    document_->mark_clean();
+    update_chrome();
+    show_status("Saved");
+  }
+}
+
+void MainWindow::action_save_as() {
+  std::string path;
+  ImageFormat format = ImageFormat::Png;
+  if (!choose_save_path(path, format)) {
+    return;
+  }
+  if (save_to_path(path, format)) {
+    document_->set_path(path);
+    document_->mark_clean();
+    update_chrome();
+    show_status("Saved");
+  }
+}
+
+bool MainWindow::confirm_close() {
+  return confirm_lose_changes();
+}
+
+bool MainWindow::on_delete_event(GdkEventAny* event) {
+  if (!confirm_close()) {
+    return true;
+  }
+  return Gtk::ApplicationWindow::on_delete_event(event);
+}
+
+bool MainWindow::confirm_lose_changes() {
+  if (!document_->dirty()) {
+    return true;
+  }
+  Gtk::MessageDialog dialog(*this, "Save changes to the current image?", false,
+                            Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_NONE, true);
+  dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
+  dialog.add_button("_Discard", Gtk::RESPONSE_NO);
+  dialog.add_button("_Save", Gtk::RESPONSE_YES);
+  const int response = dialog.run();
+  if (response == Gtk::RESPONSE_CANCEL) {
+    return false;
+  }
+  if (response == Gtk::RESPONSE_YES) {
+    action_save();
+    return !document_->dirty();
+  }
+  return true;
+}
+
+bool MainWindow::layer_has_transparency() const {
+  const Layer& layer = document_->layers().active_layer();
+  const std::uint8_t* p = layer.pixels();
+  const int n = layer.width() * layer.height();
+  for (int i = 0; i < n; ++i) {
+    if (p[static_cast<std::size_t>(i) * 4 + 3] != 255) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool MainWindow::save_to_path(const std::string& path, ImageFormat format) {
+  if (format == ImageFormat::Jpeg && layer_has_transparency()) {
+    Gtk::MessageDialog warn(*this,
+                            "JPEG cannot store transparency. The image will be flattened onto white.",
+                            false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
+    if (warn.run() != Gtk::RESPONSE_OK) {
+      return false;
+    }
+  }
+  if (format == ImageFormat::Bmp && layer_has_transparency()) {
+    Gtk::MessageDialog warn(*this,
+                            "BMP cannot store transparency. The image will be flattened onto white.",
+                            false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
+    if (warn.run() != Gtk::RESPONSE_OK) {
+      return false;
+    }
+  }
+  const Layer& layer = document_->layers().active_layer();
+  std::string error;
+  if (!save_flat_image(path, format, layer.pixels(), layer.width(), layer.height(), layer.stride(),
+                       90, error)) {
+    Gtk::MessageDialog err(*this, "Could not save image.", false, Gtk::MESSAGE_ERROR,
+                           Gtk::BUTTONS_OK, true);
+    err.set_secondary_text(error);
+    err.run();
+    return false;
+  }
+  return true;
+}
+
+std::string MainWindow::choose_open_path() {
+  Gtk::FileChooserDialog dialog(*this, "Open Image", Gtk::FILE_CHOOSER_ACTION_OPEN);
+  dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
+  dialog.add_button("_Open", Gtk::RESPONSE_ACCEPT);
+  auto all = Gtk::FileFilter::create();
+  all->set_name("Images");
+  all->add_pattern("*.png");
+  all->add_pattern("*.jpg");
+  all->add_pattern("*.jpeg");
+  all->add_pattern("*.bmp");
+  dialog.add_filter(all);
+  auto png = Gtk::FileFilter::create();
+  png->set_name("PNG");
+  png->add_pattern("*.png");
+  dialog.add_filter(png);
+  auto jpeg = Gtk::FileFilter::create();
+  jpeg->set_name("JPEG");
+  jpeg->add_pattern("*.jpg");
+  jpeg->add_pattern("*.jpeg");
+  dialog.add_filter(jpeg);
+  auto bmp = Gtk::FileFilter::create();
+  bmp->set_name("BMP");
+  bmp->add_pattern("*.bmp");
+  dialog.add_filter(bmp);
+  if (dialog.run() != Gtk::RESPONSE_ACCEPT) {
+    return {};
+  }
+  return dialog.get_filename();
+}
+
+bool MainWindow::choose_save_path(std::string& path, ImageFormat& format) {
+  Gtk::FileChooserDialog dialog(*this, "Save Image", Gtk::FILE_CHOOSER_ACTION_SAVE);
+  dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
+  dialog.add_button("_Save", Gtk::RESPONSE_ACCEPT);
+  dialog.set_do_overwrite_confirmation(true);
+  auto png = Gtk::FileFilter::create();
+  png->set_name("PNG image (*.png)");
+  png->add_pattern("*.png");
+  dialog.add_filter(png);
+  auto jpeg = Gtk::FileFilter::create();
+  jpeg->set_name("JPEG image (*.jpg)");
+  jpeg->add_pattern("*.jpg");
+  jpeg->add_pattern("*.jpeg");
+  dialog.add_filter(jpeg);
+  auto bmp = Gtk::FileFilter::create();
+  bmp->set_name("BMP image (*.bmp)");
+  bmp->add_pattern("*.bmp");
+  dialog.add_filter(bmp);
+  if (!document_->path().empty()) {
+    dialog.set_filename(document_->path());
+  } else {
+    dialog.set_current_name("untitled.png");
+  }
+  if (dialog.run() != Gtk::RESPONSE_ACCEPT) {
+    return false;
+  }
+  path = dialog.get_filename();
+  format = format_from_path(path);
+  if (format == ImageFormat::Unknown) {
+    auto filter = dialog.get_filter();
+    if (filter && filter->get_name().find("JPEG") != Glib::ustring::npos) {
+      format = ImageFormat::Jpeg;
+    } else if (filter && filter->get_name().find("BMP") != Glib::ustring::npos) {
+      format = ImageFormat::Bmp;
+    } else {
+      format = ImageFormat::Png;
+    }
+    path += format_extension(format);
+  }
+  return true;
 }
 
 }  // namespace brushpad

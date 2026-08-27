@@ -114,8 +114,32 @@ void CanvasView::invalidate_all() {
   area_.queue_draw();
 }
 
+void CanvasView::visible_center(double& x, double& y) const {
+  const auto hadj = get_hadjustment();
+  const auto vadj = get_vadjustment();
+  x = hadj ? hadj->get_value() + hadj->get_page_size() * 0.5 : area_.get_allocated_width() * 0.5;
+  y = vadj ? vadj->get_value() + vadj->get_page_size() * 0.5 : area_.get_allocated_height() * 0.5;
+}
+
 void CanvasView::set_zoom(double zoom) {
-  zoom_to(zoom, area_.get_allocated_width() * 0.5, area_.get_allocated_height() * 0.5);
+  double x = 0;
+  double y = 0;
+  visible_center(x, y);
+  zoom_to(zoom, x, y);
+}
+
+void CanvasView::zoom_in() {
+  double x = 0;
+  double y = 0;
+  visible_center(x, y);
+  zoom_in_at(x, y);
+}
+
+void CanvasView::zoom_out() {
+  double x = 0;
+  double y = 0;
+  visible_center(x, y);
+  zoom_out_at(x, y);
 }
 
 void CanvasView::zoom_in_at(double widget_x, double widget_y) {

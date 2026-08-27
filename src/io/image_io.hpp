@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#ifndef BRUSHPAD_IO_IMAGE_IO_HPP
+#define BRUSHPAD_IO_IMAGE_IO_HPP
+
+#include "raster/types.hpp"
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+namespace brushpad {
+
+struct LoadedImage {
+  int width = 0;
+  int height = 0;
+  std::vector<std::uint8_t> rgba;
+  std::string layer_name;
+  std::string error;
+  bool ok() const { return error.empty() && width > 0 && height > 0; }
+};
+
+enum class ImageFormat { Png, Jpeg, Bmp, Unknown };
+
+ImageFormat format_from_path(const std::string& path);
+std::string format_extension(ImageFormat format);
+
+LoadedImage load_flat_image(const std::string& path);
+
+bool save_flat_image(const std::string& path, ImageFormat format, const std::uint8_t* rgba,
+                     int width, int height, int stride, int jpeg_quality, std::string& error);
+
+}  // namespace brushpad
+
+#endif

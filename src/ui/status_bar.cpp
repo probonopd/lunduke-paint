@@ -35,16 +35,12 @@ void StatusBar::set_hint(const Glib::ustring& hint) {
 }
 
 void StatusBar::show_coordinates(double x, double y) {
-  have_coords_ = true;
-  x_ = x;
-  y_ = y;
   char buffer[64];
   std::snprintf(buffer, sizeof(buffer), "%d, %d", static_cast<int>(x), static_cast<int>(y));
   coords_.set_text(buffer);
 }
 
 void StatusBar::clear_coordinates() {
-  have_coords_ = false;
   coords_.set_text("—, —");
 }
 

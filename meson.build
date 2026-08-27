@@ -61,6 +61,7 @@ brushpad_sources = files(
   'src/tools/tool_eraser.cpp',
   'src/tools/tool_picker.cpp',
   'src/tools/tool_fill.cpp',
+  'src/io/image_io.cpp',
 )
 
 executable(

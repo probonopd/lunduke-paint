@@ -3,6 +3,7 @@
 #define BRUSHPAD_APP_MAIN_WINDOW_HPP
 
 #include "doc/document.hpp"
+#include "io/image_io.hpp"
 #include "tools/tool.hpp"
 #include "ui/canvas_view.hpp"
 #include "ui/colors_panel.hpp"
@@ -33,6 +34,11 @@ public:
   void reset_canvas();
   void new_document(int width, int height, Color background);
   void show_status(const Glib::ustring& message);
+  void action_new();
+  void action_open();
+  void action_save();
+  void action_save_as();
+  bool confirm_close();
   Document& document() override { return *document_; }
   Document* document_ptr() { return document_.get(); }
   CanvasView& canvas() { return canvas_; }
@@ -65,6 +71,12 @@ private:
   bool on_key_release(GdkEventKey* event);
   bool focus_is_editable() const;
   void update_title();
+  bool confirm_lose_changes();
+  bool save_to_path(const std::string& path, ImageFormat format);
+  std::string choose_open_path();
+  bool choose_save_path(std::string& path, ImageFormat& format);
+  bool layer_has_transparency() const;
+  bool on_delete_event(GdkEventAny* event) override;
 
   Gtk::Box root_{Gtk::ORIENTATION_VERTICAL};
   Gtk::Box toolbar_{Gtk::ORIENTATION_HORIZONTAL};
