@@ -2,6 +2,7 @@
 #ifndef BRUSHPAD_APP_MAIN_WINDOW_HPP
 #define BRUSHPAD_APP_MAIN_WINDOW_HPP
 
+#include "doc/document.hpp"
 #include "ui/canvas_view.hpp"
 #include "ui/colors_panel.hpp"
 #include "ui/history_panel.hpp"
@@ -9,6 +10,8 @@
 #include "ui/status_bar.hpp"
 #include "ui/tool_options_bar.hpp"
 #include "ui/toolbox.hpp"
+
+#include <memory>
 
 #include <giomm/menumodel.h>
 #include <glibmm/ustring.h>
@@ -41,6 +44,7 @@ private:
   LayersPanel layers_panel_;
   HistoryPanel history_panel_;
   StatusBar status_bar_;
+  std::unique_ptr<Document> document_;
 };
 
 }  // namespace brushpad

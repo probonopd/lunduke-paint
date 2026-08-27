@@ -1,7 +1,7 @@
 project(
   'brushpad',
   'cpp',
-  version: '0.0.0',
+  version: '0.1.0',
   license: 'GPL-3.0-or-later',
   meson_version: '>=0.56.0',
   default_options: [
@@ -14,6 +14,7 @@ project(
 # warning_level=2 => -Wall -Wextra
 gtkmm_dep = dependency('gtkmm-3.0', version: '>=3.24')
 cairomm_dep = dependency('cairomm-1.0')
+gdkpixbuf_dep = dependency('gdk-pixbuf-2.0')
 
 gnome = import('gnome')
 brushpad_resources = gnome.compile_resources(
@@ -24,6 +25,22 @@ brushpad_resources = gnome.compile_resources(
 )
 
 brushpad_inc = include_directories('src')
+
+brushpad_core_sources = files(
+  'src/doc/document.cpp',
+  'src/doc/layer.cpp',
+  'src/doc/layer_stack.cpp',
+  'src/doc/history.cpp',
+  'src/doc/commands_pixels.cpp',
+  'src/raster/fill.cpp',
+  'src/raster/stroke.cpp',
+)
+
+brushpad_core = static_library(
+  'brushpad_core',
+  brushpad_core_sources,
+  include_directories: brushpad_inc,
+)
 
 brushpad_sources = files(
   'src/main.cpp',
@@ -44,8 +61,9 @@ executable(
   'brushpad',
   brushpad_sources,
   brushpad_resources,
-  dependencies: [gtkmm_dep, cairomm_dep],
+  dependencies: [gtkmm_dep, cairomm_dep, gdkpixbuf_dep],
   include_directories: brushpad_inc,
+  link_with: brushpad_core,
   install: true,
 )
 
@@ -54,8 +72,25 @@ test_dummy = executable(
   files('tests/test_dummy.cpp'),
   install: false,
 )
-
 test('dummy', test_dummy)
+
+test_fill = executable(
+  'test_fill',
+  files('tests/test_fill.cpp'),
+  include_directories: brushpad_inc,
+  link_with: brushpad_core,
+  install: false,
+)
+test('fill', test_fill)
+
+test_history = executable(
+  'test_history',
+  files('tests/test_history.cpp'),
+  include_directories: brushpad_inc,
+  link_with: brushpad_core,
+  install: false,
+)
+test('history', test_history)
 
 install_data(
   'data/org.brushpad.Brushpad.desktop',

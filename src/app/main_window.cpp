@@ -15,6 +15,7 @@
 namespace brushpad {
 
 MainWindow::MainWindow() {
+  document_ = Document::create(kDefaultWidth, kDefaultHeight, Color::white());
   set_title("Brushpad");
   set_default_size(1100, 720);
   // Traditional WM decorations: do not call set_titlebar() / GtkHeaderBar.
@@ -85,6 +86,7 @@ Glib::RefPtr<Gio::MenuModel> MainWindow::load_menubar_model() {
 }
 
 void MainWindow::reset_canvas() {
+  document_ = Document::create(kDefaultWidth, kDefaultHeight, Color::white());
   canvas_.reset_blank();
 }
 

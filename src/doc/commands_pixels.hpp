@@ -1,0 +1,49 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#ifndef BRUSHPAD_DOC_COMMANDS_PIXELS_HPP
+#define BRUSHPAD_DOC_COMMANDS_PIXELS_HPP
+
+#include "doc/command.hpp"
+
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace brushpad {
+
+class Layer;
+
+// One history item for a stroke or fill. Stores only changed tiles of the
+// dirty rectangle (not the whole layer).
+class PixelPatchCommand : public Command {
+public:
+  static std::unique_ptr<PixelPatchCommand> from_layers(const Layer& before, const Layer& after,
+                                                        Rect bounds, std::string name,
+                                                        int layer_index = 0);
+
+  std::string name() const override { return name_; }
+  void apply(Document& document) override;
+  void undo(Document& document) override;
+  Rect dirty_rect() const override { return bounds_; }
+
+  bool empty() const { return tiles_.empty(); }
+
+private:
+  struct Tile {
+    int x = 0;
+    int y = 0;
+    int w = 0;
+    int h = 0;
+    std::vector<std::uint8_t> before;
+    std::vector<std::uint8_t> after;
+  };
+
+  std::string name_;
+  int layer_index_ = 0;
+  Rect bounds_;
+  std::vector<Tile> tiles_;
+};
+
+}  // namespace brushpad
+
+#endif

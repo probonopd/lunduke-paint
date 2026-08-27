@@ -1,0 +1,90 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "doc/history.hpp"
+
+namespace brushpad {
+
+History::History(int depth) {
+  set_depth(depth);
+}
+
+void History::set_depth(int depth) {
+  if (depth < 1) {
+    depth = 1;
+  }
+  if (depth > kMaxUndoDepth) {
+    depth = kMaxUndoDepth;
+  }
+  depth_ = depth;
+  trim();
+}
+
+void History::commit(Document& document, std::unique_ptr<Command> command) {
+  if (!command) {
+    return;
+  }
+  command->apply(document);
+  commit_applied(std::move(command));
+}
+
+void History::commit_applied(std::unique_ptr<Command> command) {
+  if (!command) {
+    return;
+  }
+  if (index_ + 1 < static_cast<int>(commands_.size())) {
+    commands_.erase(commands_.begin() + index_ + 1, commands_.end());
+  }
+  commands_.push_back(std::move(command));
+  index_ = static_cast<int>(commands_.size()) - 1;
+  trim();
+}
+
+bool History::can_undo() const {
+  return index_ >= 0;
+}
+
+bool History::can_redo() const {
+  return index_ + 1 < static_cast<int>(commands_.size());
+}
+
+Rect History::undo(Document& document) {
+  if (!can_undo()) {
+    return {};
+  }
+  Rect dirty = commands_[static_cast<std::size_t>(index_)]->dirty_rect();
+  commands_[static_cast<std::size_t>(index_)]->undo(document);
+  --index_;
+  return dirty;
+}
+
+Rect History::redo(Document& document) {
+  if (!can_redo()) {
+    return {};
+  }
+  ++index_;
+  commands_[static_cast<std::size_t>(index_)]->apply(document);
+  return commands_[static_cast<std::size_t>(index_)]->dirty_rect();
+}
+
+void History::clear() {
+  commands_.clear();
+  index_ = -1;
+}
+
+std::string History::name_at(int i) const {
+  if (i < 0 || i >= static_cast<int>(commands_.size())) {
+    return {};
+  }
+  return commands_[static_cast<std::size_t>(i)]->name();
+}
+
+void History::trim() {
+  while (static_cast<int>(commands_.size()) > depth_ && !commands_.empty()) {
+    commands_.erase(commands_.begin());
+    if (index_ >= 0) {
+      --index_;
+    }
+  }
+}
+
+}  // namespace brushpad
