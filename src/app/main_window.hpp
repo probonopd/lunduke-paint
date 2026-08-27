@@ -13,6 +13,7 @@
 #include "ui/tool_options_bar.hpp"
 #include "ui/toolbox.hpp"
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -59,6 +60,25 @@ public:
   void update_chrome();
   void on_undo();
   void on_redo();
+  void action_cut();
+  void action_copy();
+  void action_paste();
+  void action_delete();
+  void action_duplicate();
+  void action_select_all();
+  void action_deselect();
+  void action_invert_selection();
+  void action_canvas_size();
+  void action_scale();
+  void action_crop();
+  void action_autocrop();
+  void action_rotate_90();
+  void action_rotate_180();
+  void action_flip_h();
+  void action_flip_v();
+  void action_clear();
+  void action_zoom_fit();
+  void action_toggle_grid();
 
 private:
   void build_ui();
@@ -77,6 +97,11 @@ private:
   bool choose_save_path(std::string& path, ImageFormat& format);
   bool layer_has_transparency() const;
   bool on_delete_event(GdkEventAny* event) override;
+  void commit_buffer_change(const char* name, int new_w, int new_h, const std::uint8_t* rgba,
+                            int stride);
+  bool warn_size(int width, int height);
+  void copy_selection_to_clipboard();
+  bool paste_from_clipboard();
 
   Gtk::Box root_{Gtk::ORIENTATION_VERTICAL};
   Gtk::Box toolbar_{Gtk::ORIENTATION_HORIZONTAL};
@@ -98,6 +123,13 @@ private:
   int fill_tolerance_{0};
   Glib::RefPtr<Gio::SimpleAction> undo_action_;
   Glib::RefPtr<Gio::SimpleAction> redo_action_;
+  Glib::RefPtr<Gio::SimpleAction> cut_action_;
+  Glib::RefPtr<Gio::SimpleAction> copy_action_;
+  Glib::RefPtr<Gio::SimpleAction> delete_action_;
+  Glib::RefPtr<Gio::SimpleAction> duplicate_action_;
+  Glib::RefPtr<Gio::SimpleAction> deselect_action_;
+  Glib::RefPtr<Gio::SimpleAction> invert_action_;
+  Glib::RefPtr<Gio::SimpleAction> crop_action_;
 };
 
 }  // namespace brushpad

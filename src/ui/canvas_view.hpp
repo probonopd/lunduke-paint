@@ -5,13 +5,16 @@
 #include "raster/types.hpp"
 #include "tools/tool.hpp"
 
+#include <glibmm/refptr.h>
 #include <gtkmm/drawingarea.h>
 #include <gtkmm/scrolledwindow.h>
+#include <sigc++/connection.h>
 #include <sigc++/signal.h>
 
 namespace brushpad {
 
 class Document;
+class Layer;
 class Tool;
 
 class CanvasView : public Gtk::ScrolledWindow {
@@ -25,6 +28,7 @@ public:
   void reset_blank();
   void invalidate_rect(Rect rect);
   void invalidate_all();
+  void refresh_size();
 
   double zoom() const { return zoom_; }
   void set_zoom(double zoom);
@@ -33,6 +37,10 @@ public:
   void zoom_in_at(double widget_x, double widget_y);
   void zoom_out_at(double widget_x, double widget_y);
   void zoom_to(double zoom, double widget_x, double widget_y);
+  void zoom_fit();
+
+  bool grid_visible() const { return grid_visible_; }
+  void set_grid_visible(bool visible);
 
   int canvas_width() const;
   int canvas_height() const;
@@ -63,11 +71,20 @@ private:
   double snapped_zoom(double zoom) const;
   void visible_center(double& x, double& y) const;
   int margin() const { return 24; }
+  Color display_pixel(const Layer& layer, int x, int y) const;
+  void draw_pixel_grid(const Cairo::RefPtr<Cairo::Context>& cr, int m, int vis_x0, int vis_y0,
+                       int vis_x1, int vis_y1);
+  void draw_marching_ants(const Cairo::RefPtr<Cairo::Context>& cr, int m);
+  void ensure_ants_timer();
+  void invalidate_ants();
 
   Gtk::DrawingArea area_;
   Document* document_{nullptr};
   Tool* tool_{nullptr};
   double zoom_{1.0};
+  bool grid_visible_{true};
+  int ants_phase_{0};
+  sigc::connection ants_timer_;
   bool space_down_{false};
   bool panning_{false};
   double pan_start_x_{0};

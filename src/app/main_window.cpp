@@ -3,7 +3,12 @@
 #include "app/main_window.hpp"
 
 #include "app/actions.hpp"
+#include "doc/commands_image.hpp"
+#include "doc/commands_pixels.hpp"
+#include "doc/selection.hpp"
 #include "io/image_io.hpp"
+#include "raster/transform.hpp"
+#include "ui/dialogs_image.hpp"
 #include "ui/dialogs_new.hpp"
 #include "tools/tools.hpp"
 
@@ -12,14 +17,18 @@
 #include <gtkmm/builder.h>
 #include <glibmm/miscutils.h>
 #include <gtk/gtk.h>
+#include <gdkmm/pixbuf.h>
 #include <gtkmm/button.h>
+#include <gtkmm/clipboard.h>
 #include <gtkmm/colorchooserdialog.h>
 #include <gtkmm/filechooserdialog.h>
 #include <gtkmm/filefilter.h>
 #include <gtkmm/messagedialog.h>
 #include <gtkmm/menubar.h>
 #include <gtkmm/separator.h>
+#include <cstring>
 #include <iostream>
+#include <vector>
 #include <stdexcept>
 
 namespace brushpad {
@@ -48,12 +57,41 @@ MainWindow::MainWindow() {
   add_action(actions::kZoomIn, [this]() { canvas_.zoom_in(); });
   add_action(actions::kZoomOut, [this]() { canvas_.zoom_out(); });
   add_action(actions::kZoom100, [this]() { canvas_.set_zoom(1.0); });
+  add_action(actions::kZoomFit, sigc::mem_fun(*this, &MainWindow::action_zoom_fit));
+  add_action(actions::kToggleGrid, sigc::mem_fun(*this, &MainWindow::action_toggle_grid));
+  cut_action_ = add_action(actions::kCut, sigc::mem_fun(*this, &MainWindow::action_cut));
+  copy_action_ = add_action(actions::kCopy, sigc::mem_fun(*this, &MainWindow::action_copy));
+  add_action(actions::kPaste, sigc::mem_fun(*this, &MainWindow::action_paste));
+  delete_action_ = add_action(actions::kDelete, sigc::mem_fun(*this, &MainWindow::action_delete));
+  duplicate_action_ = add_action(actions::kDuplicate, sigc::mem_fun(*this, &MainWindow::action_duplicate));
+  add_action(actions::kSelectAll, sigc::mem_fun(*this, &MainWindow::action_select_all));
+  deselect_action_ = add_action(actions::kDeselect, sigc::mem_fun(*this, &MainWindow::action_deselect));
+  invert_action_ = add_action(actions::kInvertSelection,
+                             sigc::mem_fun(*this, &MainWindow::action_invert_selection));
+  add_action(actions::kCanvasSize, sigc::mem_fun(*this, &MainWindow::action_canvas_size));
+  add_action(actions::kScale, sigc::mem_fun(*this, &MainWindow::action_scale));
+  crop_action_ = add_action(actions::kCrop, sigc::mem_fun(*this, &MainWindow::action_crop));
+  add_action(actions::kAutocrop, sigc::mem_fun(*this, &MainWindow::action_autocrop));
+  add_action(actions::kRotate90, sigc::mem_fun(*this, &MainWindow::action_rotate_90));
+  add_action(actions::kRotate180, sigc::mem_fun(*this, &MainWindow::action_rotate_180));
+  add_action(actions::kFlipH, sigc::mem_fun(*this, &MainWindow::action_flip_h));
+  add_action(actions::kFlipV, sigc::mem_fun(*this, &MainWindow::action_flip_v));
+  add_action(actions::kClear, sigc::mem_fun(*this, &MainWindow::action_clear));
+  add_action("print")->set_enabled(false);
+  add_action("layer-new")->set_enabled(false);
+  add_action("adjust-brightness")->set_enabled(false);
+  add_action("effect-blur")->set_enabled(false);
+  add_action("about")->set_enabled(false);
 
+  tools_.emplace_back(create_rect_select_tool());
   tools_.emplace_back(create_pencil_tool());
   tools_.emplace_back(create_brush_tool());
   tools_.emplace_back(create_eraser_tool());
   tools_.emplace_back(create_fill_tool());
   tools_.emplace_back(create_picker_tool());
+  tools_.emplace_back(create_line_tool());
+  tools_.emplace_back(create_rectangle_tool());
+  tools_.emplace_back(create_ellipse_tool());
   for (auto& tool : tools_) {
     tool->set_host(this);
   }
@@ -81,11 +119,15 @@ void MainWindow::build_ui() {
   canvas_.set_hexpand(true);
   canvas_.set_vexpand(true);
 
+  toolbox_.add_tool_button("rect-select", "Rectangle select (S)", "edit-select-all-symbolic");
   toolbox_.add_tool_button("pencil", "Pencil (P)", "document-edit-symbolic");
   toolbox_.add_tool_button("brush", "Brush (B)", "edit-select-symbolic");
   toolbox_.add_tool_button("eraser", "Eraser (A)", "edit-clear-symbolic");
   toolbox_.add_tool_button("fill", "Flood fill (F)", "color-fill-symbolic");
   toolbox_.add_tool_button("picker", "Color picker (C)", "color-select-symbolic");
+  toolbox_.add_tool_button("line", "Line (L)", "insert-link-symbolic");
+  toolbox_.add_tool_button("rectangle", "Rectangle (R)", "view-restore-symbolic");
+  toolbox_.add_tool_button("ellipse", "Ellipse (E)", "media-record-symbolic");
   toolbox_.on_tool_chosen = [this](const std::string& id) { set_active_tool(id); };
   toolbox_.on_well_clicked = [this](bool background) { choose_color(background); };
   colors_panel_.on_swatch = [this](Color color, bool background) {
@@ -136,6 +178,10 @@ void MainWindow::build_toolbar() {
   toolbar_.pack_start(*toolbar_button("document-new", "New", "app.new"), Gtk::PACK_SHRINK);
   toolbar_.pack_start(*toolbar_button("document-open", "Open", "app.open"), Gtk::PACK_SHRINK);
   toolbar_.pack_start(*toolbar_button("document-save", "Save", "app.save"), Gtk::PACK_SHRINK);
+  toolbar_.pack_start(*Gtk::manage(new Gtk::Separator(Gtk::ORIENTATION_VERTICAL)), Gtk::PACK_SHRINK);
+  toolbar_.pack_start(*toolbar_button("edit-cut", "Cut", "win.cut"), Gtk::PACK_SHRINK);
+  toolbar_.pack_start(*toolbar_button("edit-copy", "Copy", "win.copy"), Gtk::PACK_SHRINK);
+  toolbar_.pack_start(*toolbar_button("edit-paste", "Paste", "win.paste"), Gtk::PACK_SHRINK);
   toolbar_.pack_start(*Gtk::manage(new Gtk::Separator(Gtk::ORIENTATION_VERTICAL)), Gtk::PACK_SHRINK);
   toolbar_.pack_start(*toolbar_button("edit-undo", "Undo", "win.undo"), Gtk::PACK_SHRINK);
   toolbar_.pack_start(*toolbar_button("edit-redo", "Redo", "win.redo"), Gtk::PACK_SHRINK);
@@ -266,6 +312,21 @@ void MainWindow::update_chrome() {
   update_title();
   undo_action_->set_enabled(document_->history().can_undo());
   redo_action_->set_enabled(document_->history().can_redo());
+  const Selection& sel = document_->selection();
+  const bool has_sel = !sel.empty();
+  cut_action_->set_enabled(has_sel);
+  copy_action_->set_enabled(has_sel);
+  delete_action_->set_enabled(has_sel);
+  duplicate_action_->set_enabled(has_sel && !sel.inverted());
+  deselect_action_->set_enabled(has_sel);
+  invert_action_->set_enabled(true);
+  crop_action_->set_enabled(has_sel && !sel.inverted());
+  if (has_sel) {
+    const Rect b = sel.bounds();
+    status_bar_.set_selection_size(b.w, b.h, true);
+  } else {
+    status_bar_.set_selection_size(0, 0, false);
+  }
   status_bar_.set_canvas_size(document_->width(), document_->height());
   status_bar_.set_zoom(canvas_.zoom());
   status_bar_.set_modified(document_->dirty());
@@ -273,6 +334,7 @@ void MainWindow::update_chrome() {
     status_bar_.set_hint(active_tool_->hint());
   }
   toolbox_.set_colors(document_->foreground(), document_->background());
+  canvas_.refresh_size();
 }
 
 void MainWindow::update_title() {
@@ -330,9 +392,11 @@ bool MainWindow::on_key_press(GdkEventKey* event) {
     return false;
   }
   if (event->keyval == GDK_KEY_Escape) {
-    if (active_tool_ != nullptr) {
+    if (active_tool_ != nullptr && active_tool_->is_stroking()) {
       active_tool_->on_cancel();
+      return true;
     }
+    action_deselect();
     return true;
   }
   if ((event->state & (GDK_CONTROL_MASK | GDK_MOD1_MASK)) != 0) {
@@ -604,6 +668,268 @@ bool MainWindow::choose_save_path(std::string& path, ImageFormat& format) {
     path += format_extension(format);
   }
   return true;
+}
+
+
+void MainWindow::copy_selection_to_clipboard() {
+  if (document_->selection().empty()) {
+    return;
+  }
+  int w = 0;
+  int h = 0;
+  std::vector<std::uint8_t> rgba;
+  copy_selection_rgba(document_->layers().active_layer(), document_->selection(), document_->width(),
+                      document_->height(), w, h, rgba);
+  if (w < 1 || h < 1 || rgba.empty()) {
+    return;
+  }
+  auto pixbuf = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB, true, 8, w, h);
+  const int dst_stride = pixbuf->get_rowstride();
+  std::uint8_t* dst = pixbuf->get_pixels();
+  for (int y = 0; y < h; ++y) {
+    std::memcpy(dst + static_cast<std::size_t>(y) * dst_stride,
+                rgba.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(w) * 4,
+                static_cast<std::size_t>(w) * 4);
+  }
+  Gtk::Clipboard::get()->set_image(pixbuf);
+  show_status("Copied");
+}
+
+bool MainWindow::paste_from_clipboard() {
+  auto pixbuf = Gtk::Clipboard::get()->wait_for_image();
+  if (!pixbuf) {
+    show_status("Clipboard has no image");
+    return false;
+  }
+  const int w = pixbuf->get_width();
+  const int h = pixbuf->get_height();
+  if (w < 1 || h < 1) {
+    return false;
+  }
+  auto rgba_buf = pixbuf->add_alpha(false, 0, 0, 0);
+  std::vector<std::uint8_t> rgba(static_cast<std::size_t>(w) * static_cast<std::size_t>(h) * 4);
+  const int src_stride = rgba_buf->get_rowstride();
+  const std::uint8_t* src = rgba_buf->get_pixels();
+  const int nch = rgba_buf->get_n_channels();
+  for (int y = 0; y < h; ++y) {
+    const std::uint8_t* srow = src + static_cast<std::size_t>(y) * src_stride;
+    std::uint8_t* drow = rgba.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(w) * 4;
+    for (int x = 0; x < w; ++x) {
+      const std::uint8_t* p = srow + static_cast<std::size_t>(x) * nch;
+      drow[x * 4 + 0] = p[0];
+      drow[x * 4 + 1] = p[1];
+      drow[x * 4 + 2] = p[2];
+      drow[x * 4 + 3] = nch >= 4 ? p[3] : 255;
+    }
+  }
+  document_->paste_floating(0, 0, w, h, std::move(rgba));
+  set_active_tool("rect-select");
+  show_status("Pasted");
+  return true;
+}
+
+void MainWindow::action_cut() {
+  if (document_->selection().empty()) {
+    return;
+  }
+  copy_selection_to_clipboard();
+  document_->delete_selection();
+}
+
+void MainWindow::action_copy() {
+  copy_selection_to_clipboard();
+}
+
+void MainWindow::action_paste() {
+  paste_from_clipboard();
+}
+
+void MainWindow::action_delete() {
+  if (focus_is_editable()) {
+    return;
+  }
+  document_->delete_selection();
+}
+
+void MainWindow::action_duplicate() {
+  document_->duplicate_selection();
+  set_active_tool("rect-select");
+}
+
+void MainWindow::action_select_all() {
+  document_->select_all();
+}
+
+void MainWindow::action_deselect() {
+  if (active_tool_ != nullptr && active_tool_->is_stroking()) {
+    active_tool_->on_cancel();
+  }
+  document_->deselect();
+}
+
+void MainWindow::action_invert_selection() {
+  document_->invert_selection();
+}
+
+void MainWindow::action_zoom_fit() {
+  canvas_.zoom_fit();
+}
+
+void MainWindow::action_toggle_grid() {
+  canvas_.set_grid_visible(!canvas_.grid_visible());
+  show_status(canvas_.grid_visible() ? "Grid on" : "Grid off");
+}
+
+bool MainWindow::warn_size(int width, int height) {
+  if (width < 1 || height < 1) {
+    return false;
+  }
+  if (width > kHardMaxSide || height > kHardMaxSide) {
+    Gtk::MessageDialog refuse(*this, "Images cannot be larger than 16384 pixels on a side.", false,
+                              Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+    refuse.run();
+    return false;
+  }
+  if (width > kSoftMaxSide || height > kSoftMaxSide) {
+    Gtk::MessageDialog warn(*this,
+                            "This canvas is larger than 8192 pixels on a side and may use a lot of memory.",
+                            false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
+    if (warn.run() != Gtk::RESPONSE_OK) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void MainWindow::commit_buffer_change(const char* name, int new_w, int new_h,
+                                      const std::uint8_t* rgba, int stride) {
+  const Layer& layer = document_->layers().active_layer();
+  auto cmd = LayerBufferCommand::from_buffers(name, document_->width(), document_->height(),
+                                              layer.pixels(), layer.stride(), new_w, new_h, rgba,
+                                              stride, document_->layers().active_index());
+  document_->commit(std::move(cmd));
+  canvas_.refresh_size();
+  canvas_.invalidate_all();
+}
+
+void MainWindow::action_canvas_size() {
+  document_->commit_floating();
+  CanvasSizeDialog dialog(*this, document_->width(), document_->height());
+  if (dialog.run() != Gtk::RESPONSE_OK) {
+    return;
+  }
+  const int nw = dialog.image_width();
+  const int nh = dialog.image_height();
+  if (!warn_size(nw, nh)) {
+    return;
+  }
+  const Layer& layer = document_->layers().active_layer();
+  std::vector<std::uint8_t> dest(static_cast<std::size_t>(nw) * static_cast<std::size_t>(nh) * 4);
+  resize_canvas(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), nw, nh,
+                nw * 4, dialog.fill_color(document_->background()));
+  commit_buffer_change("Canvas size", nw, nh, dest.data(), nw * 4);
+}
+
+void MainWindow::action_scale() {
+  document_->commit_floating();
+  ScaleImageDialog dialog(*this, document_->width(), document_->height());
+  if (dialog.run() != Gtk::RESPONSE_OK) {
+    return;
+  }
+  const int nw = dialog.image_width();
+  const int nh = dialog.image_height();
+  if (!warn_size(nw, nh)) {
+    return;
+  }
+  const Layer& layer = document_->layers().active_layer();
+  std::vector<std::uint8_t> dest(static_cast<std::size_t>(nw) * static_cast<std::size_t>(nh) * 4);
+  if (dialog.nearest()) {
+    scale_nearest(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), nw, nh,
+                  nw * 4);
+  } else {
+    scale_bilinear(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), nw, nh,
+                   nw * 4);
+  }
+  commit_buffer_change("Scale", nw, nh, dest.data(), nw * 4);
+}
+
+void MainWindow::action_crop() {
+  document_->commit_floating();
+  const Selection& sel = document_->selection();
+  if (sel.empty() || sel.inverted()) {
+    return;
+  }
+  Rect r = rect_intersect(sel.bounds(), Rect{0, 0, document_->width(), document_->height()});
+  if (r.empty()) {
+    return;
+  }
+  const Layer& layer = document_->layers().active_layer();
+  std::vector<std::uint8_t> dest(static_cast<std::size_t>(r.w) * static_cast<std::size_t>(r.h) * 4);
+  crop_rect(layer.pixels(), layer.width(), layer.height(), layer.stride(), r, dest.data(), r.w * 4);
+  commit_buffer_change("Crop", r.w, r.h, dest.data(), r.w * 4);
+}
+
+void MainWindow::action_autocrop() {
+  document_->commit_floating();
+  const Layer& layer = document_->layers().active_layer();
+  const Rect r = autocrop_bounds(layer.pixels(), layer.width(), layer.height(), layer.stride());
+  if (r.empty() || (r.x == 0 && r.y == 0 && r.w == layer.width() && r.h == layer.height())) {
+    show_status("Nothing to autocrop");
+    return;
+  }
+  std::vector<std::uint8_t> dest(static_cast<std::size_t>(r.w) * static_cast<std::size_t>(r.h) * 4);
+  crop_rect(layer.pixels(), layer.width(), layer.height(), layer.stride(), r, dest.data(), r.w * 4);
+  commit_buffer_change("Autocrop", r.w, r.h, dest.data(), r.w * 4);
+}
+
+void MainWindow::action_rotate_90() {
+  document_->commit_floating();
+  const Layer& layer = document_->layers().active_layer();
+  const int nw = layer.height();
+  const int nh = layer.width();
+  std::vector<std::uint8_t> dest(static_cast<std::size_t>(nw) * static_cast<std::size_t>(nh) * 4);
+  rotate_90_cw(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), nw * 4);
+  commit_buffer_change("Rotate 90", nw, nh, dest.data(), nw * 4);
+}
+
+void MainWindow::action_rotate_180() {
+  document_->commit_floating();
+  const Layer& layer = document_->layers().active_layer();
+  std::vector<std::uint8_t> dest = copy_layer_pixels(layer);
+  rotate_180(dest.data(), layer.width(), layer.height(), layer.width() * 4);
+  commit_buffer_change("Rotate 180", layer.width(), layer.height(), dest.data(), layer.width() * 4);
+}
+
+void MainWindow::action_flip_h() {
+  document_->commit_floating();
+  const Layer& layer = document_->layers().active_layer();
+  std::vector<std::uint8_t> dest = copy_layer_pixels(layer);
+  flip_h(dest.data(), layer.width(), layer.height(), layer.width() * 4);
+  commit_buffer_change("Flip horizontal", layer.width(), layer.height(), dest.data(),
+                      layer.width() * 4);
+}
+
+void MainWindow::action_flip_v() {
+  document_->commit_floating();
+  const Layer& layer = document_->layers().active_layer();
+  std::vector<std::uint8_t> dest = copy_layer_pixels(layer);
+  flip_v(dest.data(), layer.width(), layer.height(), layer.width() * 4);
+  commit_buffer_change("Flip vertical", layer.width(), layer.height(), dest.data(),
+                      layer.width() * 4);
+}
+
+void MainWindow::action_clear() {
+  document_->commit_floating();
+  document_->deselect();
+  Layer& layer = document_->layers().active_layer();
+  Layer before(layer.width(), layer.height(), Color::transparent(), "before");
+  before.copy_from(layer);
+  layer.fill(document_->background());
+  auto cmd = PixelPatchCommand::from_layers(before, layer, Rect{0, 0, layer.width(), layer.height()},
+                                            "Clear", document_->layers().active_index());
+  if (cmd && !cmd->empty()) {
+    document_->commit(std::move(cmd));
+  }
 }
 
 }  // namespace brushpad

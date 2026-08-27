@@ -36,6 +36,15 @@ void Application::on_startup() {
   set_accels_for_action("win.zoom-in", {"<Primary>plus", "<Primary>equal"});
   set_accels_for_action("win.zoom-out", {"<Primary>minus"});
   set_accels_for_action("win.zoom-100", {"<Primary>0"});
+  set_accels_for_action("win.zoom-fit", {"<Primary>1"});
+  set_accels_for_action("win.toggle-grid", {"<Primary>g"});
+  set_accels_for_action("win.cut", {"<Primary>x"});
+  set_accels_for_action("win.copy", {"<Primary>c"});
+  set_accels_for_action("win.paste", {"<Primary>v"});
+  set_accels_for_action("win.delete", {"Delete", "BackSpace"});
+  set_accels_for_action("win.duplicate", {"<Primary>j"});
+  set_accels_for_action("win.select-all", {"<Primary>a"});
+  set_accels_for_action("win.deselect", {"<Primary>d"});
 }
 
 void Application::on_activate() {

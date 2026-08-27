@@ -17,6 +17,7 @@ public:
   void show_coordinates(double x, double y);
   void clear_coordinates();
   void set_canvas_size(int width, int height);
+  void set_selection_size(int width, int height, bool visible);
   void set_zoom(double zoom);
   void set_modified(bool modified);
   void show_message(const Glib::ustring& message);
@@ -24,6 +25,7 @@ public:
 private:
   Gtk::Label hint_;
   Gtk::Label coords_;
+  Gtk::Label sel_;
   Gtk::Label size_;
   Gtk::Label zoom_;
   Gtk::Label modified_;

@@ -3,7 +3,10 @@
 #include "ui/canvas_view.hpp"
 
 #include "doc/document.hpp"
+#include "doc/layer.hpp"
+#include "doc/selection.hpp"
 
+#include <glibmm/main.h>
 #include <gtkmm/adjustment.h>
 
 #include <algorithm>
@@ -112,6 +115,10 @@ void CanvasView::invalidate_rect(Rect rect) {
 
 void CanvasView::invalidate_all() {
   area_.queue_draw();
+}
+
+void CanvasView::refresh_size() {
+  update_area_size();
 }
 
 void CanvasView::visible_center(double& x, double& y) const {
@@ -324,8 +331,6 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
       auto surface = Cairo::ImageSurface::create(Cairo::FORMAT_ARGB32, dest_w, dest_h);
       std::uint8_t* dst = surface->get_data();
       const int dst_stride = surface->get_stride();
-      const std::uint8_t* src = layer.pixels();
-      const int src_stride = layer.stride();
       const int iz = std::max(1, static_cast<int>(std::lround(zoom_)));
       const bool exact = std::abs(zoom_ - static_cast<double>(iz)) < 1e-6;
       for (int dy = 0; dy < dest_h; ++dy) {
@@ -339,7 +344,6 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
           sy = ch - 1;
         }
         std::uint8_t* drow = dst + static_cast<std::size_t>(dy) * dst_stride;
-        const std::uint8_t* srow = src + static_cast<std::size_t>(sy) * src_stride;
         for (int dx = 0; dx < dest_w; ++dx) {
           int sx = vis_x0;
           if (exact) {
@@ -350,8 +354,7 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
           if (sx >= cw) {
             sx = cw - 1;
           }
-          const std::uint8_t* p = srow + static_cast<std::size_t>(sx) * 4;
-          write_argb32(drow + static_cast<std::size_t>(dx) * 4, Color{p[0], p[1], p[2], p[3]});
+          write_argb32(drow + static_cast<std::size_t>(dx) * 4, display_pixel(layer, sx, sy));
         }
       }
       surface->mark_dirty();
@@ -364,15 +367,11 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     auto surface = Cairo::ImageSurface::create(Cairo::FORMAT_ARGB32, sw, sh);
     std::uint8_t* dst = surface->get_data();
     const int dst_stride = surface->get_stride();
-    const std::uint8_t* src = layer.pixels();
-    const int src_stride = layer.stride();
     for (int y = 0; y < sh; ++y) {
       std::uint8_t* drow = dst + static_cast<std::size_t>(y) * dst_stride;
-      const std::uint8_t* srow =
-          src + static_cast<std::size_t>(vis_y0 + y) * src_stride + static_cast<std::size_t>(vis_x0) * 4;
       for (int x = 0; x < sw; ++x) {
-        const std::uint8_t* p = srow + static_cast<std::size_t>(x) * 4;
-        write_argb32(drow + static_cast<std::size_t>(x) * 4, Color{p[0], p[1], p[2], p[3]});
+        write_argb32(drow + static_cast<std::size_t>(x) * 4,
+                     display_pixel(layer, vis_x0 + x, vis_y0 + y));
       }
     }
     surface->mark_dirty();
@@ -383,6 +382,12 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     cr->paint();
     cr->restore();
   }
+
+  if (zoom_ >= 4.0 - 1e-9 && grid_visible_) {
+    draw_pixel_grid(cr, m, vis_x0, vis_y0, vis_x1, vis_y1);
+  }
+  draw_marching_ants(cr, m);
+  ensure_ants_timer();
 
   cr->restore();
   (void)alloc;
@@ -474,6 +479,147 @@ bool CanvasView::on_area_scroll(GdkEventScroll* event) {
     zoom_out_at(event->x, event->y);
   }
   return true;
+}
+
+
+Color CanvasView::display_pixel(const Layer& layer, int x, int y) const {
+  Color c = layer.pixel(x, y);
+  if (document_ == nullptr) {
+    return c;
+  }
+  const Selection& sel = document_->selection();
+  if (!sel.floating()) {
+    return c;
+  }
+  if (!sel.copy_mode() && sel.origin_rect().contains(x, y)) {
+    c = Color::transparent();
+  }
+  if (sel.float_rect().contains(x, y)) {
+    const Color f = sel.float_pixel(x - sel.float_x(), y - sel.float_y());
+    if (!sel.transparent_move() || f.a != 0) {
+      c = f;
+    }
+  }
+  return c;
+}
+
+void CanvasView::set_grid_visible(bool visible) {
+  if (grid_visible_ == visible) {
+    return;
+  }
+  grid_visible_ = visible;
+  invalidate_all();
+}
+
+void CanvasView::zoom_fit() {
+  const auto hadj = get_hadjustment();
+  const auto vadj = get_vadjustment();
+  double vw = hadj ? hadj->get_page_size() : static_cast<double>(get_allocated_width());
+  double vh = vadj ? vadj->get_page_size() : static_cast<double>(get_allocated_height());
+  if (vw < 32.0) {
+    vw = 32.0;
+  }
+  if (vh < 32.0) {
+    vh = 32.0;
+  }
+  vw -= static_cast<double>(margin()) * 2.0;
+  vh -= static_cast<double>(margin()) * 2.0;
+  if (vw < 1.0) {
+    vw = 1.0;
+  }
+  if (vh < 1.0) {
+    vh = 1.0;
+  }
+  const int cw = canvas_width();
+  const int ch = canvas_height();
+  if (cw < 1 || ch < 1) {
+    return;
+  }
+  set_zoom(std::min(vw / cw, vh / ch));
+}
+
+void CanvasView::draw_pixel_grid(const Cairo::RefPtr<Cairo::Context>& cr, int m, int vis_x0,
+                                int vis_y0, int vis_x1, int vis_y1) {
+  cr->save();
+  cr->set_line_width(1.0);
+  cr->set_source_rgba(0.0, 0.0, 0.0, 0.28);
+  for (int x = vis_x0; x <= vis_x1; ++x) {
+    const double wx = m + x * zoom_ + 0.5;
+    cr->move_to(wx, m + vis_y0 * zoom_);
+    cr->line_to(wx, m + vis_y1 * zoom_);
+  }
+  for (int y = vis_y0; y <= vis_y1; ++y) {
+    const double wy = m + y * zoom_ + 0.5;
+    cr->move_to(m + vis_x0 * zoom_, wy);
+    cr->line_to(m + vis_x1 * zoom_, wy);
+  }
+  cr->stroke();
+  cr->restore();
+}
+
+void CanvasView::draw_marching_ants(const Cairo::RefPtr<Cairo::Context>& cr, int m) {
+  if (document_ == nullptr) {
+    return;
+  }
+  const Selection& sel = document_->selection();
+  if (sel.empty()) {
+    return;
+  }
+  auto stroke_rect = [&](Rect r) {
+    if (r.empty()) {
+      return;
+    }
+    const double x = m + r.x * zoom_ + 0.5;
+    const double y = m + r.y * zoom_ + 0.5;
+    const double w = r.w * zoom_;
+    const double h = r.h * zoom_;
+    cr->save();
+    std::vector<double> dash{4.0, 4.0};
+    cr->set_line_width(1.0);
+    cr->set_dash(dash, static_cast<double>(ants_phase_));
+    cr->set_source_rgb(0.0, 0.0, 0.0);
+    cr->rectangle(x, y, w, h);
+    cr->stroke();
+    cr->set_dash(dash, static_cast<double>(ants_phase_) + 4.0);
+    cr->set_source_rgb(1.0, 1.0, 1.0);
+    cr->rectangle(x, y, w, h);
+    cr->stroke();
+    cr->restore();
+  };
+  if (sel.inverted()) {
+    stroke_rect({0, 0, document_->width(), document_->height()});
+    stroke_rect(sel.bounds());
+  } else {
+    stroke_rect(sel.bounds());
+  }
+}
+
+void CanvasView::ensure_ants_timer() {
+  if (ants_timer_.connected()) {
+    return;
+  }
+  ants_timer_ = Glib::signal_timeout().connect(
+      [this]() {
+        if (document_ == nullptr || document_->selection().empty()) {
+          return true;
+        }
+        ants_phase_ = (ants_phase_ + 1) % 8;
+        invalidate_ants();
+        return true;
+      },
+      90);
+}
+
+void CanvasView::invalidate_ants() {
+  if (document_ == nullptr || document_->selection().empty()) {
+    return;
+  }
+  const Selection& sel = document_->selection();
+  if (sel.inverted()) {
+    invalidate_all();
+    return;
+  }
+  invalidate_rect(sel.bounds());
 }
 
 }  // namespace brushpad
