@@ -2,6 +2,7 @@
 
 #include "ui/toolbox.hpp"
 
+#include <gtkmm/image.h>
 #include <gtkmm/stylecontext.h>
 
 namespace brushpad {
@@ -32,7 +33,12 @@ Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
 void Toolbox::add_tool_button(const std::string& id, const std::string& tooltip,
                               const std::string& icon_name) {
   auto* button = Gtk::manage(new Gtk::Button());
-  button->set_image_from_icon_name(icon_name, Gtk::ICON_SIZE_SMALL_TOOLBAR);
+  const std::string resource =
+      "/org/lunduke/LundukePaint/icons/scalable/actions/" + icon_name + ".svg";
+  auto* image = Gtk::manage(new Gtk::Image());
+  image->set_from_resource(resource);
+  image->set_pixel_size(18);
+  button->set_image(*image);
   button->set_tooltip_text(tooltip);
   button->set_relief(Gtk::RELIEF_NONE);
   button->set_can_focus(false);
