@@ -45,6 +45,9 @@ void Application::on_startup() {
   set_accels_for_action("win.duplicate", {"<Primary>j"});
   set_accels_for_action("win.select-all", {"<Primary>a"});
   set_accels_for_action("win.deselect", {"<Primary>d"});
+  set_accels_for_action("win.layer-new", {"<Primary><Shift>n"});
+  set_accels_for_action("win.layer-merge-down", {"<Primary>e"});
+  set_accels_for_action("win.layer-flatten", {"<Primary><Shift>e"});
 }
 
 void Application::on_activate() {

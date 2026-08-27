@@ -41,6 +41,15 @@ constexpr const char* kFlipH = "flip-h";
 constexpr const char* kFlipV = "flip-v";
 constexpr const char* kClear = "clear";
 
+constexpr const char* kLayerNew = "layer-new";
+constexpr const char* kLayerDuplicate = "layer-duplicate";
+constexpr const char* kLayerDelete = "layer-delete";
+constexpr const char* kLayerRaise = "layer-raise";
+constexpr const char* kLayerLower = "layer-lower";
+constexpr const char* kLayerMergeDown = "layer-merge-down";
+constexpr const char* kLayerFlatten = "layer-flatten";
+constexpr const char* kLayerProperties = "layer-properties";
+
 }  // namespace actions
 }  // namespace brushpad
 

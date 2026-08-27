@@ -157,8 +157,40 @@
       <attribute name="label" translatable="yes">_Layers</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">New Layer</attribute>
+          <attribute name="label" translatable="yes">_New Layer</attribute>
           <attribute name="action">win.layer-new</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Duplicate Layer</attribute>
+          <attribute name="action">win.layer-duplicate</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">De_lete Layer</attribute>
+          <attribute name="action">win.layer-delete</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">_Raise Layer</attribute>
+          <attribute name="action">win.layer-raise</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Lower Layer</attribute>
+          <attribute name="action">win.layer-lower</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Merge Down</attribute>
+          <attribute name="action">win.layer-merge-down</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Flatten</attribute>
+          <attribute name="action">win.layer-flatten</attribute>
+        </item>
+      </section>
+      <section>
+        <item>
+          <attribute name="label" translatable="yes">_Properties…</attribute>
+          <attribute name="action">win.layer-properties</attribute>
         </item>
       </section>
     </submenu>

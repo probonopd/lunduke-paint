@@ -80,7 +80,19 @@ MainWindow::MainWindow() {
   add_action(actions::kFlipV, sigc::mem_fun(*this, &MainWindow::action_flip_v));
   add_action(actions::kClear, sigc::mem_fun(*this, &MainWindow::action_clear));
   add_action("print")->set_enabled(false);
-  add_action("layer-new")->set_enabled(false);
+  add_action(actions::kLayerNew, sigc::mem_fun(*this, &MainWindow::action_layer_new));
+  add_action(actions::kLayerDuplicate, sigc::mem_fun(*this, &MainWindow::action_layer_duplicate));
+  layer_delete_action_ = add_action(actions::kLayerDelete,
+                                    sigc::mem_fun(*this, &MainWindow::action_layer_delete));
+  layer_raise_action_ = add_action(actions::kLayerRaise,
+                                   sigc::mem_fun(*this, &MainWindow::action_layer_raise));
+  layer_lower_action_ = add_action(actions::kLayerLower,
+                                   sigc::mem_fun(*this, &MainWindow::action_layer_lower));
+  layer_merge_action_ = add_action(actions::kLayerMergeDown,
+                                   sigc::mem_fun(*this, &MainWindow::action_layer_merge_down));
+  layer_flatten_action_ = add_action(actions::kLayerFlatten,
+                                     sigc::mem_fun(*this, &MainWindow::action_layer_flatten));
+  add_action(actions::kLayerProperties, sigc::mem_fun(*this, &MainWindow::action_layer_properties));
   add_action("adjust-brightness")->set_enabled(false);
   add_action("effect-blur")->set_enabled(false);
   add_action("about")->set_enabled(false);
@@ -216,6 +228,7 @@ Glib::RefPtr<Gio::MenuModel> MainWindow::load_menubar_model() {
 void MainWindow::bind_document() {
   canvas_.set_document(document_.get());
   canvas_.set_tool(active_tool_);
+  layers_panel_.set_document(document_.get());
   document_->set_on_changed([this]() { update_chrome(); });
   document_->set_on_invalidated([this](Rect rect) { canvas_.invalidate_rect(rect); });
   toolbox_.set_colors(document_->foreground(), document_->background());
@@ -343,6 +356,14 @@ void MainWindow::update_chrome() {
   }
   toolbox_.set_colors(document_->foreground(), document_->background());
   canvas_.refresh_size();
+  layers_panel_.refresh();
+  const int nlayers = document_->layers().count();
+  const int active = document_->layers().active_index();
+  layer_delete_action_->set_enabled(nlayers > 1);
+  layer_raise_action_->set_enabled(active + 1 < nlayers);
+  layer_lower_action_->set_enabled(active > 0);
+  layer_merge_action_->set_enabled(active > 0);
+  layer_flatten_action_->set_enabled(nlayers > 1);
 }
 
 void MainWindow::update_title() {
@@ -989,6 +1010,68 @@ void MainWindow::action_clear() {
   if (cmd && !cmd->empty()) {
     document_->commit(std::move(cmd));
   }
+}
+
+
+void MainWindow::action_layer_new() {
+  if (document_->layers().count() >= kSoftMaxLayers) {
+    Gtk::MessageDialog warn(*this,
+                            "This document has 64 or more layers and may use a lot of memory.",
+                            false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
+    if (warn.run() != Gtk::RESPONSE_OK) {
+      return;
+    }
+  }
+  document_->add_layer();
+  right_dock_.set_current_page(1);
+  show_status("Added layer");
+}
+
+void MainWindow::action_layer_duplicate() {
+  document_->duplicate_layer();
+  show_status("Duplicated layer");
+}
+
+void MainWindow::action_layer_delete() {
+  if (!document_->delete_layer()) {
+    show_status("Cannot delete the last layer");
+    return;
+  }
+  show_status("Deleted layer");
+}
+
+void MainWindow::action_layer_raise() {
+  if (!document_->raise_layer()) {
+    return;
+  }
+  show_status("Raised layer");
+}
+
+void MainWindow::action_layer_lower() {
+  if (!document_->lower_layer()) {
+    return;
+  }
+  show_status("Lowered layer");
+}
+
+void MainWindow::action_layer_merge_down() {
+  if (!document_->merge_down()) {
+    show_status("Nothing below to merge");
+    return;
+  }
+  show_status("Merged down");
+}
+
+void MainWindow::action_layer_flatten() {
+  if (document_->layers().count() <= 1) {
+    return;
+  }
+  document_->flatten();
+  show_status("Flattened");
+}
+
+void MainWindow::action_layer_properties() {
+  layers_panel_.show_properties();
 }
 
 }  // namespace brushpad

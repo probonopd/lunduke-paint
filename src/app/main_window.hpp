@@ -81,6 +81,14 @@ public:
   void action_clear();
   void action_zoom_fit();
   void action_toggle_grid();
+  void action_layer_new();
+  void action_layer_duplicate();
+  void action_layer_delete();
+  void action_layer_raise();
+  void action_layer_lower();
+  void action_layer_merge_down();
+  void action_layer_flatten();
+  void action_layer_properties();
 
 private:
   void build_ui();
@@ -135,6 +143,11 @@ private:
   Glib::RefPtr<Gio::SimpleAction> deselect_action_;
   Glib::RefPtr<Gio::SimpleAction> invert_action_;
   Glib::RefPtr<Gio::SimpleAction> crop_action_;
+  Glib::RefPtr<Gio::SimpleAction> layer_delete_action_;
+  Glib::RefPtr<Gio::SimpleAction> layer_raise_action_;
+  Glib::RefPtr<Gio::SimpleAction> layer_lower_action_;
+  Glib::RefPtr<Gio::SimpleAction> layer_merge_action_;
+  Glib::RefPtr<Gio::SimpleAction> layer_flatten_action_;
 };
 
 }  // namespace brushpad
