@@ -14,7 +14,8 @@ namespace brushpad {
 
 class NewImageDialog : public Gtk::Dialog {
 public:
-  explicit NewImageDialog(Gtk::Window& parent);
+  explicit NewImageDialog(Gtk::Window& parent, int width = kDefaultWidth,
+                          int height = kDefaultHeight);
 
   int image_width() const;
   int image_height() const;

@@ -28,7 +28,8 @@ void write_argb32(std::uint8_t* dst, Color c) {
   dst[3] = c.a;
 }
 
-void draw_checker(const Cairo::RefPtr<Cairo::Context>& cr, int x, int y, int w, int h) {
+void draw_checker(const Cairo::RefPtr<Cairo::Context>& cr, int x, int y, int w, int h, Color light,
+                  Color dark) {
   const int cell = 8;
   const int x0 = x;
   const int y0 = y;
@@ -37,11 +38,8 @@ void draw_checker(const Cairo::RefPtr<Cairo::Context>& cr, int x, int y, int w, 
   for (int cy = y0; cy < y1; cy += cell) {
     for (int cx = x0; cx < x1; cx += cell) {
       const int tx = ((cx - x0) / cell) + ((cy - y0) / cell);
-      if ((tx & 1) == 0) {
-        cr->set_source_rgb(0.82, 0.82, 0.82);
-      } else {
-        cr->set_source_rgb(0.62, 0.62, 0.62);
-      }
+      const Color c = ((tx & 1) == 0) ? light : dark;
+      cr->set_source_rgb(c.r / 255.0, c.g / 255.0, c.b / 255.0);
       const int cw = std::min(cell, x1 - cx);
       const int ch = std::min(cell, y1 - cy);
       cr->rectangle(cx, cy, cw, ch);
@@ -325,7 +323,7 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
   cr->save();
   cr->rectangle(m, m, dw, dh);
   cr->clip();
-  draw_checker(cr, m, m, dw, dh);
+  draw_checker(cr, m, m, dw, dh, checker_light_, checker_dark_);
 
   if (document_ == nullptr) {
     cr->restore();
@@ -429,7 +427,7 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     cr->restore();
   }
 
-  if (zoom_ >= 4.0 - 1e-9 && grid_visible_) {
+  if (grid_visible_ && zoom_ + 1e-9 >= static_cast<double>(grid_threshold_) / 100.0) {
     draw_pixel_grid(cr, m, vis_x0, vis_y0, vis_x1, vis_y1);
   }
   draw_marching_ants(cr, m);
@@ -559,6 +557,20 @@ void CanvasView::set_grid_visible(bool visible) {
     return;
   }
   grid_visible_ = visible;
+  invalidate_all();
+}
+
+void CanvasView::set_checker_colors(Color light, Color dark) {
+  checker_light_ = light;
+  checker_dark_ = dark;
+  invalidate_all();
+}
+
+void CanvasView::set_grid_threshold(int percent) {
+  if (percent < 100) {
+    percent = 100;
+  }
+  grid_threshold_ = percent;
   invalidate_all();
 }
 

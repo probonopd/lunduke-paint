@@ -9,7 +9,7 @@
 
 namespace brushpad {
 
-NewImageDialog::NewImageDialog(Gtk::Window& parent)
+NewImageDialog::NewImageDialog(Gtk::Window& parent, int width, int height)
     : Gtk::Dialog("New Image", parent, true),
       white_("White"),
       transparent_("Transparent"),
@@ -21,11 +21,11 @@ NewImageDialog::NewImageDialog(Gtk::Window& parent)
 
   width_.set_range(1, kHardMaxSide);
   width_.set_increments(1, 50);
-  width_.set_value(kDefaultWidth);
+  width_.set_value(width);
   width_.set_digits(0);
   height_.set_range(1, kHardMaxSide);
   height_.set_increments(1, 50);
-  height_.set_value(kDefaultHeight);
+  height_.set_value(height);
   height_.set_digits(0);
 
   Gtk::RadioButton::Group group = white_.get_group();

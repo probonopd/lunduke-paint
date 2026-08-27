@@ -61,6 +61,7 @@ brushpad_sources = files(
   'src/app/application.cpp',
   'src/app/main_window.cpp',
   'src/app/actions.cpp',
+  'src/app/preferences.cpp',
   'src/ui/canvas_view.cpp',
   'src/ui/toolbox.cpp',
   'src/ui/tool_options_bar.cpp',
@@ -90,6 +91,7 @@ brushpad_sources = files(
   'src/tools/tool_text.cpp',
   'src/ui/dialogs_image.cpp',
   'src/ui/dialogs_adjust.cpp',
+  'src/ui/dialogs_prefs.cpp',
 )
 
 executable(

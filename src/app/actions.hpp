@@ -6,6 +6,9 @@ namespace brushpad {
 namespace actions {
 
 constexpr const char* kAppId = "org.brushpad.Brushpad";
+constexpr const char* kVersion = "0.1.0";
+constexpr const char* kProductName = "Brushpad";
+
 
 constexpr const char* kNew = "new";
 constexpr const char* kOpen = "open";
@@ -60,6 +63,11 @@ constexpr const char* kAdjustPosterize = "adjust-posterize";
 constexpr const char* kEffectBlur = "effect-blur";
 constexpr const char* kEffectSharpen = "effect-sharpen";
 constexpr const char* kEffectEmboss = "effect-emboss";
+
+constexpr const char* kPreferences = "preferences";
+constexpr const char* kShortcuts = "shortcuts";
+constexpr const char* kAbout = "about";
+constexpr const char* kPrint = "print";
 
 }  // namespace actions
 }  // namespace brushpad

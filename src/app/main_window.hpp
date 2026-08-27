@@ -2,6 +2,7 @@
 #ifndef BRUSHPAD_APP_MAIN_WINDOW_HPP
 #define BRUSHPAD_APP_MAIN_WINDOW_HPP
 
+#include "app/preferences.hpp"
 #include "doc/document.hpp"
 #include "doc/workspace.hpp"
 #include "io/image_io.hpp"
@@ -101,6 +102,10 @@ public:
   void action_effect_blur();
   void action_effect_sharpen();
   void action_effect_emboss();
+  void action_preferences();
+  void action_shortcuts();
+  void action_about();
+  void action_print();
 
 private:
   void build_ui();
@@ -137,6 +142,7 @@ private:
   bool paste_from_clipboard();
   void apply_layer_effect(const char* name,
                           const std::function<void(std::uint8_t*, int, int, int)>& fn);
+  void apply_preferences();
 
   Gtk::Box root_{Gtk::ORIENTATION_VERTICAL};
   Gtk::Box toolbar_{Gtk::ORIENTATION_HORIZONTAL};
@@ -151,6 +157,7 @@ private:
   HistoryPanel history_panel_;
   StatusBar status_bar_;
   Workspace workspace_;
+  Preferences prefs_;
   bool switching_tabs_{false};
   std::vector<std::unique_ptr<Tool>> tools_;
   Tool* active_tool_{nullptr};

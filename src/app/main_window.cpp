@@ -14,6 +14,7 @@
 #include "ui/dialogs_adjust.hpp"
 #include "ui/dialogs_image.hpp"
 #include "ui/dialogs_new.hpp"
+#include "ui/dialogs_prefs.hpp"
 #include "tools/tools.hpp"
 
 #include <glibmm/error.h>
@@ -31,6 +32,10 @@
 #include <gtkmm/messagedialog.h>
 #include <gtkmm/menubar.h>
 #include <gtkmm/separator.h>
+#include <gtkmm/aboutdialog.h>
+#include <gtkmm/printoperation.h>
+#include <gtkmm/grid.h>
+#include <algorithm>
 #include <cstring>
 #include <functional>
 #include <iostream>
@@ -52,8 +57,11 @@ Gtk::Button* toolbar_button(const char* icon, const char* tooltip, const char* a
 }  // namespace
 
 MainWindow::MainWindow() {
-  workspace_.add(Document::create(kDefaultWidth, kDefaultHeight, Color::white()));
-  set_title("Untitled — Brushpad");
+  prefs_.load();
+  auto startup = Document::create(prefs_.default_width, prefs_.default_height, Color::white());
+  startup->history().set_depth(prefs_.undo_limit);
+  workspace_.add(std::move(startup));
+  set_title(Glib::ustring("Untitled — ") + actions::kProductName);
   set_default_size(1100, 720);
   // Traditional WM decorations: do not call set_titlebar() / GtkHeaderBar.
 
@@ -83,7 +91,7 @@ MainWindow::MainWindow() {
   add_action(actions::kFlipH, sigc::mem_fun(*this, &MainWindow::action_flip_h));
   add_action(actions::kFlipV, sigc::mem_fun(*this, &MainWindow::action_flip_v));
   add_action(actions::kClear, sigc::mem_fun(*this, &MainWindow::action_clear));
-  add_action("print")->set_enabled(false);
+  add_action(actions::kPrint, sigc::mem_fun(*this, &MainWindow::action_print));
   add_action(actions::kLayerNew, sigc::mem_fun(*this, &MainWindow::action_layer_new));
   add_action(actions::kLayerDuplicate, sigc::mem_fun(*this, &MainWindow::action_layer_duplicate));
   layer_delete_action_ = add_action(actions::kLayerDelete,
@@ -106,7 +114,9 @@ MainWindow::MainWindow() {
   add_action(actions::kEffectBlur, sigc::mem_fun(*this, &MainWindow::action_effect_blur));
   add_action(actions::kEffectSharpen, sigc::mem_fun(*this, &MainWindow::action_effect_sharpen));
   add_action(actions::kEffectEmboss, sigc::mem_fun(*this, &MainWindow::action_effect_emboss));
-  add_action("about")->set_enabled(false);
+  add_action(actions::kPreferences, sigc::mem_fun(*this, &MainWindow::action_preferences));
+  add_action(actions::kShortcuts, sigc::mem_fun(*this, &MainWindow::action_shortcuts));
+  add_action(actions::kAbout, sigc::mem_fun(*this, &MainWindow::action_about));
 
   tools_.emplace_back(create_rect_select_tool());
   tools_.emplace_back(create_lasso_tool());
@@ -136,6 +146,7 @@ MainWindow::MainWindow() {
   signal_key_release_event().connect(sigc::mem_fun(*this, &MainWindow::on_key_release), false);
 
   build_ui();
+  apply_preferences();
   bind_document();
   set_active_tool("pencil");
   show_all();
@@ -307,6 +318,10 @@ void MainWindow::new_document(int width, int height, Color background) {
 }
 
 void MainWindow::adopt_document(std::unique_ptr<Document> document, bool prefer_replace) {
+  if (!document) {
+    return;
+  }
+  document->history().set_depth(prefs_.undo_limit);
   if (active_tool_ != nullptr) {
     active_tool_->on_cancel();
   }
@@ -455,7 +470,7 @@ void MainWindow::update_title() {
   if (document().dirty()) {
     name += "*";
   }
-  set_title(name + " — Brushpad");
+  set_title(name + " — " + actions::kProductName);
 }
 
 void MainWindow::choose_color(bool background) {
@@ -550,7 +565,7 @@ void MainWindow::on_toggle_right_dock() {
 }
 
 void MainWindow::action_new() {
-  NewImageDialog dialog(*this);
+  NewImageDialog dialog(*this, prefs_.default_width, prefs_.default_height);
   if (dialog.run() != Gtk::RESPONSE_OK) {
     return;
   }
@@ -1390,7 +1405,9 @@ bool MainWindow::close_document_at(int index) {
     active_tool_->on_cancel();
   }
   if (workspace_.count() == 1) {
-    workspace_.replace_active(Document::create(kDefaultWidth, kDefaultHeight, Color::white()));
+    auto blank = Document::create(prefs_.default_width, prefs_.default_height, Color::white());
+    blank->history().set_depth(prefs_.undo_limit);
+    workspace_.replace_active(std::move(blank));
   } else {
     workspace_.close(index);
   }
@@ -1513,6 +1530,142 @@ void MainWindow::action_effect_emboss() {
     std::memcpy(src.data(), px, src.size());
     emboss_rgba(src.data(), w, h, stride, px, stride);
   });
+}
+
+void MainWindow::apply_preferences() {
+  canvas_.set_checker_colors(prefs_.checker_light, prefs_.checker_dark);
+  canvas_.set_grid_threshold(prefs_.grid_threshold);
+  for (int i = 0; i < workspace_.count(); ++i) {
+    workspace_.at(i).history().set_depth(prefs_.undo_limit);
+  }
+}
+
+void MainWindow::action_preferences() {
+  PreferencesDialog dialog(*this, prefs_);
+  if (dialog.run() != Gtk::RESPONSE_OK) {
+    return;
+  }
+  dialog.apply_to(prefs_);
+  if (!prefs_.save()) {
+    Gtk::MessageDialog err(*this, "Could not save preferences.", false, Gtk::MESSAGE_WARNING,
+                           Gtk::BUTTONS_OK, true);
+    err.set_secondary_text(Preferences::config_path());
+    err.run();
+  }
+  apply_preferences();
+  update_chrome();
+  show_status("Preferences saved");
+}
+
+void MainWindow::action_shortcuts() {
+  Gtk::Dialog dialog("Keyboard Shortcuts", *this, true);
+  dialog.add_button("_Close", Gtk::RESPONSE_CLOSE);
+  dialog.set_default_response(Gtk::RESPONSE_CLOSE);
+  auto* grid = Gtk::manage(new Gtk::Grid());
+  grid->set_row_spacing(4);
+  grid->set_column_spacing(24);
+  grid->set_border_width(12);
+  const char* rows[][2] = {
+      {"New / Open / Save / Save As", "Ctrl+N / O / S / Shift+S"},
+      {"Close / Quit", "Ctrl+W / Q"},
+      {"Print", "Ctrl+P"},
+      {"Undo", "Ctrl+Z"},
+      {"Redo", "Ctrl+Y or Ctrl+Shift+Z"},
+      {"Cut / Copy / Paste / Select all", "Ctrl+X / C / V / A"},
+      {"Deselect", "Ctrl+D or Esc"},
+      {"Delete selection", "Delete"},
+      {"Duplicate selection", "Ctrl+J"},
+      {"New layer", "Ctrl+Shift+N"},
+      {"Merge down", "Ctrl+E"},
+      {"Flatten", "Ctrl+Shift+E"},
+      {"Zoom in / out / 100% / fit", "Ctrl++ / Ctrl+- / Ctrl+0 / Ctrl+1"},
+      {"Grid / dock / fullscreen", "Ctrl+G / F12 / F11"},
+      {"Swap FG-BG / default colors", "X / D"},
+  };
+  for (int i = 0; i < 15; ++i) {
+    auto* action = Gtk::manage(new Gtk::Label(rows[i][0], Gtk::ALIGN_START));
+    auto* keys = Gtk::manage(new Gtk::Label(rows[i][1], Gtk::ALIGN_START));
+    grid->attach(*action, 0, i, 1, 1);
+    grid->attach(*keys, 1, i, 1, 1);
+  }
+  dialog.get_content_area()->pack_start(*grid, Gtk::PACK_SHRINK);
+  dialog.show_all();
+  dialog.run();
+}
+
+void MainWindow::action_about() {
+  Gtk::AboutDialog dialog;
+  dialog.set_transient_for(*this);
+  dialog.set_program_name(actions::kProductName);
+  dialog.set_version(actions::kVersion);
+  dialog.set_comments("A traditional X11 paint program.\nApplication id: " +
+                      Glib::ustring(actions::kAppId));
+  dialog.set_copyright("GPL-3.0-or-later");
+  dialog.set_license("GPL-3.0-or-later");
+  dialog.set_wrap_license(true);
+  dialog.set_logo_icon_name(actions::kAppId);
+  dialog.run();
+}
+
+void MainWindow::action_print() {
+  auto op = Gtk::PrintOperation::create();
+  op->set_n_pages(1);
+  op->set_embed_page_setup(true);
+  op->set_unit(Gtk::UNIT_POINTS);
+  op->signal_draw_page().connect([this](const Glib::RefPtr<Gtk::PrintContext>& ctx, int) {
+    if (!ctx) {
+      return;
+    }
+    const int w = document().width();
+    const int h = document().height();
+    if (w < 1 || h < 1) {
+      return;
+    }
+    std::vector<std::uint8_t> flat;
+    composite_visible(flat);
+    auto surface = Cairo::ImageSurface::create(Cairo::FORMAT_ARGB32, w, h);
+    std::uint8_t* dst = surface->get_data();
+    const int dst_stride = surface->get_stride();
+    for (int y = 0; y < h; ++y) {
+      std::uint8_t* drow = dst + static_cast<std::size_t>(y) * static_cast<std::size_t>(dst_stride);
+      const std::uint8_t* srow =
+          flat.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(w) * 4;
+      for (int x = 0; x < w; ++x) {
+        const std::uint8_t* s = srow + static_cast<std::size_t>(x) * 4;
+        const int a = s[3];
+        drow[static_cast<std::size_t>(x) * 4 + 0] =
+            static_cast<std::uint8_t>((static_cast<int>(s[2]) * a + 127) / 255);
+        drow[static_cast<std::size_t>(x) * 4 + 1] =
+            static_cast<std::uint8_t>((static_cast<int>(s[1]) * a + 127) / 255);
+        drow[static_cast<std::size_t>(x) * 4 + 2] =
+            static_cast<std::uint8_t>((static_cast<int>(s[0]) * a + 127) / 255);
+        drow[static_cast<std::size_t>(x) * 4 + 3] = static_cast<std::uint8_t>(a);
+      }
+    }
+    surface->mark_dirty();
+    auto cr = ctx->get_cairo_context();
+    const double pw = ctx->get_width();
+    const double ph = ctx->get_height();
+    const double scale = std::min(pw / static_cast<double>(w), ph / static_cast<double>(h));
+    const double dw = static_cast<double>(w) * scale;
+    const double dh = static_cast<double>(h) * scale;
+    cr->save();
+    cr->set_source_rgb(1.0, 1.0, 1.0);
+    cr->paint();
+    cr->translate((pw - dw) * 0.5, (ph - dh) * 0.5);
+    cr->scale(scale, scale);
+    cr->set_source(surface, 0, 0);
+    cr->paint();
+    cr->restore();
+  });
+  try {
+    op->run(Gtk::PRINT_OPERATION_ACTION_PRINT_DIALOG, *this);
+  } catch (const Gtk::PrintError& error) {
+    Gtk::MessageDialog err(*this, "Could not print.", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK,
+                           true);
+    err.set_secondary_text(error.what());
+    err.run();
+  }
 }
 
 }  // namespace brushpad

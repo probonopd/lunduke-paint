@@ -49,6 +49,7 @@ void Application::on_startup() {
   set_accels_for_action("win.layer-new", {"<Primary><Shift>n"});
   set_accels_for_action("win.layer-merge-down", {"<Primary>e"});
   set_accels_for_action("win.layer-flatten", {"<Primary><Shift>e"});
+  set_accels_for_action("win.print", {"<Primary>p"});
 }
 
 void Application::on_activate() {

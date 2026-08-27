@@ -41,6 +41,8 @@ public:
 
   bool grid_visible() const { return grid_visible_; }
   void set_grid_visible(bool visible);
+  void set_checker_colors(Color light, Color dark);
+  void set_grid_threshold(int percent);
 
   int canvas_width() const;
   int canvas_height() const;
@@ -84,6 +86,9 @@ private:
   Tool* tool_{nullptr};
   double zoom_{1.0};
   bool grid_visible_{true};
+  Color checker_light_{209, 209, 209, 255};
+  Color checker_dark_{158, 158, 158, 255};
+  int grid_threshold_{400};
   int ants_phase_{0};
   sigc::connection ants_timer_;
   bool space_down_{false};
