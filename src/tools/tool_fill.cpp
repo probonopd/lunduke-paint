@@ -4,6 +4,7 @@
 
 #include "doc/commands_pixels.hpp"
 #include "doc/document.hpp"
+#include "doc/selection.hpp"
 #include "raster/fill.hpp"
 
 #include <gtkmm/box.h>
@@ -60,6 +61,7 @@ void FillTool::on_press(CanvasEvent event) {
     return;
   }
   Document& doc = host_->document();
+  doc.commit_floating();
   doc.layers().copy_active_to_tool();
   Layer& tool = doc.layers().tool_layer();
   const int x = static_cast<int>(std::floor(event.x));

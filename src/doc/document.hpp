@@ -10,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace brushpad {
 
@@ -51,6 +52,15 @@ public:
   Rect undo();
   Rect redo();
 
+  void select_all();
+  void deselect();
+  void invert_selection();
+  bool commit_floating(const char* name = "Move selection");
+  void delete_selection();
+  void duplicate_selection();
+  void paste_floating(int x, int y, int w, int h, std::vector<std::uint8_t> rgba);
+  void replace_active_buffer(int width, int height, const std::uint8_t* rgba, int stride);
+
   using ChangedFn = std::function<void()>;
   using InvalidatedFn = std::function<void(Rect)>;
 
@@ -58,11 +68,10 @@ public:
   void set_on_invalidated(InvalidatedFn fn) { on_invalidated_ = std::move(fn); }
 
   void notify_invalidated(Rect rect);
+  void notify_changed();
 
 private:
   Document(int width, int height, Color background, std::string layer_name);
-
-  void notify_changed();
 
   int width_ = kDefaultWidth;
   int height_ = kDefaultHeight;

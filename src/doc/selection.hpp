@@ -2,11 +2,85 @@
 #ifndef BRUSHPAD_DOC_SELECTION_HPP
 #define BRUSHPAD_DOC_SELECTION_HPP
 
-// Phase 2 stub. Selection behavior is not implemented in Phase 1.
+#include "raster/types.hpp"
+
+#include <cstdint>
+#include <vector>
 
 namespace brushpad {
 
-class Selection {};
+class Layer;
+
+// One selection per document (not per layer). Phase 2 is rectangular;
+// invert means "canvas minus the rectangle."
+class Selection {
+public:
+  bool empty() const { return empty_; }
+  bool inverted() const { return inverted_; }
+  bool floating() const { return floating_; }
+
+  bool transparent_move() const { return transparent_move_; }
+  void set_transparent_move(bool enabled) { transparent_move_ = enabled; }
+
+  bool copy_mode() const { return copy_mode_; }
+  void set_copy_mode(bool enabled) { copy_mode_ = enabled; }
+
+  // Chosen rectangle (the hole when inverted; the float dest when floating).
+  Rect bounds() const;
+
+  bool contains(int x, int y) const;
+
+  void clear();
+  void set_rect(Rect rect);
+  void select_all(int width, int height);
+  void invert(int width, int height);
+
+  int float_x() const { return float_x_; }
+  int float_y() const { return float_y_; }
+  int float_w() const { return float_w_; }
+  int float_h() const { return float_h_; }
+  int origin_x() const { return origin_x_; }
+  int origin_y() const { return origin_y_; }
+
+  Rect float_rect() const;
+  Rect origin_rect() const;
+  Rect dirty_union() const;
+
+  const std::uint8_t* float_pixels() const {
+    return float_pixels_.empty() ? nullptr : float_pixels_.data();
+  }
+  Color float_pixel(int x, int y) const;
+
+  // Copy the current rect from the layer into a floating buffer. Does not
+  // modify the layer (the hole is previewed until commit).
+  bool lift(const Layer& layer);
+
+  void set_float_pixels(int x, int y, int w, int h, std::vector<std::uint8_t> rgba);
+  void move_float(int x, int y);
+  void drop_float();
+
+private:
+  bool empty_ = true;
+  bool inverted_ = false;
+  bool floating_ = false;
+  bool transparent_move_ = false;
+  bool copy_mode_ = false;
+  Rect rect_{};
+  int float_x_ = 0;
+  int float_y_ = 0;
+  int float_w_ = 0;
+  int float_h_ = 0;
+  int origin_x_ = 0;
+  int origin_y_ = 0;
+  std::vector<std::uint8_t> float_pixels_;
+};
+
+void clip_rect_to_selection(Layer& dest, const Layer& source, Rect rect, const Selection& sel);
+void fill_selection(Layer& layer, const Selection& sel, Color color, Rect* dirty);
+void copy_selection_rgba(const Layer& layer, const Selection& sel, int canvas_w, int canvas_h,
+                         int& out_w, int& out_h, std::vector<std::uint8_t>& out);
+void blit_rgba(Layer& dest, int dx, int dy, const std::uint8_t* src, int sw, int sh, int sstride,
+               bool skip_transparent);
 
 }  // namespace brushpad
 

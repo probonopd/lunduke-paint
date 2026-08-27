@@ -4,6 +4,7 @@
 
 #include "doc/commands_pixels.hpp"
 #include "doc/document.hpp"
+#include "doc/selection.hpp"
 #include "raster/stroke.hpp"
 
 #include <gtkmm/box.h>
@@ -112,6 +113,7 @@ void BrushTool::begin_stroke(CanvasEvent event) {
   if (host_ == nullptr) {
     return;
   }
+  host_->document().commit_floating();
   drawing_ = true;
   button_ = event.button;
   last_x_ = event.x;
@@ -128,6 +130,8 @@ void BrushTool::stamp_to(double x, double y) {
   Layer& tool = host_->document().layers().tool_layer();
   stroke_brush(tool.pixels(), tool.width(), tool.height(), tool.stride(), last_x_, last_y_, x, y,
                size_, stroke_color(button_), antialias_, &dirty_);
+  clip_rect_to_selection(tool, host_->document().layers().active_layer(), dirty_,
+                         host_->document().selection());
   last_x_ = x;
   last_y_ = y;
   host_->invalidate_canvas(dirty_);

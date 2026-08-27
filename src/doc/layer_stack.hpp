@@ -30,9 +30,17 @@ public:
   void clear_tool_layer();
   void copy_active_to_tool();
 
+  Layer& selection_layer();
+  const Layer& selection_layer() const;
+  void clear_selection_layer();
+
+  void replace_active(int width, int height, const std::uint8_t* rgba, int stride);
+  void resize_scratch(int width, int height);
+
 private:
   std::vector<std::unique_ptr<Layer>> layers_;
   std::unique_ptr<Layer> tool_layer_;
+  std::unique_ptr<Layer> selection_layer_;
   int active_ = 0;
   int width_ = 0;
   int height_ = 0;

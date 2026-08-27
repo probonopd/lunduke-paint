@@ -32,8 +32,12 @@ brushpad_core_sources = files(
   'src/doc/layer_stack.cpp',
   'src/doc/history.cpp',
   'src/doc/commands_pixels.cpp',
+  'src/doc/commands_image.cpp',
+  'src/doc/selection.cpp',
   'src/raster/fill.cpp',
   'src/raster/stroke.cpp',
+  'src/raster/transform.cpp',
+  'src/raster/shapes.cpp',
 )
 
 brushpad_core = static_library(
@@ -98,6 +102,24 @@ test_history = executable(
   install: false,
 )
 test('history', test_history)
+
+test_selection = executable(
+  'test_selection',
+  files('tests/test_selection.cpp'),
+  include_directories: brushpad_inc,
+  link_with: brushpad_core,
+  install: false,
+)
+test('selection', test_selection)
+
+test_transform = executable(
+  'test_transform',
+  files('tests/test_transform.cpp'),
+  include_directories: brushpad_inc,
+  link_with: brushpad_core,
+  install: false,
+)
+test('transform', test_transform)
 
 install_data(
   'data/org.brushpad.Brushpad.desktop',

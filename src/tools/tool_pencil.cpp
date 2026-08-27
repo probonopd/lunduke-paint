@@ -4,6 +4,7 @@
 
 #include "doc/commands_pixels.hpp"
 #include "doc/document.hpp"
+#include "doc/selection.hpp"
 #include "raster/stroke.hpp"
 
 #include <gtkmm/box.h>
@@ -102,6 +103,7 @@ void PencilTool::begin_stroke(CanvasEvent event) {
   if (host_ == nullptr) {
     return;
   }
+  host_->document().commit_floating();
   drawing_ = true;
   button_ = event.button;
   last_x_ = static_cast<int>(std::floor(event.x));
@@ -120,6 +122,8 @@ void PencilTool::stamp_to(int x, int y) {
   const int size = host_->stroke_size();
   stroke_pencil(tool.pixels(), tool.width(), tool.height(), tool.stride(), last_x_, last_y_, x, y,
                 size, color, &dirty_);
+  clip_rect_to_selection(tool, host_->document().layers().active_layer(), dirty_,
+                         host_->document().selection());
   last_x_ = x;
   last_y_ = y;
   host_->invalidate_canvas(dirty_);

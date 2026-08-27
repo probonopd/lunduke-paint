@@ -43,7 +43,9 @@ public:
   void set_pixel(int x, int y, Color color);
 
   void fill(Color color);
+  void fill_rect(Rect rect, Color color);
   void clear_transparent();
+  void set_pixels(int width, int height, const std::uint8_t* rgba, int stride);
 
   void copy_rect_from(const Layer& src, Rect rect);
   void write_rect(Rect rect, const std::uint8_t* rgba);

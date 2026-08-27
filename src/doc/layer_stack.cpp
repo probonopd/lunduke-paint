@@ -12,6 +12,7 @@ void LayerStack::reset(int width, int height, Color fill, const std::string& lay
   layers_.clear();
   layers_.push_back(std::make_unique<Layer>(width, height, fill, layer_name));
   tool_layer_ = std::make_unique<Layer>(width, height, Color::transparent(), "Tool");
+  selection_layer_ = std::make_unique<Layer>(width, height, Color::transparent(), "Selection");
   active_ = 0;
 }
 
@@ -62,6 +63,37 @@ void LayerStack::clear_tool_layer() {
 
 void LayerStack::copy_active_to_tool() {
   tool_layer().copy_from(active_layer());
+}
+
+
+Layer& LayerStack::selection_layer() {
+  if (!selection_layer_) {
+    selection_layer_ = std::make_unique<Layer>(width_, height_, Color::transparent(), "Selection");
+  }
+  return *selection_layer_;
+}
+
+const Layer& LayerStack::selection_layer() const {
+  return *selection_layer_;
+}
+
+void LayerStack::clear_selection_layer() {
+  if (selection_layer_) {
+    selection_layer_->clear_transparent();
+  }
+}
+
+void LayerStack::replace_active(int width, int height, const std::uint8_t* rgba, int stride) {
+  width_ = width;
+  height_ = height;
+  active_layer().set_pixels(width, height, rgba, stride);
+}
+
+void LayerStack::resize_scratch(int width, int height) {
+  width_ = width;
+  height_ = height;
+  tool_layer_ = std::make_unique<Layer>(width, height, Color::transparent(), "Tool");
+  selection_layer_ = std::make_unique<Layer>(width, height, Color::transparent(), "Selection");
 }
 
 }  // namespace brushpad

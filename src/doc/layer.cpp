@@ -58,6 +58,46 @@ void Layer::clear_transparent() {
   std::fill(pixels_.begin(), pixels_.end(), static_cast<std::uint8_t>(0));
 }
 
+
+void Layer::fill_rect(Rect rect, Color color) {
+  rect = rect_intersect(rect, Rect{0, 0, width_, height_});
+  if (rect.empty()) {
+    return;
+  }
+  for (int y = rect.y; y < rect.y2(); ++y) {
+    std::uint8_t* row = pixels_.data() + static_cast<std::size_t>(y) * stride_;
+    for (int x = rect.x; x < rect.x2(); ++x) {
+      std::uint8_t* p = row + static_cast<std::size_t>(x) * 4;
+      p[0] = color.r;
+      p[1] = color.g;
+      p[2] = color.b;
+      p[3] = color.a;
+    }
+  }
+}
+
+void Layer::set_pixels(int width, int height, const std::uint8_t* rgba, int stride) {
+  if (width < 1) {
+    width = 1;
+  }
+  if (height < 1) {
+    height = 1;
+  }
+  width_ = width;
+  height_ = height;
+  stride_ = width_ * 4;
+  pixels_.assign(static_cast<std::size_t>(stride_) * static_cast<std::size_t>(height_), 0);
+  if (rgba == nullptr) {
+    return;
+  }
+  const int row_bytes = width_ * 4;
+  for (int y = 0; y < height_; ++y) {
+    std::memcpy(pixels_.data() + static_cast<std::size_t>(y) * stride_,
+                rgba + static_cast<std::size_t>(y) * static_cast<std::size_t>(stride),
+                static_cast<std::size_t>(row_bytes));
+  }
+}
+
 void Layer::copy_rect_from(const Layer& src, Rect rect) {
   rect = rect_intersect(rect, Rect{0, 0, width_, height_});
   rect = rect_intersect(rect, Rect{0, 0, src.width_, src.height_});
