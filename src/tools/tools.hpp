@@ -21,6 +21,8 @@ Tool* create_rounded_rect_tool();
 Tool* create_polyline_tool();
 Tool* create_polygon_tool();
 Tool* create_curve_tool();
+Tool* create_lasso_tool();
+Tool* create_ellipse_select_tool();
 
 }  // namespace brushpad
 

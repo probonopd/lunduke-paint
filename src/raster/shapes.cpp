@@ -399,4 +399,74 @@ void draw_cubic_bezier(std::uint8_t* rgba, int width, int height, int stride, in
   }
 }
 
+void fill_ellipse_mask(std::uint8_t* mask, int width, int height) {
+  if (mask == nullptr || width < 1 || height < 1) {
+    return;
+  }
+  const double cx = (static_cast<double>(width)) * 0.5;
+  const double cy = (static_cast<double>(height)) * 0.5;
+  const double rx = std::max(0.5, static_cast<double>(width) * 0.5);
+  const double ry = std::max(0.5, static_cast<double>(height) * 0.5);
+  const double inv_rx = 1.0 / rx;
+  const double inv_ry = 1.0 / ry;
+  for (int y = 0; y < height; ++y) {
+    const double ny = ((static_cast<double>(y) + 0.5) - cy) * inv_ry;
+    for (int x = 0; x < width; ++x) {
+      const double nx = ((static_cast<double>(x) + 0.5) - cx) * inv_rx;
+      if (nx * nx + ny * ny <= 1.0) {
+        mask[static_cast<std::size_t>(y) * static_cast<std::size_t>(width) +
+             static_cast<std::size_t>(x)] = 255;
+      }
+    }
+  }
+}
+
+void stroke_polyline_mask(std::uint8_t* mask, int width, int height, const int* xs, const int* ys,
+                          int count, bool closed) {
+  if (mask == nullptr || xs == nullptr || ys == nullptr || count < 1) {
+    return;
+  }
+  auto plot = [&](int x, int y) {
+    if (x < 0 || y < 0 || x >= width || y >= height) {
+      return;
+    }
+    mask[static_cast<std::size_t>(y) * static_cast<std::size_t>(width) + static_cast<std::size_t>(x)] =
+        255;
+  };
+  auto line = [&](int x0, int y0, int x1, int y1) {
+    int dx = std::abs(x1 - x0);
+    int dy = -std::abs(y1 - y0);
+    const int sx = x0 < x1 ? 1 : -1;
+    const int sy = y0 < y1 ? 1 : -1;
+    int err = dx + dy;
+    int x = x0;
+    int y = y0;
+    for (;;) {
+      plot(x, y);
+      if (x == x1 && y == y1) {
+        break;
+      }
+      const int e2 = 2 * err;
+      if (e2 >= dy) {
+        err += dy;
+        x += sx;
+      }
+      if (e2 <= dx) {
+        err += dx;
+        y += sy;
+      }
+    }
+  };
+  if (count == 1) {
+    plot(xs[0], ys[0]);
+    return;
+  }
+  for (int i = 1; i < count; ++i) {
+    line(xs[i - 1], ys[i - 1], xs[i], ys[i]);
+  }
+  if (closed && count >= 2) {
+    line(xs[count - 1], ys[count - 1], xs[0], ys[0]);
+  }
+}
+
 }  // namespace brushpad

@@ -101,6 +101,8 @@ MainWindow::MainWindow() {
   add_action("about")->set_enabled(false);
 
   tools_.emplace_back(create_rect_select_tool());
+  tools_.emplace_back(create_lasso_tool());
+  tools_.emplace_back(create_ellipse_select_tool());
   tools_.emplace_back(create_pencil_tool());
   tools_.emplace_back(create_brush_tool());
   tools_.emplace_back(create_eraser_tool());
@@ -144,6 +146,8 @@ void MainWindow::build_ui() {
   canvas_.set_vexpand(true);
 
   toolbox_.add_tool_button("rect-select", "Rectangle select (S)", "edit-select-all-symbolic");
+  toolbox_.add_tool_button("lasso", "Freeform select (M)", "edit-select-symbolic");
+  toolbox_.add_tool_button("ellipse-select", "Ellipse select (I)", "media-record-symbolic");
   toolbox_.add_tool_button("pencil", "Pencil (P)", "document-edit-symbolic");
   toolbox_.add_tool_button("brush", "Brush (B)", "edit-select-symbolic");
   toolbox_.add_tool_button("eraser", "Eraser (A)", "edit-clear-symbolic");

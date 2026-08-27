@@ -19,6 +19,19 @@ Rect Selection::bounds() const {
   return rect_;
 }
 
+bool Selection::mask_at(int canvas_x, int canvas_y) const {
+  if (mask_.empty() || !rect_.contains(canvas_x, canvas_y)) {
+    return false;
+  }
+  const int mx = canvas_x - rect_.x;
+  const int my = canvas_y - rect_.y;
+  if (mx < 0 || my < 0 || mx >= mask_w_ || my >= mask_h_) {
+    return false;
+  }
+  return mask_[static_cast<std::size_t>(my) * static_cast<std::size_t>(mask_w_) +
+               static_cast<std::size_t>(mx)] != 0;
+}
+
 bool Selection::contains(int x, int y) const {
   if (empty_) {
     return false;
@@ -26,7 +39,12 @@ bool Selection::contains(int x, int y) const {
   if (floating_) {
     return float_rect().contains(x, y);
   }
-  const bool inside = rect_.contains(x, y);
+  bool inside = false;
+  if (!mask_.empty()) {
+    inside = mask_at(x, y);
+  } else {
+    inside = rect_.contains(x, y);
+  }
   return inverted_ ? !inside : inside;
 }
 
@@ -35,6 +53,9 @@ void Selection::clear() {
   inverted_ = false;
   drop_float();
   rect_ = {};
+  mask_.clear();
+  mask_w_ = 0;
+  mask_h_ = 0;
 }
 
 void Selection::set_rect(Rect rect) {
@@ -46,6 +67,24 @@ void Selection::set_rect(Rect rect) {
   inverted_ = false;
   drop_float();
   rect_ = rect;
+  mask_.clear();
+  mask_w_ = 0;
+  mask_h_ = 0;
+}
+
+void Selection::set_mask(Rect bounds, std::vector<std::uint8_t> mask) {
+  if (bounds.empty() ||
+      mask.size() < static_cast<std::size_t>(bounds.w) * static_cast<std::size_t>(bounds.h)) {
+    clear();
+    return;
+  }
+  empty_ = false;
+  inverted_ = false;
+  drop_float();
+  rect_ = bounds;
+  mask_w_ = bounds.w;
+  mask_h_ = bounds.h;
+  mask_ = std::move(mask);
 }
 
 void Selection::select_all(int width, int height) {
@@ -57,6 +96,9 @@ void Selection::select_all(int width, int height) {
   inverted_ = false;
   drop_float();
   rect_ = {0, 0, width, height};
+  mask_.clear();
+  mask_w_ = 0;
+  mask_h_ = 0;
 }
 
 void Selection::invert(int width, int height) {
@@ -126,6 +168,20 @@ bool Selection::lift(const Layer& layer) {
   origin_y_ = r.y;
   float_pixels_.assign(static_cast<std::size_t>(float_w_) * static_cast<std::size_t>(float_h_) * 4, 0);
   layer.read_rect(r, float_pixels_.data());
+  if (!mask_.empty()) {
+    for (int y = 0; y < float_h_; ++y) {
+      for (int x = 0; x < float_w_; ++x) {
+        if (!mask_at(r.x + x, r.y + y)) {
+          std::uint8_t* p =
+              float_pixels_.data() +
+              (static_cast<std::size_t>(y) * static_cast<std::size_t>(float_w_) +
+               static_cast<std::size_t>(x)) *
+                  4;
+          p[0] = p[1] = p[2] = p[3] = 0;
+        }
+      }
+    }
+  }
   floating_ = true;
   rect_ = float_rect();
   return true;
@@ -208,7 +264,7 @@ void fill_selection(Layer& layer, const Selection& sel, Color color, Rect* dirty
     }
     return;
   }
-  if (!sel.inverted()) {
+  if (!sel.inverted() && !sel.has_mask()) {
     const Rect r = rect_intersect(sel.bounds(), Rect{0, 0, layer.width(), layer.height()});
     if (r.empty()) {
       return;
@@ -289,6 +345,19 @@ void copy_selection_rgba(const Layer& layer, const Selection& sel, int canvas_w,
   out_h = r.h;
   out.assign(static_cast<std::size_t>(out_w) * static_cast<std::size_t>(out_h) * 4, 0);
   layer.read_rect(r, out.data());
+  if (sel.has_mask()) {
+    for (int y = 0; y < out_h; ++y) {
+      for (int x = 0; x < out_w; ++x) {
+        if (!sel.mask_at(r.x + x, r.y + y)) {
+          std::uint8_t* p =
+              out.data() + (static_cast<std::size_t>(y) * static_cast<std::size_t>(out_w) +
+                            static_cast<std::size_t>(x)) *
+                               4;
+          p[0] = p[1] = p[2] = p[3] = 0;
+        }
+      }
+    }
+  }
 }
 
 void blit_rgba(Layer& dest, int dx, int dy, const std::uint8_t* src, int sw, int sh, int sstride,

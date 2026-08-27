@@ -40,6 +40,11 @@ void draw_cubic_bezier(std::uint8_t* rgba, int width, int height, int stride, in
 void fill_polygon_mask(std::uint8_t* mask, int width, int height, const int* xs, const int* ys,
                        int count);
 
+void fill_ellipse_mask(std::uint8_t* mask, int width, int height);
+
+void stroke_polyline_mask(std::uint8_t* mask, int width, int height, const int* xs, const int* ys,
+                          int count, bool closed);
+
 void constrain_line_45(int x0, int y0, int* x1, int* y1);
 void constrain_square(int x0, int y0, int* x1, int* y1);
 

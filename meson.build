@@ -83,6 +83,8 @@ brushpad_sources = files(
   'src/tools/tool_polyline.cpp',
   'src/tools/tool_polygon.cpp',
   'src/tools/tool_curve.cpp',
+  'src/tools/tool_lasso.cpp',
+  'src/tools/tool_ellipse_select.cpp',
   'src/ui/dialogs_image.cpp',
 )
 

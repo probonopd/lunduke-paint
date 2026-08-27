@@ -622,9 +622,93 @@ void CanvasView::draw_marching_ants(const Cairo::RefPtr<Cairo::Context>& cr, int
     cr->stroke();
     cr->restore();
   };
+  auto stroke_mask = [&]() {
+    if (!sel.has_mask() || sel.mask() == nullptr) {
+      stroke_rect(sel.bounds());
+      return;
+    }
+    const Rect b = sel.bounds();
+    const int mw = sel.mask_w();
+    const int mh = sel.mask_h();
+    const std::uint8_t* mask = sel.mask();
+    auto inside = [&](int x, int y) -> bool {
+      if (x < 0 || y < 0 || x >= mw || y >= mh) {
+        return false;
+      }
+      return mask[static_cast<std::size_t>(y) * static_cast<std::size_t>(mw) +
+                  static_cast<std::size_t>(x)] != 0;
+    };
+    cr->save();
+    std::vector<double> dash{4.0, 4.0};
+    cr->set_line_width(1.0);
+    cr->set_dash(dash, static_cast<double>(ants_phase_));
+    cr->set_source_rgb(0.0, 0.0, 0.0);
+    for (int y = 0; y < mh; ++y) {
+      for (int x = 0; x < mw; ++x) {
+        if (!inside(x, y)) {
+          continue;
+        }
+        const double px = m + (b.x + x) * zoom_;
+        const double py = m + (b.y + y) * zoom_;
+        if (!inside(x, y - 1)) {
+          cr->move_to(px, py + 0.5);
+          cr->line_to(px + zoom_, py + 0.5);
+        }
+        if (!inside(x, y + 1)) {
+          cr->move_to(px, py + zoom_ + 0.5);
+          cr->line_to(px + zoom_, py + zoom_ + 0.5);
+        }
+        if (!inside(x - 1, y)) {
+          cr->move_to(px + 0.5, py);
+          cr->line_to(px + 0.5, py + zoom_);
+        }
+        if (!inside(x + 1, y)) {
+          cr->move_to(px + zoom_ + 0.5, py);
+          cr->line_to(px + zoom_ + 0.5, py + zoom_);
+        }
+      }
+    }
+    cr->stroke();
+    cr->set_dash(dash, static_cast<double>(ants_phase_) + 4.0);
+    cr->set_source_rgb(1.0, 1.0, 1.0);
+    for (int y = 0; y < mh; ++y) {
+      for (int x = 0; x < mw; ++x) {
+        if (!inside(x, y)) {
+          continue;
+        }
+        const double px = m + (b.x + x) * zoom_;
+        const double py = m + (b.y + y) * zoom_;
+        if (!inside(x, y - 1)) {
+          cr->move_to(px, py + 0.5);
+          cr->line_to(px + zoom_, py + 0.5);
+        }
+        if (!inside(x, y + 1)) {
+          cr->move_to(px, py + zoom_ + 0.5);
+          cr->line_to(px + zoom_, py + zoom_ + 0.5);
+        }
+        if (!inside(x - 1, y)) {
+          cr->move_to(px + 0.5, py);
+          cr->line_to(px + 0.5, py + zoom_);
+        }
+        if (!inside(x + 1, y)) {
+          cr->move_to(px + zoom_ + 0.5, py);
+          cr->line_to(px + zoom_ + 0.5, py + zoom_);
+        }
+      }
+    }
+    cr->stroke();
+    cr->restore();
+  };
+
   if (sel.inverted()) {
     stroke_rect({0, 0, document_->width(), document_->height()});
-    stroke_rect(sel.bounds());
+    if (sel.has_mask() && !sel.floating()) {
+      stroke_mask();
+    } else {
+      stroke_rect(sel.bounds());
+    }
+  } else if (sel.has_mask() && !sel.floating()) {
+    stroke_mask();
   } else {
     stroke_rect(sel.bounds());
   }

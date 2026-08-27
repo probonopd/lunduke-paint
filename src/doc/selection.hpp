@@ -11,8 +11,8 @@ namespace brushpad {
 
 class Layer;
 
-// One selection per document (not per layer). Phase 2 is rectangular;
-// invert means "canvas minus the rectangle."
+// One selection per document (not per layer). Rect, ellipse, or lasso
+// (optional 8-bit mask). Invert means "canvas minus the chosen region."
 class Selection {
 public:
   bool empty() const { return empty_; }
@@ -32,6 +32,12 @@ public:
 
   void clear();
   void set_rect(Rect rect);
+  void set_mask(Rect bounds, std::vector<std::uint8_t> mask);
+  bool has_mask() const { return !mask_.empty(); }
+  const std::uint8_t* mask() const { return mask_.empty() ? nullptr : mask_.data(); }
+  int mask_w() const { return mask_w_; }
+  int mask_h() const { return mask_h_; }
+  bool mask_at(int canvas_x, int canvas_y) const;
   void select_all(int width, int height);
   void invert(int width, int height);
 
@@ -73,6 +79,9 @@ private:
   int origin_x_ = 0;
   int origin_y_ = 0;
   std::vector<std::uint8_t> float_pixels_;
+  std::vector<std::uint8_t> mask_;
+  int mask_w_ = 0;
+  int mask_h_ = 0;
 };
 
 void clip_rect_to_selection(Layer& dest, const Layer& source, Rect rect, const Selection& sel);
