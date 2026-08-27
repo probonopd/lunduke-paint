@@ -43,6 +43,16 @@ private:
   Gtk::SpinButton levels_;
 };
 
+class BlurDialog : public Gtk::Dialog {
+public:
+  explicit BlurDialog(Gtk::Window& parent);
+
+  int radius() const;
+
+private:
+  Gtk::SpinButton radius_;
+};
+
 }  // namespace brushpad
 
 #endif

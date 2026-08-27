@@ -57,6 +57,10 @@ constexpr const char* kAdjustGrayscale = "adjust-grayscale";
 constexpr const char* kAdjustHue = "adjust-hue";
 constexpr const char* kAdjustPosterize = "adjust-posterize";
 
+constexpr const char* kEffectBlur = "effect-blur";
+constexpr const char* kEffectSharpen = "effect-sharpen";
+constexpr const char* kEffectEmboss = "effect-emboss";
+
 }  // namespace actions
 }  // namespace brushpad
 

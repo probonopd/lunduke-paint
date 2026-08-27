@@ -103,7 +103,9 @@ MainWindow::MainWindow() {
   add_action(actions::kAdjustGrayscale, sigc::mem_fun(*this, &MainWindow::action_adjust_grayscale));
   add_action(actions::kAdjustHue, sigc::mem_fun(*this, &MainWindow::action_adjust_hue));
   add_action(actions::kAdjustPosterize, sigc::mem_fun(*this, &MainWindow::action_adjust_posterize));
-  add_action("effect-blur")->set_enabled(false);
+  add_action(actions::kEffectBlur, sigc::mem_fun(*this, &MainWindow::action_effect_blur));
+  add_action(actions::kEffectSharpen, sigc::mem_fun(*this, &MainWindow::action_effect_sharpen));
+  add_action(actions::kEffectEmboss, sigc::mem_fun(*this, &MainWindow::action_effect_emboss));
   add_action("about")->set_enabled(false);
 
   tools_.emplace_back(create_rect_select_tool());
@@ -1481,6 +1483,35 @@ void MainWindow::action_adjust_posterize() {
   apply_layer_effect("Posterize", [levels = dialog.levels()](std::uint8_t* px, int w, int h,
                                                              int stride) {
     posterize_rgba(px, w, h, stride, levels);
+  });
+}
+
+void MainWindow::action_effect_blur() {
+  BlurDialog dialog(*this);
+  if (dialog.run() != Gtk::RESPONSE_OK) {
+    return;
+  }
+  const int radius = dialog.radius();
+  apply_layer_effect("Blur", [radius](std::uint8_t* px, int w, int h, int stride) {
+    std::vector<std::uint8_t> src(static_cast<std::size_t>(h) * static_cast<std::size_t>(stride));
+    std::memcpy(src.data(), px, src.size());
+    box_blur_rgba(src.data(), w, h, stride, px, stride, radius);
+  });
+}
+
+void MainWindow::action_effect_sharpen() {
+  apply_layer_effect("Sharpen", [](std::uint8_t* px, int w, int h, int stride) {
+    std::vector<std::uint8_t> src(static_cast<std::size_t>(h) * static_cast<std::size_t>(stride));
+    std::memcpy(src.data(), px, src.size());
+    sharpen_rgba(src.data(), w, h, stride, px, stride);
+  });
+}
+
+void MainWindow::action_effect_emboss() {
+  apply_layer_effect("Emboss", [](std::uint8_t* px, int w, int h, int stride) {
+    std::vector<std::uint8_t> src(static_cast<std::size_t>(h) * static_cast<std::size_t>(stride));
+    std::memcpy(src.data(), px, src.size());
+    emboss_rgba(src.data(), w, h, stride, px, stride);
   });
 }
 

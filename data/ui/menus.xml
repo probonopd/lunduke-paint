@@ -227,8 +227,16 @@
       <attribute name="label" translatable="yes">_Effects</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">Blur…</attribute>
+          <attribute name="label" translatable="yes">_Blur…</attribute>
           <attribute name="action">win.effect-blur</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Sharpen</attribute>
+          <attribute name="action">win.effect-sharpen</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Emboss</attribute>
+          <attribute name="action">win.effect-emboss</attribute>
         </item>
       </section>
     </submenu>

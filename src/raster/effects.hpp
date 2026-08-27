@@ -21,6 +21,14 @@ void hue_saturation_rgba(std::uint8_t* rgba, int width, int height, int stride, 
 // levels is 2..16.
 void posterize_rgba(std::uint8_t* rgba, int width, int height, int stride, int levels);
 
+// src and dest must not alias. radius is 1..16.
+void box_blur_rgba(const std::uint8_t* src, int width, int height, int src_stride,
+                   std::uint8_t* dest, int dest_stride, int radius);
+void sharpen_rgba(const std::uint8_t* src, int width, int height, int src_stride,
+                  std::uint8_t* dest, int dest_stride);
+void emboss_rgba(const std::uint8_t* src, int width, int height, int src_stride,
+                 std::uint8_t* dest, int dest_stride);
+
 }  // namespace brushpad
 
 #endif

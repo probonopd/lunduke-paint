@@ -93,6 +93,46 @@ int main() {
     errors += expect(layer.pixel(0, 0) == (Color{215, 205, 195, 255}), "redo invert");
   }
 
+  // Box blur on a 3×3 white-on-black plus undo invertibility.
+  {
+    const int w = 3;
+    const int h = 3;
+    const int stride = w * 4;
+    std::vector<std::uint8_t> src(static_cast<std::size_t>(stride * h), 0);
+    std::vector<std::uint8_t> dest(src.size(), 0);
+    for (int i = 3; i < static_cast<int>(src.size()); i += 4) {
+      src[static_cast<std::size_t>(i)] = 255;
+    }
+    set(src.data(), stride, 1, 1, Color{255, 255, 255, 255});
+    brushpad::box_blur_rgba(src.data(), w, h, stride, dest.data(), stride, 1);
+    const Color center = get(dest.data(), stride, 1, 1);
+    errors += expect(center.r < 255 && center.r > 0, "blur softens white center");
+    errors += expect(center.a == 255, "blur keeps opaque alpha at center");
+    const Color corner = get(dest.data(), stride, 0, 0);
+    errors += expect(corner.r > 0 && corner.r < 255, "blur leaks into black corner");
+
+    auto doc = Document::create(3, 3, Color::black(), "Background");
+    Layer& layer = doc->layers().active_layer();
+    layer.set_pixel(1, 1, Color::white());
+    Layer before(layer.width(), layer.height(), Color::transparent(), "before");
+    before.copy_from(layer);
+    std::vector<std::uint8_t> out(static_cast<std::size_t>(layer.stride()) *
+                                 static_cast<std::size_t>(layer.height()));
+    brushpad::box_blur_rgba(layer.pixels(), layer.width(), layer.height(), layer.stride(),
+                            out.data(), layer.stride(), 1);
+    layer.write_rect(Rect{0, 0, 3, 3}, out.data());
+    Layer after(layer.width(), layer.height(), Color::transparent(), "after");
+    after.copy_from(layer);
+    auto cmd = PixelPatchCommand::from_layers(before, after, Rect{0, 0, 3, 3}, "Blur");
+    errors += expect(!cmd->empty(), "blur produced a patch");
+    const Color blurred = layer.pixel(1, 1);
+    doc->history().commit_applied(std::move(cmd));
+    doc->history().undo(*doc);
+    errors += expect(layer.pixel(1, 1) == Color::white(), "undo blur");
+    doc->history().redo(*doc);
+    errors += expect(layer.pixel(1, 1) == blurred, "redo blur");
+  }
+
   if (errors != 0) {
     std::fprintf(stderr, "test_effects: %d failure(s)\n", errors);
     return 1;

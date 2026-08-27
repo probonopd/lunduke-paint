@@ -98,6 +98,9 @@ public:
   void action_adjust_grayscale();
   void action_adjust_hue();
   void action_adjust_posterize();
+  void action_effect_blur();
+  void action_effect_sharpen();
+  void action_effect_emboss();
 
 private:
   void build_ui();

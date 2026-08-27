@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace brushpad {
 namespace {
@@ -177,6 +178,143 @@ void posterize_rgba(std::uint8_t* rgba, int width, int height, int stride, int l
       }
     }
   }
+}
+
+void box_blur_rgba(const std::uint8_t* src, int width, int height, int src_stride,
+                   std::uint8_t* dest, int dest_stride, int radius) {
+  if (src == nullptr || dest == nullptr || width < 1 || height < 1) {
+    return;
+  }
+  if (radius < 1) {
+    radius = 1;
+  }
+  if (radius > 16) {
+    radius = 16;
+  }
+  std::vector<std::uint8_t> tmp(static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4);
+  const int tmp_stride = width * 4;
+
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      int sum[4] = {0, 0, 0, 0};
+      int count = 0;
+      for (int dx = -radius; dx <= radius; ++dx) {
+        int sx = x + dx;
+        if (sx < 0) {
+          sx = 0;
+        } else if (sx >= width) {
+          sx = width - 1;
+        }
+        const std::uint8_t* p =
+            src + static_cast<std::size_t>(y) * static_cast<std::size_t>(src_stride) +
+            static_cast<std::size_t>(sx) * 4;
+        sum[0] += p[0];
+        sum[1] += p[1];
+        sum[2] += p[2];
+        sum[3] += p[3];
+        ++count;
+      }
+      std::uint8_t* o = tmp.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(tmp_stride) +
+                        static_cast<std::size_t>(x) * 4;
+      o[0] = static_cast<std::uint8_t>(sum[0] / count);
+      o[1] = static_cast<std::uint8_t>(sum[1] / count);
+      o[2] = static_cast<std::uint8_t>(sum[2] / count);
+      o[3] = static_cast<std::uint8_t>(sum[3] / count);
+    }
+  }
+
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      int sum[4] = {0, 0, 0, 0};
+      int count = 0;
+      for (int dy = -radius; dy <= radius; ++dy) {
+        int sy = y + dy;
+        if (sy < 0) {
+          sy = 0;
+        } else if (sy >= height) {
+          sy = height - 1;
+        }
+        const std::uint8_t* p =
+            tmp.data() + static_cast<std::size_t>(sy) * static_cast<std::size_t>(tmp_stride) +
+            static_cast<std::size_t>(x) * 4;
+        sum[0] += p[0];
+        sum[1] += p[1];
+        sum[2] += p[2];
+        sum[3] += p[3];
+        ++count;
+      }
+      std::uint8_t* o = dest + static_cast<std::size_t>(y) * static_cast<std::size_t>(dest_stride) +
+                        static_cast<std::size_t>(x) * 4;
+      o[0] = static_cast<std::uint8_t>(sum[0] / count);
+      o[1] = static_cast<std::uint8_t>(sum[1] / count);
+      o[2] = static_cast<std::uint8_t>(sum[2] / count);
+      o[3] = static_cast<std::uint8_t>(sum[3] / count);
+    }
+  }
+}
+
+namespace {
+
+void conv3(const std::uint8_t* src, int width, int height, int src_stride, std::uint8_t* dest,
+           int dest_stride, const int k[9], int bias, bool copy_alpha) {
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
+      int sum[3] = {bias, bias, bias};
+      int ki = 0;
+      for (int dy = -1; dy <= 1; ++dy) {
+        int sy = y + dy;
+        if (sy < 0) {
+          sy = 0;
+        } else if (sy >= height) {
+          sy = height - 1;
+        }
+        for (int dx = -1; dx <= 1; ++dx) {
+          int sx = x + dx;
+          if (sx < 0) {
+            sx = 0;
+          } else if (sx >= width) {
+            sx = width - 1;
+          }
+          const std::uint8_t* p =
+              src + static_cast<std::size_t>(sy) * static_cast<std::size_t>(src_stride) +
+              static_cast<std::size_t>(sx) * 4;
+          const int wgt = k[ki++];
+          sum[0] += static_cast<int>(p[0]) * wgt;
+          sum[1] += static_cast<int>(p[1]) * wgt;
+          sum[2] += static_cast<int>(p[2]) * wgt;
+        }
+      }
+      std::uint8_t* o = dest + static_cast<std::size_t>(y) * static_cast<std::size_t>(dest_stride) +
+                        static_cast<std::size_t>(x) * 4;
+      o[0] = static_cast<std::uint8_t>(clamp_byte(sum[0]));
+      o[1] = static_cast<std::uint8_t>(clamp_byte(sum[1]));
+      o[2] = static_cast<std::uint8_t>(clamp_byte(sum[2]));
+      const std::uint8_t* s =
+          src + static_cast<std::size_t>(y) * static_cast<std::size_t>(src_stride) +
+          static_cast<std::size_t>(x) * 4;
+      o[3] = copy_alpha ? s[3] : static_cast<std::uint8_t>(clamp_byte(s[3]));
+    }
+  }
+}
+
+}  // namespace
+
+void sharpen_rgba(const std::uint8_t* src, int width, int height, int src_stride,
+                  std::uint8_t* dest, int dest_stride) {
+  if (src == nullptr || dest == nullptr || width < 1 || height < 1) {
+    return;
+  }
+  const int k[9] = {0, -1, 0, -1, 5, -1, 0, -1, 0};
+  conv3(src, width, height, src_stride, dest, dest_stride, k, 0, true);
+}
+
+void emboss_rgba(const std::uint8_t* src, int width, int height, int src_stride, std::uint8_t* dest,
+                 int dest_stride) {
+  if (src == nullptr || dest == nullptr || width < 1 || height < 1) {
+    return;
+  }
+  const int k[9] = {-2, -1, 0, -1, 1, 1, 0, 1, 2};
+  conv3(src, width, height, src_stride, dest, dest_stride, k, 128, true);
 }
 
 }  // namespace brushpad

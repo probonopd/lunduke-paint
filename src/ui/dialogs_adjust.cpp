@@ -106,4 +106,29 @@ int PosterizeDialog::levels() const {
   return levels_.get_value_as_int();
 }
 
+BlurDialog::BlurDialog(Gtk::Window& parent) : Gtk::Dialog("Blur", parent, true) {
+  add_button("_Cancel", Gtk::RESPONSE_CANCEL);
+  add_button("_OK", Gtk::RESPONSE_OK);
+  set_default_response(Gtk::RESPONSE_OK);
+  set_resizable(false);
+
+  radius_.set_range(1, 16);
+  radius_.set_increments(1, 2);
+  radius_.set_digits(0);
+  radius_.set_value(2);
+
+  auto* grid = Gtk::manage(new Gtk::Grid());
+  grid->set_row_spacing(8);
+  grid->set_column_spacing(8);
+  grid->set_border_width(8);
+  grid->attach(*Gtk::manage(new Gtk::Label("Radius")), 0, 0, 1, 1);
+  grid->attach(radius_, 1, 0, 1, 1);
+  get_content_area()->pack_start(*grid, Gtk::PACK_SHRINK);
+  show_all();
+}
+
+int BlurDialog::radius() const {
+  return radius_.get_value_as_int();
+}
+
 }  // namespace brushpad
