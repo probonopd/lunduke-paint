@@ -55,6 +55,8 @@ brushpad_sources = files(
   'src/ui/history_panel.cpp',
   'src/ui/status_bar.cpp',
   'src/ui/dialogs_new.cpp',
+  'src/tools/tool.cpp',
+  'src/tools/tool_pencil.cpp',
 )
 
 executable(

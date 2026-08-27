@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#ifndef BRUSHPAD_TOOLS_TOOL_HPP
+#define BRUSHPAD_TOOLS_TOOL_HPP
+
+#include "raster/types.hpp"
+
+namespace Gtk {
+class Widget;
+}
+
+namespace brushpad {
+
+class Document;
+
+struct CanvasEvent {
+  double x = 0;
+  double y = 0;
+  unsigned button = 0;      // 1 left, 2 middle, 3 right
+  unsigned modifiers = 0;   // Modifier bits below
+};
+
+struct Modifier {
+  static constexpr unsigned Shift = 1u;
+  static constexpr unsigned Ctrl = 2u;
+  static constexpr unsigned Alt = 4u;
+};
+
+class ToolHost {
+public:
+  virtual ~ToolHost() = default;
+  virtual Document& document() = 0;
+  virtual int stroke_size() const = 0;
+  virtual void set_stroke_size(int size) = 0;
+  virtual bool brush_antialias() const = 0;
+  virtual void set_brush_antialias(bool enabled) = 0;
+  virtual int fill_tolerance() const = 0;
+  virtual void set_fill_tolerance(int tolerance) = 0;
+  virtual void invalidate_canvas(Rect rect) = 0;
+  virtual void return_to_previous_tool() = 0;
+  virtual Color sample_canvas(int x, int y) const = 0;
+};
+
+class Tool {
+public:
+  virtual ~Tool() = default;
+
+  virtual const char* id() const = 0;
+  virtual const char* name() const = 0;
+  virtual char shortcut() const = 0;
+  virtual const char* hint() const { return name(); }
+
+  virtual void on_press(CanvasEvent event) = 0;
+  virtual void on_motion(CanvasEvent event) = 0;
+  virtual void on_release(CanvasEvent event) = 0;
+  virtual void on_cancel() = 0;
+
+  virtual Gtk::Widget* options_widget() { return nullptr; }
+  virtual bool is_stroking() const { return false; }
+
+  void set_host(ToolHost* host) { host_ = host; }
+
+protected:
+  ToolHost* host_ = nullptr;
+
+  Color stroke_color(unsigned button) const;
+};
+
+}  // namespace brushpad
+
+#endif

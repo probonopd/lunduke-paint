@@ -6,26 +6,66 @@
 
 namespace brushpad {
 
-StatusBar::StatusBar() {
-  context_id_ = get_context_id("brushpad");
-  show_message("Ready");
+StatusBar::StatusBar() : Gtk::Box(Gtk::ORIENTATION_HORIZONTAL, 8) {
+  set_border_width(3);
+  hint_.set_xalign(0.0f);
+  hint_.set_hexpand(true);
+  coords_.set_width_chars(14);
+  size_.set_width_chars(14);
+  zoom_.set_width_chars(8);
+  modified_.set_width_chars(10);
+  pack_start(hint_, Gtk::PACK_EXPAND_WIDGET);
+  pack_start(*Gtk::manage(new Gtk::Separator(Gtk::ORIENTATION_VERTICAL)), Gtk::PACK_SHRINK);
+  pack_start(coords_, Gtk::PACK_SHRINK);
+  pack_start(*Gtk::manage(new Gtk::Separator(Gtk::ORIENTATION_VERTICAL)), Gtk::PACK_SHRINK);
+  pack_start(size_, Gtk::PACK_SHRINK);
+  pack_start(*Gtk::manage(new Gtk::Separator(Gtk::ORIENTATION_VERTICAL)), Gtk::PACK_SHRINK);
+  pack_start(zoom_, Gtk::PACK_SHRINK);
+  pack_start(*Gtk::manage(new Gtk::Separator(Gtk::ORIENTATION_VERTICAL)), Gtk::PACK_SHRINK);
+  pack_start(modified_, Gtk::PACK_SHRINK);
+  set_hint("Ready");
+  set_canvas_size(800, 600);
+  set_zoom(1.0);
+  set_modified(false);
+  clear_coordinates();
+}
+
+void StatusBar::set_hint(const Glib::ustring& hint) {
+  hint_.set_text(hint);
 }
 
 void StatusBar::show_coordinates(double x, double y) {
+  have_coords_ = true;
+  x_ = x;
+  y_ = y;
   char buffer[64];
-  std::snprintf(buffer, sizeof(buffer), "Canvas: %.0f, %.0f", x, y);
-  pop(context_id_);
-  push(buffer, context_id_);
+  std::snprintf(buffer, sizeof(buffer), "%d, %d", static_cast<int>(x), static_cast<int>(y));
+  coords_.set_text(buffer);
 }
 
 void StatusBar::clear_coordinates() {
-  pop(context_id_);
-  push("Ready", context_id_);
+  have_coords_ = false;
+  coords_.set_text("—, —");
+}
+
+void StatusBar::set_canvas_size(int width, int height) {
+  char buffer[64];
+  std::snprintf(buffer, sizeof(buffer), "%d × %d", width, height);
+  size_.set_text(buffer);
+}
+
+void StatusBar::set_zoom(double zoom) {
+  char buffer[32];
+  std::snprintf(buffer, sizeof(buffer), "%d%%", static_cast<int>(zoom * 100.0 + 0.5));
+  zoom_.set_text(buffer);
+}
+
+void StatusBar::set_modified(bool modified) {
+  modified_.set_text(modified ? "Modified" : "");
 }
 
 void StatusBar::show_message(const Glib::ustring& message) {
-  pop(context_id_);
-  push(message, context_id_);
+  hint_.set_text(message);
 }
 
 }  // namespace brushpad

@@ -22,13 +22,20 @@ void Application::on_startup() {
   add_action(actions::kNew, sigc::mem_fun(*this, &Application::on_action_new));
   add_action(actions::kOpen, sigc::mem_fun(*this, &Application::on_action_open));
   add_action(actions::kSave, sigc::mem_fun(*this, &Application::on_action_save));
+  add_action(actions::kSaveAs, sigc::mem_fun(*this, &Application::on_action_save));
   add_action(actions::kQuit, sigc::mem_fun(*this, &Application::on_action_quit));
 
   set_accels_for_action("app.new", {"<Primary>n"});
   set_accels_for_action("app.open", {"<Primary>o"});
   set_accels_for_action("app.save", {"<Primary>s"});
+  set_accels_for_action("app.save-as", {"<Primary><Shift>s"});
   set_accels_for_action("app.quit", {"<Primary>q"});
   set_accels_for_action("win.toggle-right-dock", {"F12"});
+  set_accels_for_action("win.undo", {"<Primary>z"});
+  set_accels_for_action("win.redo", {"<Primary>y", "<Primary><Shift>z"});
+  set_accels_for_action("win.zoom-in", {"<Primary>plus", "<Primary>equal"});
+  set_accels_for_action("win.zoom-out", {"<Primary>minus"});
+  set_accels_for_action("win.zoom-100", {"<Primary>0"});
 }
 
 void Application::on_activate() {
