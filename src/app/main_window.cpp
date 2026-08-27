@@ -112,6 +112,9 @@ MainWindow::MainWindow() {
   tools_.emplace_back(create_color_eraser_tool());
   tools_.emplace_back(create_spray_tool());
   tools_.emplace_back(create_rounded_rect_tool());
+  tools_.emplace_back(create_polyline_tool());
+  tools_.emplace_back(create_polygon_tool());
+  tools_.emplace_back(create_curve_tool());
   for (auto& tool : tools_) {
     tool->set_host(this);
   }
@@ -152,6 +155,9 @@ void MainWindow::build_ui() {
   toolbox_.add_tool_button("color-eraser", "Color eraser (O)", "edit-clear-symbolic");
   toolbox_.add_tool_button("spray", "Spraycan (Y)", "weather-showers-scattered-symbolic");
   toolbox_.add_tool_button("rounded-rect", "Rounded rectangle (U)", "view-restore-symbolic");
+  toolbox_.add_tool_button("polyline", "Polyline (N)", "insert-link-symbolic");
+  toolbox_.add_tool_button("polygon", "Polygon (G)", "insert-object-symbolic");
+  toolbox_.add_tool_button("curve", "Curve (V)", "object-select-symbolic");
   toolbox_.on_tool_chosen = [this](const std::string& id) { set_active_tool(id); };
   toolbox_.on_well_clicked = [this](bool background) { choose_color(background); };
   toolbox_.on_transparent = [this](bool background) {
@@ -475,12 +481,20 @@ bool MainWindow::on_key_press(GdkEventKey* event) {
     return false;
   }
   if (event->keyval == GDK_KEY_Escape) {
-    if (active_tool_ != nullptr && active_tool_->is_stroking()) {
+    if (active_tool_ != nullptr && (active_tool_->is_stroking() || active_tool_->captures_keys())) {
       active_tool_->on_cancel();
       return true;
     }
     action_deselect();
     return true;
+  }
+  if (event->keyval == GDK_KEY_Return || event->keyval == GDK_KEY_KP_Enter) {
+    if (active_tool_ != nullptr && active_tool_->on_commit()) {
+      return true;
+    }
+  }
+  if (active_tool_ != nullptr && active_tool_->captures_keys()) {
+    return false;
   }
   if ((event->state & (GDK_CONTROL_MASK | GDK_MOD1_MASK)) != 0) {
     return false;

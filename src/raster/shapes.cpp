@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 namespace brushpad {
 namespace {
@@ -236,6 +237,165 @@ void draw_rounded_rect(std::uint8_t* rgba, int width, int height, int stride, in
   }
   if (dirty != nullptr) {
     *dirty = rect_union(*dirty, Rect{ix0, iy0, ix1 - ix0, iy1 - iy0});
+  }
+}
+
+void draw_polyline(std::uint8_t* rgba, int width, int height, int stride, const int* xs,
+                   const int* ys, int count, int thickness, Color color, bool antialias,
+                   Rect* dirty) {
+  if (rgba == nullptr || xs == nullptr || ys == nullptr || count < 1) {
+    return;
+  }
+  if (count == 1) {
+    draw_line(rgba, width, height, stride, xs[0], ys[0], xs[0], ys[0], thickness, color, antialias,
+              dirty);
+    return;
+  }
+  for (int i = 1; i < count; ++i) {
+    draw_line(rgba, width, height, stride, xs[i - 1], ys[i - 1], xs[i], ys[i], thickness, color,
+              antialias, dirty);
+  }
+}
+
+void fill_polygon_mask(std::uint8_t* mask, int width, int height, const int* xs, const int* ys,
+                       int count) {
+  if (mask == nullptr || xs == nullptr || ys == nullptr || count < 3 || width < 1 || height < 1) {
+    return;
+  }
+  int miny = height;
+  int maxy = -1;
+  for (int i = 0; i < count; ++i) {
+    if (ys[i] < miny) {
+      miny = ys[i];
+    }
+    if (ys[i] > maxy) {
+      maxy = ys[i];
+    }
+  }
+  miny = std::max(0, miny);
+  maxy = std::min(height - 1, maxy);
+  std::vector<int> xs_hit;
+  xs_hit.reserve(static_cast<std::size_t>(count));
+  for (int y = miny; y <= maxy; ++y) {
+    xs_hit.clear();
+    const double scan = static_cast<double>(y) + 0.5;
+    for (int i = 0; i < count; ++i) {
+      const int j = (i + 1) % count;
+      double y0 = static_cast<double>(ys[i]);
+      double y1 = static_cast<double>(ys[j]);
+      double x0 = static_cast<double>(xs[i]);
+      double x1 = static_cast<double>(xs[j]);
+      if (y0 == y1) {
+        continue;
+      }
+      if (y0 > y1) {
+        std::swap(y0, y1);
+        std::swap(x0, x1);
+      }
+      if (scan < y0 || scan >= y1) {
+        continue;
+      }
+      const double t = (scan - y0) / (y1 - y0);
+      xs_hit.push_back(static_cast<int>(std::floor(x0 + t * (x1 - x0))));
+    }
+    std::sort(xs_hit.begin(), xs_hit.end());
+    for (std::size_t k = 0; k + 1 < xs_hit.size(); k += 2) {
+      int a = std::max(0, xs_hit[k]);
+      int b = std::min(width - 1, xs_hit[k + 1]);
+      for (int x = a; x <= b; ++x) {
+        mask[static_cast<std::size_t>(y) * static_cast<std::size_t>(width) +
+             static_cast<std::size_t>(x)] = 255;
+      }
+    }
+  }
+}
+
+void draw_polygon(std::uint8_t* rgba, int width, int height, int stride, const int* xs,
+                  const int* ys, int count, int thickness, Color color, ShapeFillMode mode,
+                  bool antialias, Rect* dirty) {
+  if (rgba == nullptr || xs == nullptr || ys == nullptr || count < 1) {
+    return;
+  }
+  if (mode == ShapeFillMode::Fill || mode == ShapeFillMode::Both) {
+    if (count >= 3) {
+      std::vector<std::uint8_t> mask(static_cast<std::size_t>(width) * static_cast<std::size_t>(height),
+                                     0);
+      fill_polygon_mask(mask.data(), width, height, xs, ys, count);
+      int minx = width;
+      int miny = height;
+      int maxx = -1;
+      int maxy = -1;
+      for (int y = 0; y < height; ++y) {
+        std::uint8_t* row = rgba + static_cast<std::size_t>(y) * stride;
+        for (int x = 0; x < width; ++x) {
+          if (mask[static_cast<std::size_t>(y) * static_cast<std::size_t>(width) +
+                   static_cast<std::size_t>(x)] == 0) {
+            continue;
+          }
+          std::uint8_t* p = row + static_cast<std::size_t>(x) * 4;
+          p[0] = color.r;
+          p[1] = color.g;
+          p[2] = color.b;
+          p[3] = color.a;
+          if (x < minx) {
+            minx = x;
+          }
+          if (y < miny) {
+            miny = y;
+          }
+          if (x > maxx) {
+            maxx = x;
+          }
+          if (y > maxy) {
+            maxy = y;
+          }
+        }
+      }
+      if (dirty != nullptr && maxx >= minx) {
+        *dirty = rect_union(*dirty, Rect{minx, miny, maxx - minx + 1, maxy - miny + 1});
+      }
+    }
+  }
+  if (mode == ShapeFillMode::Stroke || mode == ShapeFillMode::Both) {
+    draw_polyline(rgba, width, height, stride, xs, ys, count, thickness, color, antialias, dirty);
+    if (count >= 2) {
+      draw_line(rgba, width, height, stride, xs[count - 1], ys[count - 1], xs[0], ys[0], thickness,
+                color, antialias, dirty);
+    }
+  }
+}
+
+void draw_cubic_bezier(std::uint8_t* rgba, int width, int height, int stride, int x0, int y0,
+                       int x1, int y1, int x2, int y2, int x3, int y3, int thickness, Color color,
+                       bool antialias, Rect* dirty) {
+  if (rgba == nullptr) {
+    return;
+  }
+  const double dx = static_cast<double>(x3 - x0);
+  const double dy = static_cast<double>(y3 - y0);
+  const double cdx = static_cast<double>(x1 - x0) + static_cast<double>(x2 - x3);
+  const double cdy = static_cast<double>(y1 - y0) + static_cast<double>(y2 - y3);
+  int steps = static_cast<int>(std::ceil(std::hypot(dx, dy) + std::hypot(cdx, cdy)));
+  if (steps < 8) {
+    steps = 8;
+  }
+  if (steps > 1024) {
+    steps = 1024;
+  }
+  int px = x0;
+  int py = y0;
+  for (int i = 1; i <= steps; ++i) {
+    const double t = static_cast<double>(i) / static_cast<double>(steps);
+    const double u = 1.0 - t;
+    const double a = u * u * u;
+    const double b = 3.0 * u * u * t;
+    const double c = 3.0 * u * t * t;
+    const double d = t * t * t;
+    const int x = static_cast<int>(std::floor(a * x0 + b * x1 + c * x2 + d * x3 + 0.5));
+    const int y = static_cast<int>(std::floor(a * y0 + b * y1 + c * y2 + d * y3 + 0.5));
+    draw_line(rgba, width, height, stride, px, py, x, y, thickness, color, antialias, dirty);
+    px = x;
+    py = y;
   }
 }
 

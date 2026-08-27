@@ -54,9 +54,13 @@ public:
   virtual void on_motion(CanvasEvent event) = 0;
   virtual void on_release(CanvasEvent event) = 0;
   virtual void on_cancel() = 0;
+  virtual void on_double_click(CanvasEvent event) { (void)event; }
+  // Enter: return true if the tool consumed the key (polygon / curve / text).
+  virtual bool on_commit() { return false; }
 
   virtual Gtk::Widget* options_widget() { return nullptr; }
   virtual bool is_stroking() const { return false; }
+  virtual bool captures_keys() const { return false; }
 
   void set_host(ToolHost* host) { host_ = host; }
 

@@ -460,8 +460,14 @@ bool CanvasView::on_area_button_press(GdkEventButton* event) {
     return true;
   }
   if (tool_ != nullptr && (event->button == 1 || event->button == 3)) {
-    tool_->on_press(make_event(event->x, event->y, event->button, event->state));
-    return true;
+    if (event->type == GDK_2BUTTON_PRESS) {
+      tool_->on_double_click(make_event(event->x, event->y, event->button, event->state));
+      return true;
+    }
+    if (event->type == GDK_BUTTON_PRESS) {
+      tool_->on_press(make_event(event->x, event->y, event->button, event->state));
+      return true;
+    }
   }
   return false;
 }

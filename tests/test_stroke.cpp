@@ -90,6 +90,27 @@ int main() {
     errors += expect(!dirty.empty(), "rounded dirty");
   }
 
+  // Closed triangle fill contains the centroid; polyline does not fill.
+  {
+    std::vector<std::uint8_t> buf(static_cast<std::size_t>(w * h * 4), 0);
+    const int xs[3] = {2, 13, 2};
+    const int ys[3] = {2, 8, 14};
+    Rect dirty{};
+    brushpad::draw_polygon(buf.data(), w, h, w * 4, xs, ys, 3, 1, red, ShapeFillMode::Fill, false,
+                           &dirty);
+    errors += expect(get(buf, w, 5, 8) == red, "polygon centroid filled");
+    errors += expect(get(buf, w, 14, 1) != red, "outside triangle empty");
+  }
+  {
+    std::vector<std::uint8_t> buf(static_cast<std::size_t>(w * h * 4), 0);
+    Rect dirty{};
+    brushpad::draw_cubic_bezier(buf.data(), w, h, w * 4, 1, 8, 4, 1, 11, 1, 14, 8, 1, red, false,
+                                &dirty);
+    errors += expect(get(buf, w, 1, 8) == red, "bezier start");
+    errors += expect(get(buf, w, 14, 8) == red, "bezier end");
+    errors += expect(!dirty.empty(), "bezier dirty");
+  }
+
   if (errors != 0) {
     std::fprintf(stderr, "test_stroke: %d failure(s)\n", errors);
     return 1;

@@ -80,6 +80,9 @@ brushpad_sources = files(
   'src/tools/tool_color_eraser.cpp',
   'src/tools/tool_spray.cpp',
   'src/tools/tool_rounded_rect.cpp',
+  'src/tools/tool_polyline.cpp',
+  'src/tools/tool_polygon.cpp',
+  'src/tools/tool_curve.cpp',
   'src/ui/dialogs_image.cpp',
 )
 

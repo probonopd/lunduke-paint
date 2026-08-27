@@ -18,6 +18,9 @@ Tool* create_ellipse_tool();
 Tool* create_color_eraser_tool();
 Tool* create_spray_tool();
 Tool* create_rounded_rect_tool();
+Tool* create_polyline_tool();
+Tool* create_polygon_tool();
+Tool* create_curve_tool();
 
 }  // namespace brushpad
 
