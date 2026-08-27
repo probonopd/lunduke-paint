@@ -102,6 +102,9 @@ void EllipseTool::on_press(CanvasEvent event) {
   if (host_ == nullptr || (event.button != 1 && event.button != 3)) {
     return;
   }
+  if (!ensure_editable()) {
+    return;
+  }
   host_->document().commit_floating();
   drawing_ = true;
   button_ = event.button;

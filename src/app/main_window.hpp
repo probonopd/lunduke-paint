@@ -14,6 +14,7 @@
 #include "ui/toolbox.hpp"
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -56,6 +57,7 @@ public:
   void invalidate_canvas(Rect rect) override;
   void return_to_previous_tool() override;
   Color sample_canvas(int x, int y) const override;
+  void show_status_hint(const char* message) override;
 
   void update_chrome();
   void on_undo();
@@ -99,6 +101,9 @@ private:
   bool on_delete_event(GdkEventAny* event) override;
   void commit_buffer_change(const char* name, int new_w, int new_h, const std::uint8_t* rgba,
                             int stride);
+  void commit_stack_transform(
+      const char* name, int new_w, int new_h,
+      const std::function<void(const Layer&, std::vector<std::uint8_t>&, int, int)>& xform);
   bool warn_size(int width, int height);
   void copy_selection_to_clipboard();
   bool paste_from_clipboard();

@@ -38,6 +38,8 @@ brushpad_core_sources = files(
   'src/raster/stroke.cpp',
   'src/raster/transform.cpp',
   'src/raster/shapes.cpp',
+  'src/raster/blend.cpp',
+  'src/doc/commands_layers.cpp',
 )
 
 brushpad_core = static_library(
@@ -125,6 +127,15 @@ test_transform = executable(
   install: false,
 )
 test('transform', test_transform)
+
+test_blend = executable(
+  'test_blend',
+  files('tests/test_blend.cpp'),
+  include_directories: brushpad_inc,
+  link_with: brushpad_core,
+  install: false,
+)
+test('blend', test_blend)
 
 install_data(
   'data/org.brushpad.Brushpad.desktop',

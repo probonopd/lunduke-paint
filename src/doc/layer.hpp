@@ -2,13 +2,34 @@
 #ifndef BRUSHPAD_DOC_LAYER_HPP
 #define BRUSHPAD_DOC_LAYER_HPP
 
+#include "raster/blend.hpp"
 #include "raster/types.hpp"
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
 namespace brushpad {
+
+class Layer;
+
+struct LayerSnapshot {
+  std::string name;
+  bool visible = true;
+  bool locked = false;
+  float opacity = 1.0f;
+  BlendMode blend = BlendMode::Normal;
+  int offset_x = 0;
+  int offset_y = 0;
+  int width = 0;
+  int height = 0;
+  std::vector<std::uint8_t> pixels;
+};
+
+LayerSnapshot snapshot_layer(const Layer& layer);
+LayerSnapshot snapshot_layer_props(const Layer& layer);
+std::unique_ptr<Layer> layer_from_snapshot(const LayerSnapshot& snap);
 
 class Layer {
 public:
@@ -24,13 +45,14 @@ public:
   void set_locked(bool v) { locked_ = v; }
 
   float opacity() const { return opacity_; }
-  void set_opacity(float v) { opacity_ = v; }
+  void set_opacity(float v);
 
-  int blend() const { return blend_; }
-  void set_blend(int v) { blend_ = v; }
+  BlendMode blend() const { return blend_; }
+  void set_blend(BlendMode v) { blend_ = v; }
 
   int offset_x() const { return offset_x_; }
   int offset_y() const { return offset_y_; }
+  void set_offset(int x, int y);
 
   int width() const { return width_; }
   int height() const { return height_; }
@@ -52,19 +74,29 @@ public:
   void read_rect(Rect rect, std::uint8_t* rgba) const;
 
   void copy_from(const Layer& src);
+  std::unique_ptr<Layer> clone() const;
+
+  void invalidate_thumbnail();
+  const std::uint8_t* thumbnail() const;
+  int thumbnail_width() const { return kThumbWidth; }
+  int thumbnail_height() const { return kThumbHeight; }
 
 private:
+  void ensure_thumbnail() const;
+
   std::string name_;
   bool visible_ = true;
   bool locked_ = false;
   float opacity_ = 1.0f;
-  int blend_ = 0;
+  BlendMode blend_ = BlendMode::Normal;
   int offset_x_ = 0;
   int offset_y_ = 0;
   int width_ = 0;
   int height_ = 0;
   int stride_ = 0;
   std::vector<std::uint8_t> pixels_;
+  mutable std::vector<std::uint8_t> thumb_;
+  mutable bool thumb_valid_ = false;
 };
 
 }  // namespace brushpad

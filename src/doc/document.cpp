@@ -2,6 +2,7 @@
 
 #include "doc/document.hpp"
 
+#include "doc/commands_layers.hpp"
 #include "doc/commands_pixels.hpp"
 #include "doc/layer.hpp"
 
@@ -134,6 +135,9 @@ bool Document::commit_floating(const char* name) {
   if (!selection_.floating()) {
     return false;
   }
+  if (layers_.active_layer().locked()) {
+    return false;
+  }
   Layer& layer = layers_.active_layer();
   Layer before(layer.width(), layer.height(), Color::transparent(), "before");
   before.copy_from(layer);
@@ -168,6 +172,10 @@ bool Document::commit_floating(const char* name) {
 
 void Document::delete_selection() {
   if (selection_.empty()) {
+    return;
+  }
+  if (layers_.active_layer().locked()) {
+    notify_changed();
     return;
   }
   Layer& layer = layers_.active_layer();
@@ -232,6 +240,185 @@ void Document::replace_active_buffer(int width, int height, const std::uint8_t* 
   layers_.replace_active(width_, height_, rgba, stride);
   layers_.resize_scratch(width_, height_);
   selection_.clear();
+}
+
+void Document::replace_stack(int width, int height, std::vector<std::unique_ptr<Layer>> layers,
+                            int active_index) {
+  if (width < 1) {
+    width = 1;
+  }
+  if (height < 1) {
+    height = 1;
+  }
+  width_ = width;
+  height_ = height;
+  layers_.replace_stack(width_, height_, std::move(layers), active_index);
+  selection_.clear();
+}
+
+bool Document::active_locked() const {
+  return layers_.count() > 0 && layers_.active_layer().locked();
+}
+
+std::vector<LayerSnapshot> Document::snapshot_layers() const {
+  std::vector<LayerSnapshot> out;
+  out.reserve(static_cast<std::size_t>(layers_.count()));
+  for (int i = 0; i < layers_.count(); ++i) {
+    out.push_back(snapshot_layer(layers_.at(i)));
+  }
+  return out;
+}
+
+void Document::add_layer() {
+  commit_floating();
+  LayerSnapshot snap;
+  snap.name = layers_.next_layer_name();
+  snap.visible = true;
+  snap.locked = false;
+  snap.opacity = 1.0f;
+  snap.blend = BlendMode::Normal;
+  snap.width = width_;
+  snap.height = height_;
+  snap.pixels.assign(static_cast<std::size_t>(width_) * static_cast<std::size_t>(height_) * 4, 0);
+  commit(std::make_unique<AddLayerCommand>(layers_.active_index() + 1, std::move(snap)));
+}
+
+void Document::duplicate_layer() {
+  commit_floating();
+  if (layers_.count() < 1) {
+    return;
+  }
+  commit(std::make_unique<DuplicateLayerCommand>(layers_.active_index()));
+}
+
+bool Document::delete_layer() {
+  commit_floating();
+  if (layers_.count() <= 1) {
+    return false;
+  }
+  const int idx = layers_.active_index();
+  commit(std::make_unique<DeleteLayerCommand>(idx, snapshot_layer(layers_.at(idx))));
+  return true;
+}
+
+bool Document::raise_layer() {
+  commit_floating();
+  const int idx = layers_.active_index();
+  if (idx + 1 >= layers_.count()) {
+    return false;
+  }
+  commit(std::make_unique<MoveLayerCommand>(idx, idx + 1, "Raise layer"));
+  return true;
+}
+
+bool Document::lower_layer() {
+  commit_floating();
+  const int idx = layers_.active_index();
+  if (idx <= 0) {
+    return false;
+  }
+  commit(std::make_unique<MoveLayerCommand>(idx, idx - 1, "Lower layer"));
+  return true;
+}
+
+bool Document::merge_down() {
+  commit_floating();
+  const int idx = layers_.active_index();
+  if (idx <= 0) {
+    return false;
+  }
+  commit(std::make_unique<MergeDownCommand>(idx, snapshot_layer(layers_.at(idx - 1)),
+                                            snapshot_layer(layers_.at(idx))));
+  return true;
+}
+
+void Document::flatten() {
+  commit_floating();
+  if (layers_.count() <= 1) {
+    return;
+  }
+  commit(std::make_unique<FlattenCommand>(snapshot_layers(), layers_.active_index()));
+}
+
+void Document::set_layer_visible(int index, bool visible) {
+  if (index < 0 || index >= layers_.count()) {
+    return;
+  }
+  Layer& layer = layers_.at(index);
+  if (layer.visible() == visible) {
+    return;
+  }
+  LayerSnapshot before = snapshot_layer_props(layer);
+  LayerSnapshot after = before;
+  after.visible = visible;
+  commit(std::make_unique<LayerPropsCommand>(index, std::move(before), std::move(after),
+                                             visible ? "Show layer" : "Hide layer"));
+}
+
+void Document::set_layer_locked(int index, bool locked) {
+  if (index < 0 || index >= layers_.count()) {
+    return;
+  }
+  Layer& layer = layers_.at(index);
+  if (layer.locked() == locked) {
+    return;
+  }
+  LayerSnapshot before = snapshot_layer_props(layer);
+  LayerSnapshot after = before;
+  after.locked = locked;
+  commit(std::make_unique<LayerPropsCommand>(index, std::move(before), std::move(after),
+                                             locked ? "Lock layer" : "Unlock layer"));
+}
+
+void Document::set_layer_opacity(int index, float opacity) {
+  if (index < 0 || index >= layers_.count()) {
+    return;
+  }
+  if (opacity < 0.0f) {
+    opacity = 0.0f;
+  }
+  if (opacity > 1.0f) {
+    opacity = 1.0f;
+  }
+  Layer& layer = layers_.at(index);
+  if (layer.opacity() == opacity) {
+    return;
+  }
+  LayerSnapshot before = snapshot_layer_props(layer);
+  LayerSnapshot after = before;
+  after.opacity = opacity;
+  commit(std::make_unique<LayerPropsCommand>(index, std::move(before), std::move(after),
+                                             "Layer opacity"));
+}
+
+void Document::set_layer_blend(int index, BlendMode blend) {
+  if (index < 0 || index >= layers_.count()) {
+    return;
+  }
+  Layer& layer = layers_.at(index);
+  if (layer.blend() == blend) {
+    return;
+  }
+  LayerSnapshot before = snapshot_layer_props(layer);
+  LayerSnapshot after = before;
+  after.blend = blend;
+  commit(std::make_unique<LayerPropsCommand>(index, std::move(before), std::move(after),
+                                             "Layer blend"));
+}
+
+void Document::rename_layer(int index, std::string name) {
+  if (index < 0 || index >= layers_.count()) {
+    return;
+  }
+  Layer& layer = layers_.at(index);
+  if (layer.name() == name) {
+    return;
+  }
+  LayerSnapshot before = snapshot_layer_props(layer);
+  LayerSnapshot after = before;
+  after.name = std::move(name);
+  commit(std::make_unique<LayerPropsCommand>(index, std::move(before), std::move(after),
+                                             "Rename layer"));
 }
 
 }  // namespace brushpad

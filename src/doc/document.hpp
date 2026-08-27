@@ -60,6 +60,24 @@ public:
   void duplicate_selection();
   void paste_floating(int x, int y, int w, int h, std::vector<std::uint8_t> rgba);
   void replace_active_buffer(int width, int height, const std::uint8_t* rgba, int stride);
+  void replace_stack(int width, int height, std::vector<std::unique_ptr<Layer>> layers,
+                     int active_index);
+
+  bool active_locked() const;
+  std::vector<LayerSnapshot> snapshot_layers() const;
+
+  void add_layer();
+  void duplicate_layer();
+  bool delete_layer();
+  bool raise_layer();
+  bool lower_layer();
+  bool merge_down();
+  void flatten();
+  void set_layer_visible(int index, bool visible);
+  void set_layer_locked(int index, bool locked);
+  void set_layer_opacity(int index, float opacity);
+  void set_layer_blend(int index, BlendMode blend);
+  void rename_layer(int index, std::string name);
 
   using ChangedFn = std::function<void()>;
   using InvalidatedFn = std::function<void(Rect)>;

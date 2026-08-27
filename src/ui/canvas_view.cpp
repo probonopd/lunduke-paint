@@ -4,6 +4,7 @@
 
 #include "doc/document.hpp"
 #include "doc/layer.hpp"
+#include "doc/layer_stack.hpp"
 #include "doc/selection.hpp"
 
 #include <glibmm/main.h>
@@ -214,10 +215,24 @@ Color CanvasView::sample_pixel(int canvas_x, int canvas_y) const {
   if (document_ == nullptr) {
     return Color::transparent();
   }
-  const Layer& layer = (tool_ != nullptr && tool_->is_stroking())
-                           ? document_->layers().tool_layer()
-                           : document_->layers().active_layer();
-  return layer.pixel(canvas_x, canvas_y);
+  const bool stroking = tool_ != nullptr && tool_->is_stroking();
+  const Layer* tool = stroking ? &document_->layers().tool_layer() : nullptr;
+  const int tool_i = stroking ? document_->layers().active_index() : -1;
+  Color c = document_->layers().composite_pixel(canvas_x, canvas_y, tool, tool_i);
+  const Selection& sel = document_->selection();
+  if (!sel.floating()) {
+    return c;
+  }
+  if (!sel.copy_mode() && sel.origin_rect().contains(canvas_x, canvas_y)) {
+    c = Color::transparent();
+  }
+  if (sel.float_rect().contains(canvas_x, canvas_y)) {
+    const Color f = sel.float_pixel(canvas_x - sel.float_x(), canvas_y - sel.float_y());
+    if (!sel.transparent_move() || f.a != 0) {
+      c = f;
+    }
+  }
+  return c;
 }
 
 void CanvasView::widget_to_canvas(double widget_x, double widget_y, double& canvas_x,
@@ -302,10 +317,6 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     return true;
   }
 
-  const Layer& layer = (tool_ != nullptr && tool_->is_stroking())
-                           ? document_->layers().tool_layer()
-                           : document_->layers().active_layer();
-
   double clip_x1 = 0;
   double clip_y1 = 0;
   double clip_x2 = 0;
@@ -320,6 +331,26 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     cr->restore();
     return true;
   }
+
+  const bool stroking = tool_ != nullptr && tool_->is_stroking();
+  const Layer* tool_override = stroking ? &document_->layers().tool_layer() : nullptr;
+  const int tool_index = stroking ? document_->layers().active_index() : -1;
+  const int sw = vis_x1 - vis_x0;
+  const int sh = vis_y1 - vis_y0;
+  std::vector<std::uint8_t> flat(static_cast<std::size_t>(sw) * static_cast<std::size_t>(sh) * 4, 0);
+  document_->layers().composite_rect(flat.data(), sw * 4, Rect{vis_x0, vis_y0, sw, sh},
+                                     tool_override, tool_index);
+
+  auto sample_flat = [&](int sx, int sy) {
+    Color c;
+    if (sx < vis_x0 || sy < vis_y0 || sx >= vis_x1 || sy >= vis_y1) {
+      return Color::transparent();
+    }
+    const std::uint8_t* p =
+        flat.data() + static_cast<std::size_t>((sy - vis_y0) * sw + (sx - vis_x0)) * 4;
+    c = Color{p[0], p[1], p[2], p[3]};
+    return display_pixel(c, sx, sy);
+  };
 
   const bool integer_up = zoom_ >= 1.0 - 1e-9;
   if (integer_up) {
@@ -354,7 +385,7 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
           if (sx >= cw) {
             sx = cw - 1;
           }
-          write_argb32(drow + static_cast<std::size_t>(dx) * 4, display_pixel(layer, sx, sy));
+          write_argb32(drow + static_cast<std::size_t>(dx) * 4, sample_flat(sx, sy));
         }
       }
       surface->mark_dirty();
@@ -371,7 +402,7 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
       std::uint8_t* drow = dst + static_cast<std::size_t>(y) * dst_stride;
       for (int x = 0; x < sw; ++x) {
         write_argb32(drow + static_cast<std::size_t>(x) * 4,
-                     display_pixel(layer, vis_x0 + x, vis_y0 + y));
+                     sample_flat(vis_x0 + x, vis_y0 + y));
       }
     }
     surface->mark_dirty();
@@ -482,8 +513,7 @@ bool CanvasView::on_area_scroll(GdkEventScroll* event) {
 }
 
 
-Color CanvasView::display_pixel(const Layer& layer, int x, int y) const {
-  Color c = layer.pixel(x, y);
+Color CanvasView::display_pixel(Color c, int x, int y) const {
   if (document_ == nullptr) {
     return c;
   }

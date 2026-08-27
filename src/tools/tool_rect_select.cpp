@@ -96,6 +96,10 @@ void RectSelectTool::on_press(CanvasEvent event) {
   const bool can_move = !sel.empty() && !sel.inverted() &&
                         (sel.floating() ? sel.float_rect().contains(x, y) : sel.bounds().contains(x, y));
   if (can_move) {
+    if (doc.layers().active_layer().locked()) {
+      host_->show_status_hint("Layer is locked");
+      return;
+    }
     if (!sel.floating()) {
       sel.lift(doc.layers().active_layer());
     }

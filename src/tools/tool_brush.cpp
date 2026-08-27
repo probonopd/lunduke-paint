@@ -113,6 +113,9 @@ void BrushTool::begin_stroke(CanvasEvent event) {
   if (host_ == nullptr) {
     return;
   }
+  if (!ensure_editable()) {
+    return;
+  }
   host_->document().commit_floating();
   drawing_ = true;
   button_ = event.button;

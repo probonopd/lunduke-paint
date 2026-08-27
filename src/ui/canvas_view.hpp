@@ -71,7 +71,7 @@ private:
   double snapped_zoom(double zoom) const;
   void visible_center(double& x, double& y) const;
   int margin() const { return 24; }
-  Color display_pixel(const Layer& layer, int x, int y) const;
+  Color display_pixel(Color color, int x, int y) const;
   void draw_pixel_grid(const Cairo::RefPtr<Cairo::Context>& cr, int m, int vis_x0, int vis_y0,
                        int vis_x1, int vis_y1);
   void draw_marching_ants(const Cairo::RefPtr<Cairo::Context>& cr, int m);

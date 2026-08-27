@@ -38,6 +38,7 @@ public:
   virtual void invalidate_canvas(Rect rect) = 0;
   virtual void return_to_previous_tool() = 0;
   virtual Color sample_canvas(int x, int y) const = 0;
+  virtual void show_status_hint(const char* message) = 0;
 };
 
 class Tool {
@@ -63,6 +64,7 @@ protected:
   ToolHost* host_ = nullptr;
 
   Color stroke_color(unsigned button) const;
+  bool ensure_editable();
 };
 
 }  // namespace brushpad

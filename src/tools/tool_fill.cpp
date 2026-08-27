@@ -60,6 +60,9 @@ void FillTool::on_press(CanvasEvent event) {
   if (host_ == nullptr || (event.button != 1 && event.button != 3)) {
     return;
   }
+  if (!ensure_editable()) {
+    return;
+  }
   Document& doc = host_->document();
   doc.commit_floating();
   doc.layers().copy_active_to_tool();

@@ -4,6 +4,7 @@
 
 #include "app/actions.hpp"
 #include "doc/commands_image.hpp"
+#include "doc/commands_layers.hpp"
 #include "doc/commands_pixels.hpp"
 #include "doc/selection.hpp"
 #include "io/image_io.hpp"
@@ -27,6 +28,7 @@
 #include <gtkmm/menubar.h>
 #include <gtkmm/separator.h>
 #include <cstring>
+#include <functional>
 #include <iostream>
 #include <vector>
 #include <stdexcept>
@@ -292,6 +294,12 @@ void MainWindow::return_to_previous_tool() {
 
 Color MainWindow::sample_canvas(int x, int y) const {
   return canvas_.sample_pixel(x, y);
+}
+
+void MainWindow::show_status_hint(const char* message) {
+  if (message != nullptr) {
+    show_status(message);
+  }
 }
 
 void MainWindow::on_undo() {
@@ -812,6 +820,34 @@ void MainWindow::commit_buffer_change(const char* name, int new_w, int new_h,
   canvas_.invalidate_all();
 }
 
+void MainWindow::commit_stack_transform(
+    const char* name, int new_w, int new_h,
+    const std::function<void(const Layer&, std::vector<std::uint8_t>&, int, int)>& xform) {
+  auto old_layers = document_->snapshot_layers();
+  std::vector<LayerSnapshot> new_layers;
+  new_layers.reserve(old_layers.size());
+  for (int i = 0; i < document_->layers().count(); ++i) {
+    const Layer& layer = document_->layers().at(i);
+    std::vector<std::uint8_t> dest(static_cast<std::size_t>(new_w) * static_cast<std::size_t>(new_h) *
+                                   4);
+    xform(layer, dest, new_w, new_h);
+    LayerSnapshot snap = snapshot_layer_props(layer);
+    snap.width = new_w;
+    snap.height = new_h;
+    snap.offset_x = 0;
+    snap.offset_y = 0;
+    snap.pixels = std::move(dest);
+    new_layers.push_back(std::move(snap));
+  }
+  auto cmd = std::make_unique<AllLayersBufferCommand>(
+      name, document_->width(), document_->height(), document_->layers().active_index(),
+      std::move(old_layers), new_w, new_h, document_->layers().active_index(),
+      std::move(new_layers));
+  document_->commit(std::move(cmd));
+  canvas_.refresh_size();
+  canvas_.invalidate_all();
+}
+
 void MainWindow::action_canvas_size() {
   document_->commit_floating();
   CanvasSizeDialog dialog(*this, document_->width(), document_->height());
@@ -823,11 +859,12 @@ void MainWindow::action_canvas_size() {
   if (!warn_size(nw, nh)) {
     return;
   }
-  const Layer& layer = document_->layers().active_layer();
-  std::vector<std::uint8_t> dest(static_cast<std::size_t>(nw) * static_cast<std::size_t>(nh) * 4);
-  resize_canvas(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), nw, nh,
-                nw * 4, dialog.fill_color(document_->background()));
-  commit_buffer_change("Canvas size", nw, nh, dest.data(), nw * 4);
+  const Color fill = dialog.fill_color(document_->background());
+  commit_stack_transform("Canvas size", nw, nh, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
+                                                    int dw, int dh) {
+    resize_canvas(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), dw, dh,
+                  dw * 4, fill);
+  });
 }
 
 void MainWindow::action_scale() {
@@ -841,16 +878,17 @@ void MainWindow::action_scale() {
   if (!warn_size(nw, nh)) {
     return;
   }
-  const Layer& layer = document_->layers().active_layer();
-  std::vector<std::uint8_t> dest(static_cast<std::size_t>(nw) * static_cast<std::size_t>(nh) * 4);
-  if (dialog.nearest()) {
-    scale_nearest(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), nw, nh,
-                  nw * 4);
-  } else {
-    scale_bilinear(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), nw, nh,
-                   nw * 4);
-  }
-  commit_buffer_change("Scale", nw, nh, dest.data(), nw * 4);
+  const bool nearest = dialog.nearest();
+  commit_stack_transform("Scale", nw, nh, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
+                                              int dw, int dh) {
+    if (nearest) {
+      scale_nearest(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), dw, dh,
+                    dw * 4);
+    } else {
+      scale_bilinear(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), dw,
+                     dh, dw * 4);
+    }
+  });
 }
 
 void MainWindow::action_crop() {
@@ -863,10 +901,11 @@ void MainWindow::action_crop() {
   if (r.empty()) {
     return;
   }
-  const Layer& layer = document_->layers().active_layer();
-  std::vector<std::uint8_t> dest(static_cast<std::size_t>(r.w) * static_cast<std::size_t>(r.h) * 4);
-  crop_rect(layer.pixels(), layer.width(), layer.height(), layer.stride(), r, dest.data(), r.w * 4);
-  commit_buffer_change("Crop", r.w, r.h, dest.data(), r.w * 4);
+  commit_stack_transform("Crop", r.w, r.h, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
+                                               int dw, int dh) {
+    crop_rect(layer.pixels(), layer.width(), layer.height(), layer.stride(), r, dest.data(), dw * 4);
+    (void)dh;
+  });
 }
 
 void MainWindow::action_autocrop() {
@@ -877,48 +916,68 @@ void MainWindow::action_autocrop() {
     show_status("Nothing to autocrop");
     return;
   }
-  std::vector<std::uint8_t> dest(static_cast<std::size_t>(r.w) * static_cast<std::size_t>(r.h) * 4);
-  crop_rect(layer.pixels(), layer.width(), layer.height(), layer.stride(), r, dest.data(), r.w * 4);
-  commit_buffer_change("Autocrop", r.w, r.h, dest.data(), r.w * 4);
+  commit_stack_transform("Autocrop", r.w, r.h, [&](const Layer& L, std::vector<std::uint8_t>& dest,
+                                                   int dw, int dh) {
+    crop_rect(L.pixels(), L.width(), L.height(), L.stride(), r, dest.data(), dw * 4);
+    (void)dh;
+  });
 }
 
 void MainWindow::action_rotate_90() {
   document_->commit_floating();
-  const Layer& layer = document_->layers().active_layer();
-  const int nw = layer.height();
-  const int nh = layer.width();
-  std::vector<std::uint8_t> dest(static_cast<std::size_t>(nw) * static_cast<std::size_t>(nh) * 4);
-  rotate_90_cw(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), nw * 4);
-  commit_buffer_change("Rotate 90", nw, nh, dest.data(), nw * 4);
+  const int nw = document_->height();
+  const int nh = document_->width();
+  commit_stack_transform("Rotate 90", nw, nh, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
+                                                  int dw, int dh) {
+    rotate_90_cw(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), dw * 4);
+    (void)dh;
+  });
 }
 
 void MainWindow::action_rotate_180() {
   document_->commit_floating();
-  const Layer& layer = document_->layers().active_layer();
-  std::vector<std::uint8_t> dest = copy_layer_pixels(layer);
-  rotate_180(dest.data(), layer.width(), layer.height(), layer.width() * 4);
-  commit_buffer_change("Rotate 180", layer.width(), layer.height(), dest.data(), layer.width() * 4);
+  const int w = document_->width();
+  const int h = document_->height();
+  commit_stack_transform("Rotate 180", w, h, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
+                                                 int dw, int dh) {
+    dest = copy_layer_pixels(layer);
+    rotate_180(dest.data(), layer.width(), layer.height(), layer.width() * 4);
+    (void)dw;
+    (void)dh;
+  });
 }
 
 void MainWindow::action_flip_h() {
   document_->commit_floating();
-  const Layer& layer = document_->layers().active_layer();
-  std::vector<std::uint8_t> dest = copy_layer_pixels(layer);
-  flip_h(dest.data(), layer.width(), layer.height(), layer.width() * 4);
-  commit_buffer_change("Flip horizontal", layer.width(), layer.height(), dest.data(),
-                      layer.width() * 4);
+  const int w = document_->width();
+  const int h = document_->height();
+  commit_stack_transform("Flip horizontal", w, h, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
+                                                     int dw, int dh) {
+    dest = copy_layer_pixels(layer);
+    flip_h(dest.data(), layer.width(), layer.height(), layer.width() * 4);
+    (void)dw;
+    (void)dh;
+  });
 }
 
 void MainWindow::action_flip_v() {
   document_->commit_floating();
-  const Layer& layer = document_->layers().active_layer();
-  std::vector<std::uint8_t> dest = copy_layer_pixels(layer);
-  flip_v(dest.data(), layer.width(), layer.height(), layer.width() * 4);
-  commit_buffer_change("Flip vertical", layer.width(), layer.height(), dest.data(),
-                      layer.width() * 4);
+  const int w = document_->width();
+  const int h = document_->height();
+  commit_stack_transform("Flip vertical", w, h, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
+                                                   int dw, int dh) {
+    dest = copy_layer_pixels(layer);
+    flip_v(dest.data(), layer.width(), layer.height(), layer.width() * 4);
+    (void)dw;
+    (void)dh;
+  });
 }
 
 void MainWindow::action_clear() {
+  if (document_->active_locked()) {
+    show_status("Layer is locked");
+    return;
+  }
   document_->commit_floating();
   document_->deselect();
   Layer& layer = document_->layers().active_layer();

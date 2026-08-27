@@ -92,6 +92,9 @@ constexpr int kDefaultHeight = 600;
 constexpr int kDefaultUndoDepth = 50;
 constexpr int kMaxUndoDepth = 200;
 constexpr int kPatchTile = 32;
+constexpr int kSoftMaxLayers = 64;
+constexpr int kThumbWidth = 48;
+constexpr int kThumbHeight = 36;
 
 }  // namespace brushpad
 
