@@ -241,6 +241,21 @@ void CanvasView::widget_to_canvas(double widget_x, double widget_y, double& canv
   canvas_y = (widget_y - margin()) / zoom_;
 }
 
+bool CanvasView::canvas_to_screen(int canvas_x, int canvas_y, int& screen_x, int& screen_y) const {
+  const double wx = static_cast<double>(margin()) + static_cast<double>(canvas_x) * zoom_;
+  const double wy = static_cast<double>(margin()) + static_cast<double>(canvas_y) * zoom_;
+  const auto win = area_.get_window();
+  if (!win) {
+    return false;
+  }
+  int ox = 0;
+  int oy = 0;
+  win->get_origin(ox, oy);
+  screen_x = ox + static_cast<int>(wx);
+  screen_y = oy + static_cast<int>(wy);
+  return true;
+}
+
 void CanvasView::update_area_size() {
   const int w = static_cast<int>(std::ceil(canvas_width() * zoom_)) + margin() * 2;
   const int h = static_cast<int>(std::ceil(canvas_height() * zoom_)) + margin() * 2;

@@ -2,6 +2,7 @@
 
 #include "raster/shapes.hpp"
 #include "raster/stroke.hpp"
+#include "raster/text.hpp"
 
 #include <cstdio>
 #include <vector>
@@ -109,6 +110,25 @@ int main() {
     errors += expect(get(buf, w, 1, 8) == red, "bezier start");
     errors += expect(get(buf, w, 14, 8) == red, "bezier end");
     errors += expect(!dirty.empty(), "bezier dirty");
+  }
+
+  // Text blit path: synthetic 2x2 bitmap stamped onto a buffer.
+  {
+    std::vector<std::uint8_t> dest(static_cast<std::size_t>(w * h * 4), 0);
+    std::vector<std::uint8_t> glyph(2 * 2 * 4, 0);
+    glyph[0] = 255;
+    glyph[1] = 0;
+    glyph[2] = 0;
+    glyph[3] = 255;
+    glyph[4] = 0;
+    glyph[5] = 0;
+    glyph[6] = 0;
+    glyph[7] = 0;
+    Rect dirty{};
+    brushpad::blit_rgba_buffer(dest.data(), w, h, w * 4, 3, 3, glyph.data(), 2, 2, 8, true, &dirty);
+    errors += expect(get(dest, w, 3, 3) == red, "text blit wrote glyph pixel");
+    errors += expect(get(dest, w, 4, 3) == Color{0, 0, 0, 0}, "text blit skipped transparent");
+    errors += expect(dirty.x == 3 && dirty.y == 3, "text blit dirty origin");
   }
 
   if (errors != 0) {

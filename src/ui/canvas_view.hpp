@@ -48,6 +48,7 @@ public:
   Color sample_pixel(int canvas_x, int canvas_y) const;
 
   void widget_to_canvas(double widget_x, double widget_y, double& canvas_x, double& canvas_y) const;
+  bool canvas_to_screen(int canvas_x, int canvas_y, int& screen_x, int& screen_y) const;
 
   sigc::signal<void, double, double>& signal_pointer_moved() {
     return signal_pointer_moved_;

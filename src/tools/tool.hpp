@@ -39,6 +39,13 @@ public:
   virtual void return_to_previous_tool() = 0;
   virtual Color sample_canvas(int x, int y) const = 0;
   virtual void show_status_hint(const char* message) = 0;
+  virtual bool canvas_to_screen(int canvas_x, int canvas_y, int& screen_x, int& screen_y) {
+    (void)canvas_x;
+    (void)canvas_y;
+    screen_x = 0;
+    screen_y = 0;
+    return false;
+  }
 };
 
 class Tool {

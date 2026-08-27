@@ -42,6 +42,7 @@ brushpad_core_sources = files(
   'src/raster/transform.cpp',
   'src/raster/shapes.cpp',
   'src/raster/blend.cpp',
+  'src/raster/text.cpp',
   'src/doc/commands_layers.cpp',
   'src/io/image_io.cpp',
   'src/io/ora.cpp',
@@ -85,6 +86,7 @@ brushpad_sources = files(
   'src/tools/tool_curve.cpp',
   'src/tools/tool_lasso.cpp',
   'src/tools/tool_ellipse_select.cpp',
+  'src/tools/tool_text.cpp',
   'src/ui/dialogs_image.cpp',
 )
 

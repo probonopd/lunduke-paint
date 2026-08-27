@@ -23,6 +23,7 @@ Tool* create_polygon_tool();
 Tool* create_curve_tool();
 Tool* create_lasso_tool();
 Tool* create_ellipse_select_tool();
+Tool* create_text_tool();
 
 }  // namespace brushpad
 

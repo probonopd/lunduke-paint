@@ -117,6 +117,7 @@ MainWindow::MainWindow() {
   tools_.emplace_back(create_polyline_tool());
   tools_.emplace_back(create_polygon_tool());
   tools_.emplace_back(create_curve_tool());
+  tools_.emplace_back(create_text_tool());
   for (auto& tool : tools_) {
     tool->set_host(this);
   }
@@ -162,6 +163,7 @@ void MainWindow::build_ui() {
   toolbox_.add_tool_button("polyline", "Polyline (N)", "insert-link-symbolic");
   toolbox_.add_tool_button("polygon", "Polygon (G)", "insert-object-symbolic");
   toolbox_.add_tool_button("curve", "Curve (V)", "object-select-symbolic");
+  toolbox_.add_tool_button("text", "Text (T)", "insert-text-symbolic");
   toolbox_.on_tool_chosen = [this](const std::string& id) { set_active_tool(id); };
   toolbox_.on_well_clicked = [this](bool background) { choose_color(background); };
   toolbox_.on_transparent = [this](bool background) {
@@ -329,6 +331,9 @@ void MainWindow::set_active_tool(const std::string& id) {
     return;
   }
   if (active_tool_ != nullptr) {
+    if (active_tool_->captures_keys()) {
+      active_tool_->on_commit();
+    }
     active_tool_->on_cancel();
     previous_tool_ = active_tool_;
   }
@@ -375,6 +380,10 @@ void MainWindow::show_status_hint(const char* message) {
   if (message != nullptr) {
     show_status(message);
   }
+}
+
+bool MainWindow::canvas_to_screen(int canvas_x, int canvas_y, int& screen_x, int& screen_y) {
+  return canvas_.canvas_to_screen(canvas_x, canvas_y, screen_x, screen_y);
 }
 
 void MainWindow::on_undo() {

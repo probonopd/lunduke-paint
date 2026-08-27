@@ -60,6 +60,7 @@ public:
   void return_to_previous_tool() override;
   Color sample_canvas(int x, int y) const override;
   void show_status_hint(const char* message) override;
+  bool canvas_to_screen(int canvas_x, int canvas_y, int& screen_x, int& screen_y) override;
 
   void update_chrome();
   void on_undo();

@@ -13,9 +13,9 @@ user layers.
 - Theme: follows the active GTK3 theme; the app is not skinned
 - Native project file: OpenRaster `.ora` (libarchive + pugixml)
 
-## Phase 3 is done
+## Phase 4 is done
 
-What works (Phase 1–3):
+What works (Phase 1–4):
 
 - One or more user layers (bottom → top in storage; Layers list is reversed
   so the top of the list is the top of the stack)
@@ -44,12 +44,16 @@ What works (Phase 1–3):
 - Per-document history; the active document drives canvas, layers, colors,
   undo
 - Pencil, brush, eraser, fill, picker, rect select, line, rectangle, ellipse
+- Color eraser, spraycan, rounded rect, polyline, polygon, curve, text
+- Freeform (lasso) and ellipse select (same move / cut / copy / paste / delete / crop ops)
+- History dock: named list, click an older row to undo there, a newer row to redo
+- Transparent is a first-class FG/BG color (palette last cell + toolbox checker)
 - Canvas size / scale / crop / rotate / flip apply to every user layer
 - Headless tests: `dummy`, `fill`, `history`, `selection`, `transform`,
-  `blend`, `ora`
+  `blend`, `ora`, `stroke`
 
-Not in this phase: history dock click-to-jump, text/spray/polygon/curve/
-lasso/color-eraser, adjustments/effects/prefs/print/About.
+Not in this phase: adjustments, effects, prefs dialog, print, About /
+shortcuts window, extra packaging polish (Phase 5).
 
 ## Development
 
@@ -76,7 +80,7 @@ On Debian 13 the pixbuf development package is `libgdk-pixbuf-2.0-dev`.
 
 Optional: after a clone, run the same commands on an X11 machine if you
 want a local test-build. A missing `DISPLAY` is fine for compile and
-`meson test`; the GUI is not required for Phase 3 checks.
+`meson test`; the GUI is not required for Phase 4 checks.
 
 ## Decisions
 
@@ -105,6 +109,14 @@ want a local test-build. A missing `DISPLAY` is fine for compile and
 - New/Open add a tab unless the only document is an unused untitled placeholder, which is replaced.
 - Zoom and pan stay per window, not per tab.
 - OpenRaster uses libarchive for the zip and pugixml for `stack.xml`.
+- History dock starts with “New document”; later rows are command names; click jumps the per-document stack (not saved in `.ora`).
+- Color eraser replaces FG-similar pixels (Chebyshev) with BG; right-drag swaps the roles.
+- Spraycan drops a disk of random dots; density 1–100 is dots per stamp.
+- Curve is the KolourPaint two-handle cubic: drag endpoints, then two control points.
+- Polyline / polygon take click vertices; Enter or double-click finishes (polygon closes).
+- Lasso and ellipse selections store an 8-bit mask; invert is still “canvas minus that region.”
+- Text is a popup Entry; Pango rasterizes onto the layer on Enter or click-away (not a live object).
+- Toolbox checker under the wells sets Transparent FG (left) or BG (right); painting with it punches alpha.
 
 ## Layout
 
@@ -112,4 +124,4 @@ Menu bar, main toolbar, tool-options bar (active tool only), document tabs
 when more than one file is open, 2-column toolbox with FG/BG wells, canvas
 with scrollbars, right dock (Colors / Layers / History), status bar
 (`hint | x,y | sel w×h | canvas | zoom | modified`). F12 toggles the
-right dock. The History tab is still a placeholder (click-to-jump is Phase 4).
+right dock. History is a click-to-jump list for the active document.
