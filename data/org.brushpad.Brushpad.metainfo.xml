@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.brushpad.Brushpad</id>
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Brushpad</name>
+  <summary>A traditional X11 paint program</summary>
+  <description>
+    <p>
+      Brushpad is a GTK 3 paint program for Linux X11. It uses a window-manager
+      title bar, a menu bar, and toolbars.
+    </p>
+  </description>
+  <launchable type="desktop-id">org.brushpad.Brushpad.desktop</launchable>
+  <developer_name>Brushpad</developer_name>
+  <content_rating type="oars-1.1"/>
+</component>

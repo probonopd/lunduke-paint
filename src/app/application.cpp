@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "app/application.hpp"
+
+#include "app/actions.hpp"
+#include "app/main_window.hpp"
+
+#include <giomm/application.h>
+
+namespace brushpad {
+
+Glib::RefPtr<Application> Application::create() {
+  return Glib::RefPtr<Application>(new Application());
+}
+
+Application::Application()
+    : Gtk::Application(actions::kAppId, Gio::APPLICATION_FLAGS_NONE) {}
+
+void Application::on_startup() {
+  Gtk::Application::on_startup();
+
+  add_action(actions::kNew, sigc::mem_fun(*this, &Application::on_action_new));
+  add_action(actions::kOpen, sigc::mem_fun(*this, &Application::on_action_open));
+  add_action(actions::kSave, sigc::mem_fun(*this, &Application::on_action_save));
+  add_action(actions::kQuit, sigc::mem_fun(*this, &Application::on_action_quit));
+
+  set_accels_for_action("app.new", {"<Primary>n"});
+  set_accels_for_action("app.open", {"<Primary>o"});
+  set_accels_for_action("app.save", {"<Primary>s"});
+  set_accels_for_action("app.quit", {"<Primary>q"});
+  set_accels_for_action("win.toggle-right-dock", {"F12"});
+}
+
+void Application::on_activate() {
+  if (window_ == nullptr) {
+    window_ = new MainWindow();
+    add_window(*window_);
+    window_->signal_hide().connect([this]() {
+      MainWindow* dying = window_;
+      window_ = nullptr;
+      delete dying;
+    });
+  }
+  window_->present();
+}
+
+void Application::on_action_new() {
+  if (window_ != nullptr) {
+    window_->reset_canvas();
+    window_->show_status("New canvas");
+  }
+}
+
+void Application::on_action_open() {
+  if (window_ != nullptr) {
+    window_->show_status("Open is not implemented yet");
+  }
+}
+
+void Application::on_action_save() {
+  if (window_ != nullptr) {
+    window_->show_status("Save is not implemented yet");
+  }
+}
+
+void Application::on_action_quit() {
+  quit();
+}
+
+}  // namespace brushpad
