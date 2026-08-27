@@ -1,0 +1,99 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include "raster/shapes.hpp"
+#include "raster/stroke.hpp"
+
+#include <cstdio>
+#include <vector>
+
+namespace {
+
+using brushpad::Color;
+using brushpad::Rect;
+using brushpad::ShapeFillMode;
+
+int expect(bool cond, const char* msg) {
+  if (!cond) {
+    std::fprintf(stderr, "test_stroke: %s\n", msg);
+    return 1;
+  }
+  return 0;
+}
+
+Color get(const std::vector<std::uint8_t>& buf, int w, int x, int y) {
+  const std::uint8_t* p = buf.data() + static_cast<std::size_t>((y * w + x) * 4);
+  return {p[0], p[1], p[2], p[3]};
+}
+
+void set(std::vector<std::uint8_t>& buf, int w, int x, int y, Color c) {
+  std::uint8_t* p = buf.data() + static_cast<std::size_t>((y * w + x) * 4);
+  p[0] = c.r;
+  p[1] = c.g;
+  p[2] = c.b;
+  p[3] = c.a;
+}
+
+}  // namespace
+
+int main() {
+  int errors = 0;
+  const int w = 16;
+  const int h = 16;
+  const Color red{255, 0, 0, 255};
+  const Color blue{0, 0, 255, 255};
+
+  // Color eraser replaces FG-similar pixels and leaves others.
+  {
+    std::vector<std::uint8_t> buf(static_cast<std::size_t>(w * h * 4), 0);
+    for (int y = 0; y < h; ++y) {
+      for (int x = 0; x < w; ++x) {
+        set(buf, w, x, y, (x < 8) ? red : blue);
+      }
+    }
+    Rect dirty{};
+    brushpad::color_erase_stamp(buf.data(), w, h, w * 4, 4.0, 4.0, 6, red, Color::transparent(), 0,
+                                &dirty);
+    errors += expect(get(buf, w, 4, 4).fully_transparent(), "erased red punch");
+    errors += expect(get(buf, w, 12, 4) == blue, "blue far from stamp stays");
+    errors += expect(!dirty.empty(), "color eraser dirty");
+  }
+
+  // Spray with a fixed seed writes at least one pixel inside the radius.
+  {
+    std::vector<std::uint8_t> buf(static_cast<std::size_t>(w * h * 4), 0);
+    std::uint32_t rng = 1;
+    Rect dirty{};
+    brushpad::spray_dots(buf.data(), w, h, w * 4, 8.0, 8.0, 4, 80, red, &rng, &dirty);
+    int hits = 0;
+    for (int y = 0; y < h; ++y) {
+      for (int x = 0; x < w; ++x) {
+        if (get(buf, w, x, y) == red) {
+          ++hits;
+          const int dx = x - 8;
+          const int dy = y - 8;
+          errors += expect(dx * dx + dy * dy <= 4 * 4 + 2, "spray stays near radius");
+        }
+      }
+    }
+    errors += expect(hits > 0, "spray wrote pixels");
+    errors += expect(!dirty.empty(), "spray dirty");
+  }
+
+  // Filled rounded rect: center is inside, sharp corner of the bbox is outside.
+  {
+    std::vector<std::uint8_t> buf(static_cast<std::size_t>(w * h * 4), 0);
+    Rect dirty{};
+    brushpad::draw_rounded_rect(buf.data(), w, h, w * 4, 1, 1, 14, 14, 1, 6, red,
+                                ShapeFillMode::Fill, false, &dirty);
+    errors += expect(get(buf, w, 8, 8) == red, "rounded center filled");
+    errors += expect(get(buf, w, 1, 1) != red, "sharp corner outside radius");
+    errors += expect(!dirty.empty(), "rounded dirty");
+  }
+
+  if (errors != 0) {
+    std::fprintf(stderr, "test_stroke: %d failure(s)\n", errors);
+    return 1;
+  }
+  std::printf("test_stroke: ok\n");
+  return 0;
+}

@@ -37,12 +37,13 @@ private:
 Gtk::Widget* FillTool::options_widget() {
   if (!options_) {
     options_ = std::make_unique<Gtk::Box>(Gtk::ORIENTATION_HORIZONTAL, 8);
-    auto* label = Gtk::manage(new Gtk::Label("Tolerance"));
+    auto* label = Gtk::manage(new Gtk::Label("Similarity"));
     auto* spin = Gtk::manage(new Gtk::SpinButton());
     spin->set_range(0, 255);
     spin->set_increments(1, 16);
     spin->set_digits(0);
     spin->set_value(tolerance_);
+    spin->set_tooltip_text("0 = exact color, 255 = fill every connected pixel");
     spin->signal_value_changed().connect([this, spin]() {
       tolerance_ = spin->get_value_as_int();
       if (host_ != nullptr) {
@@ -72,6 +73,7 @@ void FillTool::on_press(CanvasEvent event) {
   Rect dirty{};
   flood_fill(tool.pixels(), tool.width(), tool.height(), tool.stride(), x, y,
              stroke_color(event.button), tolerance_, &dirty);
+  clip_rect_to_selection(tool, doc.layers().active_layer(), dirty, doc.selection());
   auto cmd = PixelPatchCommand::from_layers(doc.layers().active_layer(), tool, dirty, "Flood fill",
                                             doc.layers().active_index());
   doc.layers().clear_tool_layer();

@@ -188,4 +188,127 @@ void stroke_brush(std::uint8_t* rgba, int width, int height, int stride, double 
   }
 }
 
+void color_erase_stamp(std::uint8_t* rgba, int width, int height, int stride, double cx, double cy,
+                       int size, Color target, Color replacement, int tolerance, Rect* dirty) {
+  if (rgba == nullptr || size < 1) {
+    return;
+  }
+  if (tolerance < 0) {
+    tolerance = 0;
+  }
+  const double radius = static_cast<double>(size) * 0.5;
+  const int x0 = static_cast<int>(std::floor(cx - radius));
+  const int y0 = static_cast<int>(std::floor(cy - radius));
+  const int x1 = static_cast<int>(std::ceil(cx + radius));
+  const int y1 = static_cast<int>(std::ceil(cy + radius));
+  const int ix0 = std::max(0, x0);
+  const int iy0 = std::max(0, y0);
+  const int ix1 = std::min(width, x1);
+  const int iy1 = std::min(height, y1);
+  if (ix0 >= ix1 || iy0 >= iy1) {
+    return;
+  }
+  const double r2 = radius * radius;
+  bool any = false;
+  for (int y = iy0; y < iy1; ++y) {
+    std::uint8_t* row = rgba + static_cast<std::size_t>(y) * stride;
+    for (int x = ix0; x < ix1; ++x) {
+      const double dx = (static_cast<double>(x) + 0.5) - cx;
+      const double dy = (static_cast<double>(y) + 0.5) - cy;
+      if (dx * dx + dy * dy > r2) {
+        continue;
+      }
+      std::uint8_t* p = row + static_cast<std::size_t>(x) * 4;
+      const Color cur{p[0], p[1], p[2], p[3]};
+      if (color_chebyshev(cur, target) > tolerance) {
+        continue;
+      }
+      put_replace(p, replacement);
+      any = true;
+    }
+  }
+  if (any) {
+    grow(dirty, ix0, iy0, ix1, iy1, width, height);
+  }
+}
+
+void color_erase_stroke(std::uint8_t* rgba, int width, int height, int stride, double x0, double y0,
+                        double x1, double y1, int size, Color target, Color replacement,
+                        int tolerance, Rect* dirty) {
+  const double dx = x1 - x0;
+  const double dy = y1 - y0;
+  const double len = std::sqrt(dx * dx + dy * dy);
+  if (len < 0.001) {
+    color_erase_stamp(rgba, width, height, stride, x0, y0, size, target, replacement, tolerance,
+                      dirty);
+    return;
+  }
+  const int n = static_cast<int>(std::ceil(len));
+  for (int i = 0; i <= n; ++i) {
+    const double t = static_cast<double>(i) / static_cast<double>(n);
+    color_erase_stamp(rgba, width, height, stride, x0 + dx * t, y0 + dy * t, size, target,
+                      replacement, tolerance, dirty);
+  }
+}
+
+void spray_dots(std::uint8_t* rgba, int width, int height, int stride, double cx, double cy,
+                int radius, int density, Color color, std::uint32_t* rng, Rect* dirty) {
+  if (rgba == nullptr || rng == nullptr || radius < 1) {
+    return;
+  }
+  if (density < 1) {
+    density = 1;
+  }
+  if (density > 100) {
+    density = 100;
+  }
+  // density 100 ≈ one dot per ~4 pixels of the disk; density 1 is a few specks.
+  const int area = std::max(1, radius * radius);
+  int count = std::max(1, (density * area) / 80);
+  const double r = static_cast<double>(radius);
+  int minx = width;
+  int miny = height;
+  int maxx = -1;
+  int maxy = -1;
+  auto next_u = [&]() {
+    *rng = *rng * 1664525u + 1013904223u;
+    return *rng;
+  };
+  for (int i = 0; i < count; ++i) {
+    // Rejection sample in the disk.
+    double dx = 0;
+    double dy = 0;
+    for (int attempt = 0; attempt < 8; ++attempt) {
+      const double u = static_cast<double>(next_u() & 0xFFFFu) / 65535.0;
+      const double v = static_cast<double>(next_u() & 0xFFFFu) / 65535.0;
+      dx = (u * 2.0 - 1.0) * r;
+      dy = (v * 2.0 - 1.0) * r;
+      if (dx * dx + dy * dy <= r * r) {
+        break;
+      }
+    }
+    const int x = static_cast<int>(std::floor(cx + dx));
+    const int y = static_cast<int>(std::floor(cy + dy));
+    if (x < 0 || y < 0 || x >= width || y >= height) {
+      continue;
+    }
+    put_replace(rgba + static_cast<std::size_t>(y) * stride + static_cast<std::size_t>(x) * 4, color);
+    if (x < minx) {
+      minx = x;
+    }
+    if (y < miny) {
+      miny = y;
+    }
+    if (x > maxx) {
+      maxx = x;
+    }
+    if (y > maxy) {
+      maxy = y;
+    }
+  }
+  if (dirty != nullptr && maxx >= minx) {
+    *dirty = rect_union(*dirty, Rect{minx, miny, maxx - minx + 1, maxy - miny + 1});
+  }
+}
+
 }  // namespace brushpad

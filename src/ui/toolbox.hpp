@@ -24,13 +24,17 @@ public:
 
   std::function<void(const std::string& id)> on_tool_chosen;
   std::function<void(bool background)> on_well_clicked;
+  std::function<void(bool background)> on_transparent;
 
 private:
   bool on_wells_draw(const Cairo::RefPtr<Cairo::Context>& cr);
   bool on_wells_press(GdkEventButton* event);
+  bool on_trans_draw(const Cairo::RefPtr<Cairo::Context>& cr);
+  bool on_trans_press(GdkEventButton* event);
 
   Gtk::Grid grid_;
   Gtk::DrawingArea wells_;
+  Gtk::DrawingArea trans_;
   std::vector<Gtk::Button*> buttons_;
   std::vector<std::string> ids_;
   Color fg_ = Color::black();

@@ -109,6 +109,9 @@ MainWindow::MainWindow() {
   tools_.emplace_back(create_line_tool());
   tools_.emplace_back(create_rectangle_tool());
   tools_.emplace_back(create_ellipse_tool());
+  tools_.emplace_back(create_color_eraser_tool());
+  tools_.emplace_back(create_spray_tool());
+  tools_.emplace_back(create_rounded_rect_tool());
   for (auto& tool : tools_) {
     tool->set_host(this);
   }
@@ -146,8 +149,18 @@ void MainWindow::build_ui() {
   toolbox_.add_tool_button("line", "Line (L)", "insert-link-symbolic");
   toolbox_.add_tool_button("rectangle", "Rectangle (R)", "view-restore-symbolic");
   toolbox_.add_tool_button("ellipse", "Ellipse (E)", "media-record-symbolic");
+  toolbox_.add_tool_button("color-eraser", "Color eraser (O)", "edit-clear-symbolic");
+  toolbox_.add_tool_button("spray", "Spraycan (Y)", "weather-showers-scattered-symbolic");
+  toolbox_.add_tool_button("rounded-rect", "Rounded rectangle (U)", "view-restore-symbolic");
   toolbox_.on_tool_chosen = [this](const std::string& id) { set_active_tool(id); };
   toolbox_.on_well_clicked = [this](bool background) { choose_color(background); };
+  toolbox_.on_transparent = [this](bool background) {
+    if (background) {
+      document().set_background(Color::transparent());
+    } else {
+      document().set_foreground(Color::transparent());
+    }
+  };
   colors_panel_.on_swatch = [this](Color color, bool background) {
     if (background) {
       document().set_background(color);

@@ -20,6 +20,13 @@ Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
   wells_.signal_draw().connect(sigc::mem_fun(*this, &Toolbox::on_wells_draw));
   wells_.signal_button_press_event().connect(sigc::mem_fun(*this, &Toolbox::on_wells_press));
   pack_start(wells_, Gtk::PACK_SHRINK);
+
+  trans_.set_size_request(56, 18);
+  trans_.set_tooltip_text("Transparent: left sets FG, right sets BG (punches alpha)");
+  trans_.add_events(Gdk::BUTTON_PRESS_MASK);
+  trans_.signal_draw().connect(sigc::mem_fun(*this, &Toolbox::on_trans_draw));
+  trans_.signal_button_press_event().connect(sigc::mem_fun(*this, &Toolbox::on_trans_press));
+  pack_start(trans_, Gtk::PACK_SHRINK);
 }
 
 void Toolbox::add_tool_button(const std::string& id, const std::string& tooltip,
@@ -98,6 +105,40 @@ bool Toolbox::on_wells_press(GdkEventButton* event) {
   const bool background = event->x > (w * 0.55);
   on_well_clicked(background);
   return true;
+}
+
+bool Toolbox::on_trans_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
+  const int w = trans_.get_allocated_width();
+  const int h = trans_.get_allocated_height();
+  const int cell = 6;
+  for (int y = 0; y < h; y += cell) {
+    for (int x = 0; x < w; x += cell) {
+      const bool dark = ((x / cell) + (y / cell)) & 1;
+      if (dark) {
+        cr->set_source_rgb(0.62, 0.62, 0.62);
+      } else {
+        cr->set_source_rgb(0.82, 0.82, 0.82);
+      }
+      cr->rectangle(x, y, cell, cell);
+      cr->fill();
+    }
+  }
+  cr->set_source_rgb(0.25, 0.25, 0.25);
+  cr->rectangle(0.5, 0.5, w - 1.0, h - 1.0);
+  cr->set_line_width(1.0);
+  cr->stroke();
+  return true;
+}
+
+bool Toolbox::on_trans_press(GdkEventButton* event) {
+  if (event == nullptr || !on_transparent) {
+    return false;
+  }
+  if (event->button == 1 || event->button == 3) {
+    on_transparent(event->button == 3);
+    return true;
+  }
+  return false;
 }
 
 }  // namespace brushpad

@@ -174,4 +174,69 @@ void draw_ellipse(std::uint8_t* rgba, int width, int height, int stride, int x0,
   }
 }
 
+void draw_rounded_rect(std::uint8_t* rgba, int width, int height, int stride, int x0, int y0,
+                       int x1, int y1, int thickness, int radius, Color color, ShapeFillMode mode,
+                       bool antialias, Rect* dirty) {
+  if (rgba == nullptr) {
+    return;
+  }
+  if (thickness < 1) {
+    thickness = 1;
+  }
+  if (radius < 0) {
+    radius = 0;
+  }
+  const int left = std::min(x0, x1);
+  const int top = std::min(y0, y1);
+  const int right = std::max(x0, x1);
+  const int bottom = std::max(y0, y1);
+  const double hw = std::max(0.5, (static_cast<double>(right - left) + 1.0) * 0.5);
+  const double hh = std::max(0.5, (static_cast<double>(bottom - top) + 1.0) * 0.5);
+  const double cx = (static_cast<double>(left) + static_cast<double>(right)) * 0.5 + 0.5;
+  const double cy = (static_cast<double>(top) + static_cast<double>(bottom)) * 0.5 + 0.5;
+  double r = std::min(static_cast<double>(radius), std::min(hw, hh));
+  const int pad = thickness + 1;
+  const int ix0 = std::max(0, left - pad);
+  const int iy0 = std::max(0, top - pad);
+  const int ix1 = std::min(width, right + pad + 1);
+  const int iy1 = std::min(height, bottom + pad + 1);
+  if (ix0 >= ix1 || iy0 >= iy1) {
+    return;
+  }
+  const double thick = static_cast<double>(thickness) * 0.5;
+  const bool do_fill = (mode == ShapeFillMode::Fill || mode == ShapeFillMode::Both);
+  const bool do_stroke = (mode == ShapeFillMode::Stroke || mode == ShapeFillMode::Both);
+  const double aa = antialias ? 0.5 : 0.0;
+  for (int y = iy0; y < iy1; ++y) {
+    std::uint8_t* row = rgba + static_cast<std::size_t>(y) * stride;
+    const double py = (static_cast<double>(y) + 0.5) - cy;
+    for (int x = ix0; x < ix1; ++x) {
+      const double px = (static_cast<double>(x) + 0.5) - cx;
+      const double dx = std::abs(px) - (hw - r);
+      const double dy = std::abs(py) - (hh - r);
+      const double ox = std::max(dx, 0.0);
+      const double oy = std::max(dy, 0.0);
+      const double sdf = std::sqrt(ox * ox + oy * oy) + std::min(std::max(dx, dy), 0.0) - r;
+      bool hit = false;
+      if (do_fill && sdf <= 0.0) {
+        hit = true;
+      }
+      if (do_stroke && std::abs(sdf) <= thick + aa) {
+        hit = true;
+      }
+      if (!hit) {
+        continue;
+      }
+      std::uint8_t* p = row + static_cast<std::size_t>(x) * 4;
+      p[0] = color.r;
+      p[1] = color.g;
+      p[2] = color.b;
+      p[3] = color.a;
+    }
+  }
+  if (dirty != nullptr) {
+    *dirty = rect_union(*dirty, Rect{ix0, iy0, ix1 - ix0, iy1 - iy0});
+  }
+}
+
 }  // namespace brushpad

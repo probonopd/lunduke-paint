@@ -77,6 +77,9 @@ brushpad_sources = files(
   'src/tools/tool_line.cpp',
   'src/tools/tool_rectangle.cpp',
   'src/tools/tool_ellipse.cpp',
+  'src/tools/tool_color_eraser.cpp',
+  'src/tools/tool_spray.cpp',
+  'src/tools/tool_rounded_rect.cpp',
   'src/ui/dialogs_image.cpp',
 )
 
@@ -151,6 +154,15 @@ test_ora = executable(
   install: false,
 )
 test('ora', test_ora)
+
+test_stroke = executable(
+  'test_stroke',
+  files('tests/test_stroke.cpp'),
+  include_directories: brushpad_inc,
+  link_with: brushpad_core,
+  install: false,
+)
+test('stroke', test_stroke)
 
 install_data(
   'data/org.brushpad.Brushpad.desktop',

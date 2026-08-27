@@ -24,6 +24,17 @@ void stroke_pencil(std::uint8_t* rgba, int width, int height, int stride, int x0
 void stroke_brush(std::uint8_t* rgba, int width, int height, int stride, double x0, double y0,
                   double x1, double y1, int size, Color color, bool antialias, Rect* dirty);
 
+// Replace target-similar pixels inside a round stamp with replacement (BG / transparent).
+void color_erase_stamp(std::uint8_t* rgba, int width, int height, int stride, double cx, double cy,
+                       int size, Color target, Color replacement, int tolerance, Rect* dirty);
+void color_erase_stroke(std::uint8_t* rgba, int width, int height, int stride, double x0, double y0,
+                        double x1, double y1, int size, Color target, Color replacement,
+                        int tolerance, Rect* dirty);
+
+// Random dots in a disk. density is 1–100. rng is a 32-bit LCG state.
+void spray_dots(std::uint8_t* rgba, int width, int height, int stride, double cx, double cy,
+                int radius, int density, Color color, std::uint32_t* rng, Rect* dirty);
+
 }  // namespace brushpad
 
 #endif
