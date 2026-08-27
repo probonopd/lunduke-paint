@@ -51,6 +51,7 @@ public:
   void commit(std::unique_ptr<Command> command);
   Rect undo();
   Rect redo();
+  Rect jump_history(int target);
 
   void select_all();
   void deselect();

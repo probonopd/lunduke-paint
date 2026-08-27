@@ -66,6 +66,23 @@ Rect History::redo(Document& document) {
   return commands_[static_cast<std::size_t>(index_)]->dirty_rect();
 }
 
+Rect History::jump_to(Document& document, int target) {
+  if (target < -1) {
+    target = -1;
+  }
+  if (target >= static_cast<int>(commands_.size())) {
+    target = static_cast<int>(commands_.size()) - 1;
+  }
+  Rect dirty{};
+  while (index_ > target) {
+    dirty = rect_union(dirty, undo(document));
+  }
+  while (index_ < target) {
+    dirty = rect_union(dirty, redo(document));
+  }
+  return dirty;
+}
+
 void History::clear() {
   commands_.clear();
   index_ = -1;

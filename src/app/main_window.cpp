@@ -252,6 +252,13 @@ void MainWindow::attach_active_document() {
   canvas_.set_document(document_ptr());
   canvas_.set_tool(active_tool_);
   layers_panel_.set_document(document_ptr());
+  history_panel_.set_document(document_ptr());
+  history_panel_.on_jump = [this](int index) {
+    if (active_tool_ != nullptr) {
+      active_tool_->on_cancel();
+    }
+    document().jump_history(index);
+  };
   document().set_on_changed([this]() { update_chrome(); });
   document().set_on_invalidated([this](Rect rect) { canvas_.invalidate_rect(rect); });
   toolbox_.set_colors(document().foreground(), document().background());
@@ -389,6 +396,7 @@ void MainWindow::update_chrome() {
   toolbox_.set_colors(document().foreground(), document().background());
   canvas_.refresh_size();
   layers_panel_.refresh();
+  history_panel_.refresh();
   const int nlayers = document().layers().count();
   const int active = document().layers().active_index();
   layer_delete_action_->set_enabled(nlayers > 1);

@@ -92,6 +92,17 @@ Rect Document::redo() {
   return dirty;
 }
 
+Rect Document::jump_history(int target) {
+  if (target == history_.index()) {
+    return {};
+  }
+  const Rect dirty = history_.jump_to(*this, target);
+  dirty_ = true;
+  notify_invalidated(dirty);
+  notify_changed();
+  return dirty;
+}
+
 void Document::notify_invalidated(Rect rect) {
   if (on_invalidated_) {
     on_invalidated_(rect);

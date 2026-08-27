@@ -92,6 +92,50 @@ int main() {
     errors += expect(same_pixels(layer, filled), "redo fill matches after");
   }
 
+  // Click-to-jump: two stacked commands, then undo/redo by index.
+  {
+    doc->history().clear();
+    layer.fill(Color::white());
+    const auto start = snapshot(layer);
+
+    Layer before1(layer.width(), layer.height(), Color::transparent(), "b1");
+    before1.copy_from(layer);
+    Rect dirty1{};
+    brushpad::stroke_pencil(layer.pixels(), layer.width(), layer.height(), layer.stride(), 2, 2, 6,
+                            4, 1, Color::black(), &dirty1);
+    Layer after1(layer.width(), layer.height(), Color::transparent(), "a1");
+    after1.copy_from(layer);
+    doc->history().commit_applied(
+        PixelPatchCommand::from_layers(before1, after1, dirty1, "Pencil stroke"));
+    const auto stroked = snapshot(layer);
+
+    Layer before2(layer.width(), layer.height(), Color::transparent(), "b2");
+    before2.copy_from(layer);
+    Rect dirty2{};
+    brushpad::flood_fill(layer.pixels(), layer.width(), layer.height(), layer.stride(), 0, 0,
+                         Color{0, 128, 255, 255}, 0, &dirty2);
+    Layer after2(layer.width(), layer.height(), Color::transparent(), "a2");
+    after2.copy_from(layer);
+    doc->history().commit_applied(
+        PixelPatchCommand::from_layers(before2, after2, dirty2, "Flood fill"));
+    const auto filled = snapshot(layer);
+
+    errors += expect(doc->history().count() == 2, "two commands recorded");
+    errors += expect(doc->history().index() == 1, "index at latest");
+    errors += expect(doc->history().name_at(0) == "Pencil stroke", "first name");
+    errors += expect(doc->history().name_at(1) == "Flood fill", "second name");
+
+    doc->jump_history(0);
+    errors += expect(doc->history().index() == 0, "jump back to stroke");
+    errors += expect(same_pixels(layer, stroked), "jump undid fill");
+    doc->jump_history(-1);
+    errors += expect(doc->history().index() == -1, "jump to initial");
+    errors += expect(same_pixels(layer, start), "jump to initial restores");
+    doc->jump_history(1);
+    errors += expect(doc->history().index() == 1, "jump forward to fill");
+    errors += expect(same_pixels(layer, filled), "jump redo matches fill");
+  }
+
   if (errors != 0) {
     std::fprintf(stderr, "test_history: %d failure(s)\n", errors);
     return 1;

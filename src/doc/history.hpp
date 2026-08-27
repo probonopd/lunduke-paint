@@ -31,6 +31,9 @@ public:
   Rect undo(Document& document);
   Rect redo(Document& document);
 
+  // Undo/redo until index() == target. target -1 is the initial document.
+  Rect jump_to(Document& document, int target);
+
   void clear();
 
   int index() const { return index_; }
