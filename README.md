@@ -1,7 +1,8 @@
 # Brushpad
 
 Brushpad is a traditional Linux X11 paint program built with GTK 3.24 and
-gtkmm-3.0. Look and feel: classic MS Paint + KolourPaint.
+gtkmm-3.0. Look and feel: classic MS Paint + KolourPaint, with Pinta-style
+user layers.
 
 - Application id: `org.brushpad.Brushpad`
 - License: GPL-3.0-or-later
@@ -10,39 +11,45 @@ gtkmm-3.0. Look and feel: classic MS Paint + KolourPaint.
 - Chrome: window-manager title bar, menu bar, and toolbars (no client-side
   decorations, no HeaderBar as main chrome)
 - Theme: follows the active GTK3 theme; the app is not skinned
+- Native project file: OpenRaster `.ora` (libarchive + pugixml)
 
-## Phase 2 is done
+## Phase 3 is done
 
-What works (Phase 1 plus Phase 2):
+What works (Phase 1–3):
 
-- One-layer document (800×600 white by default), New dialog (size + white /
-  transparent / custom color)
-- Pencil (hard pixels), round brush (optional anti-alias), eraser, flood fill
-  with tolerance, color picker (returns to the previous tool)
-- Rect select (S), marching ants, move, Ctrl-stamp/copy, cut/copy/paste/delete,
-  Select All / Deselect / Invert, Duplicate (Ctrl+J and Ctrl-drag)
-- Line (L), rectangle (R), ellipse (E): Shift constrains, fill/stroke/both,
-  thickness, optional AA; rasterize on mouse-up
-- Left button = foreground, right-drag = background; no right-click menu
-- Paint/fill clip to the current selection (active layer ∩ selection)
-- Canvas size, scale (nearest + bilinear), crop to selection, autocrop,
-  rotate 90/180, flip H/V, clear
-- Pixel grid at zoom ≥ 400% (View → Grid / Ctrl+G)
-- Integer zoom-in stays nearest neighbor
-- Zoom in/out/100%/fit (Ctrl++ / Ctrl+- / Ctrl+0 / Ctrl+1)
-- FG/BG wells, X swap, D reset, static 48-color palette (including transparent)
-- Live stroke on a ToolLayer; floating selection on a SelectionLayer
-- Dirty-rect / changed-tile history for strokes; full-buffer snapshot for
-  rotate/flip/scale/canvas-size
-- Zoom (Ctrl+wheel toward pointer), pan (middle button or Space+drag),
-  scrollbars, checkerboard behind transparent pixels
-- Open / Save / Save As PNG, JPEG, BMP via GdkPixbuf; dirty title asterisk
-- Toolbar: New Open Save | Cut Copy Paste | Undo Redo | Zoom | F12
-- Status bar shows `sel w×h` when a selection exists
-- Headless tests: `dummy`, `fill`, `history`, `selection`, `transform`
+- One or more user layers (bottom → top in storage; Layers list is reversed
+  so the top of the list is the top of the stack)
+- Each layer: name, visible, locked, opacity 0–100%, blend, offset, RGBA8888
+  buffer sized to the document, thumbnail cache
+- Internal ToolLayer + SelectionLayer stay out of the Layers list
+- Compositor draws the visible viewport only with v1 blends: Normal,
+  Multiply, Screen, Overlay, Darken, Lighten
+- Paint/effects still affect **active layer ∩ selection**
+- Locked layer refuses pixel edits (status hint); hidden layers stay in the
+  stack but are omitted from the composite
+- Layers dock: thumbnail, name, eye, lock, opacity; blend combo; New /
+  Duplicate / Delete / Up / Down / Merge down / Flatten; right-click + rename
+- Layers menu: New (Ctrl+Shift+N), Duplicate, Delete, Raise, Lower, Merge
+  down (Ctrl+E), Flatten (Ctrl+Shift+E), Properties
+- Each layer op is one named, undoable Command
+- OpenRaster `.ora` read/write (`mimetype` uncompressed first, `stack.xml`,
+  `data/layer-N.png`, `mergedimage.png`; lock as `brushpad:locked`)
+- Non-ORA files still open as a single layer named after the file
+- Save As can pick ora/png/jpeg/bmp; multi-layer flat export warns and can
+  also keep a `.ora`; never silently overwrites an `.ora` with a flat PNG
+- JPEG/BMP flatten onto white and warn
+- Multi-tab documents under the tool-options bar; File → Close (Ctrl+W);
+  dirty tab close asks to save; New/Open add a tab (replace only an unused
+  untitled placeholder)
+- Per-document history; the active document drives canvas, layers, colors,
+  undo
+- Pencil, brush, eraser, fill, picker, rect select, line, rectangle, ellipse
+- Canvas size / scale / crop / rotate / flip apply to every user layer
+- Headless tests: `dummy`, `fill`, `history`, `selection`, `transform`,
+  `blend`, `ora`
 
-Not in this phase: multi-layer UI, ORA, text, history dock wiring, spray /
-polygon / curve / lasso / ellipse select.
+Not in this phase: history dock click-to-jump, text/spray/polygon/curve/
+lasso/color-eraser, adjustments/effects/prefs/print/About.
 
 ## Development
 
@@ -69,13 +76,14 @@ On Debian 13 the pixbuf development package is `libgdk-pixbuf-2.0-dev`.
 
 Optional: after a clone, run the same commands on an X11 machine if you
 want a local test-build. A missing `DISPLAY` is fine for compile and
-`meson test`; the GUI is not required for Phase 2 checks.
+`meson test`; the GUI is not required for Phase 3 checks.
 
 ## Decisions
 
 - Flood-fill similarity is Chebyshev distance across RGBA (`max(|Δr|,|Δg|,|Δb|,|Δa|)`), matching classic Paint-style “how far from the seed color.”
 - Eraser always paints the current background color (transparent BG punches alpha); both mouse buttons erase.
-- JPEG and BMP flatten onto white (JPEG quality 90) and warn if the layer has transparency.
+- JPEG and BMP flatten onto white (JPEG quality 90) and warn if the composite has transparency or more than one layer.
+- PNG export from a multi-layer document flattens visible layers and keeps alpha, after a warning.
 - Palette is an 8×6 Paint-like grid; the last swatch is transparent.
 - History stores 32×32 tiles that actually changed inside the stroke dirty rect, not the whole layer.
 - New canvas-resize pixels default to the current background color (Paint-like); the dialog also offers transparent.
@@ -89,11 +97,19 @@ want a local test-build. A missing `DISPLAY` is fine for compile and
 - Rotate 90 is clockwise.
 - Scale dialog defaults to nearest neighbor and keep-aspect.
 - Pixel grid is on by default and only drawn at zoom ≥ 400%.
+- Blend onto a fully transparent destination uses the source color (Paint/Pinta-like; Multiply does not go black).
+- Flatten discards hidden layers and composites the visible ones into one Background layer.
+- Merge down blends the active layer onto the one below using the upper layer’s blend and opacity.
+- Layer opacity in the dock commits on Enter or focus-out so a spin does not flood undo.
+- Canvas size, scale, crop, rotate, and flip transform every user layer (KolourPaint/Pinta document ops).
+- New/Open add a tab unless the only document is an unused untitled placeholder, which is replaced.
+- Zoom and pan stay per window, not per tab.
+- OpenRaster uses libarchive for the zip and pugixml for `stack.xml`.
 
 ## Layout
 
-Menu bar, main toolbar, tool-options bar (active tool only), 2-column toolbox
-with FG/BG wells, canvas with scrollbars, right dock (Colors / Layers /
-History), status bar (`hint | x,y | sel w×h | canvas | zoom | modified`). F12
-toggles the right dock. Layers and History tabs are placeholders until later
-phases.
+Menu bar, main toolbar, tool-options bar (active tool only), document tabs
+when more than one file is open, 2-column toolbox with FG/BG wells, canvas
+with scrollbars, right dock (Colors / Layers / History), status bar
+(`hint | x,y | sel w×h | canvas | zoom | modified`). F12 toggles the
+right dock. The History tab is still a placeholder (click-to-jump is Phase 4).

@@ -3,6 +3,7 @@
 #define BRUSHPAD_APP_MAIN_WINDOW_HPP
 
 #include "doc/document.hpp"
+#include "doc/workspace.hpp"
 #include "io/image_io.hpp"
 #include "tools/tool.hpp"
 #include "ui/canvas_view.hpp"
@@ -41,8 +42,9 @@ public:
   void action_save();
   void action_save_as();
   bool confirm_close();
-  Document& document() override { return *document_; }
-  Document* document_ptr() { return document_.get(); }
+  Document& document() override { return workspace_.active(); }
+  const Document& document() const { return workspace_.active(); }
+  Document* document_ptr() { return workspace_.active_ptr(); }
   CanvasView& canvas() { return canvas_; }
 
   void set_active_tool(const std::string& id);
@@ -89,6 +91,7 @@ public:
   void action_layer_merge_down();
   void action_layer_flatten();
   void action_layer_properties();
+  void action_close_tab();
 
 private:
   void build_ui();
@@ -96,6 +99,13 @@ private:
   Glib::RefPtr<Gio::MenuModel> load_menubar_model();
   void on_toggle_right_dock();
   void bind_document();
+  void adopt_document(std::unique_ptr<Document> document, bool prefer_replace);
+  void attach_active_document();
+  void rebuild_tabs();
+  void update_tab_labels();
+  bool confirm_lose_document(Document& document);
+  bool close_document_at(int index);
+  std::string tab_title(const Document& document) const;
   void choose_color(bool background);
   bool on_key_press(GdkEventKey* event);
   bool on_key_release(GdkEventKey* event);
@@ -120,6 +130,7 @@ private:
   Gtk::Box root_{Gtk::ORIENTATION_VERTICAL};
   Gtk::Box toolbar_{Gtk::ORIENTATION_HORIZONTAL};
   ToolOptionsBar tool_options_bar_;
+  Gtk::Notebook tab_bar_;
   Gtk::Box work_area_{Gtk::ORIENTATION_HORIZONTAL};
   Toolbox toolbox_;
   CanvasView canvas_;
@@ -128,7 +139,8 @@ private:
   LayersPanel layers_panel_;
   HistoryPanel history_panel_;
   StatusBar status_bar_;
-  std::unique_ptr<Document> document_;
+  Workspace workspace_;
+  bool switching_tabs_{false};
   std::vector<std::unique_ptr<Tool>> tools_;
   Tool* active_tool_{nullptr};
   Tool* previous_tool_{nullptr};

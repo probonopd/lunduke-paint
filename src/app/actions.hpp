@@ -12,6 +12,7 @@ constexpr const char* kOpen = "open";
 constexpr const char* kSave = "save";
 constexpr const char* kSaveAs = "save-as";
 constexpr const char* kQuit = "quit";
+constexpr const char* kCloseTab = "close-tab";
 
 constexpr const char* kUndo = "undo";
 constexpr const char* kRedo = "redo";

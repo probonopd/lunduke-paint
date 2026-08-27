@@ -30,6 +30,7 @@ void Application::on_startup() {
   set_accels_for_action("app.save", {"<Primary>s"});
   set_accels_for_action("app.save-as", {"<Primary><Shift>s"});
   set_accels_for_action("app.quit", {"<Primary>q"});
+  set_accels_for_action("win.close-tab", {"<Primary>w"});
   set_accels_for_action("win.toggle-right-dock", {"F12"});
   set_accels_for_action("win.undo", {"<Primary>z"});
   set_accels_for_action("win.redo", {"<Primary>y", "<Primary><Shift>z"});

@@ -30,6 +30,7 @@ brushpad_inc = include_directories('src')
 
 brushpad_core_sources = files(
   'src/doc/document.cpp',
+  'src/doc/workspace.cpp',
   'src/doc/layer.cpp',
   'src/doc/layer_stack.cpp',
   'src/doc/history.cpp',

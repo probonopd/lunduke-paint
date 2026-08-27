@@ -21,6 +21,7 @@
 #include <gtk/gtk.h>
 #include <gdkmm/pixbuf.h>
 #include <gtkmm/button.h>
+#include <gtkmm/label.h>
 #include <gtkmm/clipboard.h>
 #include <gtkmm/colorchooserdialog.h>
 #include <gtkmm/filechooserdialog.h>
@@ -49,7 +50,7 @@ Gtk::Button* toolbar_button(const char* icon, const char* tooltip, const char* a
 }  // namespace
 
 MainWindow::MainWindow() {
-  document_ = Document::create(kDefaultWidth, kDefaultHeight, Color::white());
+  workspace_.add(Document::create(kDefaultWidth, kDefaultHeight, Color::white()));
   set_title("Untitled — Brushpad");
   set_default_size(1100, 720);
   // Traditional WM decorations: do not call set_titlebar() / GtkHeaderBar.
@@ -94,6 +95,7 @@ MainWindow::MainWindow() {
   layer_flatten_action_ = add_action(actions::kLayerFlatten,
                                      sigc::mem_fun(*this, &MainWindow::action_layer_flatten));
   add_action(actions::kLayerProperties, sigc::mem_fun(*this, &MainWindow::action_layer_properties));
+  add_action(actions::kCloseTab, sigc::mem_fun(*this, &MainWindow::action_close_tab));
   add_action("adjust-brightness")->set_enabled(false);
   add_action("effect-blur")->set_enabled(false);
   add_action("about")->set_enabled(false);
@@ -120,6 +122,7 @@ MainWindow::MainWindow() {
   bind_document();
   set_active_tool("pencil");
   show_all();
+  rebuild_tabs();
   update_chrome();
 }
 
@@ -147,9 +150,9 @@ void MainWindow::build_ui() {
   toolbox_.on_well_clicked = [this](bool background) { choose_color(background); };
   colors_panel_.on_swatch = [this](Color color, bool background) {
     if (background) {
-      document_->set_background(color);
+      document().set_background(color);
     } else {
-      document_->set_foreground(color);
+      document().set_foreground(color);
     }
   };
 
@@ -169,9 +172,24 @@ void MainWindow::build_ui() {
   work_area_.set_hexpand(true);
   work_area_.set_vexpand(true);
 
+  tab_bar_.set_scrollable(true);
+  tab_bar_.set_show_border(false);
+  tab_bar_.set_no_show_all(true);
+  tab_bar_.signal_switch_page().connect([this](Gtk::Widget*, guint page) {
+    if (switching_tabs_) {
+      return;
+    }
+    if (active_tool_ != nullptr) {
+      active_tool_->on_cancel();
+    }
+    workspace_.set_active(static_cast<int>(page));
+    attach_active_document();
+  });
+
   root_.pack_start(*menubar, Gtk::PACK_SHRINK);
   root_.pack_start(toolbar_, Gtk::PACK_SHRINK);
   root_.pack_start(tool_options_bar_, Gtk::PACK_SHRINK);
+  root_.pack_start(tab_bar_, Gtk::PACK_SHRINK);
   root_.pack_start(work_area_, Gtk::PACK_EXPAND_WIDGET);
   root_.pack_start(status_bar_, Gtk::PACK_SHRINK);
 
@@ -227,12 +245,17 @@ Glib::RefPtr<Gio::MenuModel> MainWindow::load_menubar_model() {
 }
 
 void MainWindow::bind_document() {
-  canvas_.set_document(document_.get());
+  attach_active_document();
+}
+
+void MainWindow::attach_active_document() {
+  canvas_.set_document(document_ptr());
   canvas_.set_tool(active_tool_);
-  layers_panel_.set_document(document_.get());
-  document_->set_on_changed([this]() { update_chrome(); });
-  document_->set_on_invalidated([this](Rect rect) { canvas_.invalidate_rect(rect); });
-  toolbox_.set_colors(document_->foreground(), document_->background());
+  layers_panel_.set_document(document_ptr());
+  document().set_on_changed([this]() { update_chrome(); });
+  document().set_on_invalidated([this](Rect rect) { canvas_.invalidate_rect(rect); });
+  toolbox_.set_colors(document().foreground(), document().background());
+  update_chrome();
 }
 
 void MainWindow::reset_canvas() {
@@ -240,12 +263,20 @@ void MainWindow::reset_canvas() {
 }
 
 void MainWindow::new_document(int width, int height, Color background) {
+  adopt_document(Document::create(width, height, background), false);
+}
+
+void MainWindow::adopt_document(std::unique_ptr<Document> document, bool prefer_replace) {
   if (active_tool_ != nullptr) {
     active_tool_->on_cancel();
   }
-  document_ = Document::create(width, height, background);
-  bind_document();
-  update_chrome();
+  if (prefer_replace && workspace_.count() == 1 && workspace_.is_placeholder(0)) {
+    workspace_.replace_active(std::move(document));
+  } else {
+    workspace_.add(std::move(document));
+  }
+  attach_active_document();
+  rebuild_tabs();
 }
 
 void MainWindow::show_status(const Glib::ustring& message) {
@@ -320,21 +351,21 @@ void MainWindow::on_undo() {
   if (active_tool_ != nullptr) {
     active_tool_->on_cancel();
   }
-  document_->undo();
+  document().undo();
 }
 
 void MainWindow::on_redo() {
   if (active_tool_ != nullptr) {
     active_tool_->on_cancel();
   }
-  document_->redo();
+  document().redo();
 }
 
 void MainWindow::update_chrome() {
   update_title();
-  undo_action_->set_enabled(document_->history().can_undo());
-  redo_action_->set_enabled(document_->history().can_redo());
-  const Selection& sel = document_->selection();
+  undo_action_->set_enabled(document().history().can_undo());
+  redo_action_->set_enabled(document().history().can_redo());
+  const Selection& sel = document().selection();
   const bool has_sel = !sel.empty();
   cut_action_->set_enabled(has_sel);
   copy_action_->set_enabled(has_sel);
@@ -349,30 +380,31 @@ void MainWindow::update_chrome() {
   } else {
     status_bar_.set_selection_size(0, 0, false);
   }
-  status_bar_.set_canvas_size(document_->width(), document_->height());
+  status_bar_.set_canvas_size(document().width(), document().height());
   status_bar_.set_zoom(canvas_.zoom());
-  status_bar_.set_modified(document_->dirty());
+  status_bar_.set_modified(document().dirty());
   if (active_tool_ != nullptr) {
     status_bar_.set_hint(active_tool_->hint());
   }
-  toolbox_.set_colors(document_->foreground(), document_->background());
+  toolbox_.set_colors(document().foreground(), document().background());
   canvas_.refresh_size();
   layers_panel_.refresh();
-  const int nlayers = document_->layers().count();
-  const int active = document_->layers().active_index();
+  const int nlayers = document().layers().count();
+  const int active = document().layers().active_index();
   layer_delete_action_->set_enabled(nlayers > 1);
   layer_raise_action_->set_enabled(active + 1 < nlayers);
   layer_lower_action_->set_enabled(active > 0);
   layer_merge_action_->set_enabled(active > 0);
   layer_flatten_action_->set_enabled(nlayers > 1);
+  update_tab_labels();
 }
 
 void MainWindow::update_title() {
   Glib::ustring name = "Untitled";
-  if (!document_->path().empty()) {
-    name = Glib::path_get_basename(document_->path());
+  if (!document().path().empty()) {
+    name = Glib::path_get_basename(document().path());
   }
-  if (document_->dirty()) {
+  if (document().dirty()) {
     name += "*";
   }
   set_title(name + " — Brushpad");
@@ -382,7 +414,7 @@ void MainWindow::choose_color(bool background) {
   Gtk::ColorChooserDialog dialog(background ? "Background color" : "Foreground color");
   dialog.set_transient_for(*this);
   dialog.set_use_alpha(true);
-  const Color current = background ? document_->background() : document_->foreground();
+  const Color current = background ? document().background() : document().foreground();
   Gdk::RGBA rgba;
   rgba.set_rgba(current.r / 255.0, current.g / 255.0, current.b / 255.0, current.a / 255.0);
   dialog.set_rgba(rgba);
@@ -396,9 +428,9 @@ void MainWindow::choose_color(bool background) {
   color.b = static_cast<std::uint8_t>(chosen.get_blue() * 255.0 + 0.5);
   color.a = static_cast<std::uint8_t>(chosen.get_alpha() * 255.0 + 0.5);
   if (background) {
-    document_->set_background(color);
+    document().set_background(color);
   } else {
-    document_->set_foreground(color);
+    document().set_foreground(color);
   }
 }
 
@@ -434,11 +466,11 @@ bool MainWindow::on_key_press(GdkEventKey* event) {
   }
   const guint32 ch = gdk_keyval_to_unicode(gdk_keyval_to_upper(event->keyval));
   if (ch == 'X') {
-    document_->swap_colors();
+    document().swap_colors();
     return true;
   }
   if (ch == 'D') {
-    document_->reset_colors();
+    document().reset_colors();
     return true;
   }
   for (auto& tool : tools_) {
@@ -462,9 +494,6 @@ void MainWindow::on_toggle_right_dock() {
 }
 
 void MainWindow::action_new() {
-  if (!confirm_lose_changes()) {
-    return;
-  }
   NewImageDialog dialog(*this);
   if (dialog.run() != Gtk::RESPONSE_OK) {
     return;
@@ -493,9 +522,6 @@ void MainWindow::action_new() {
 }
 
 void MainWindow::action_open() {
-  if (!confirm_lose_changes()) {
-    return;
-  }
   const std::string path = choose_open_path();
   if (path.empty()) {
     return;
@@ -532,14 +558,13 @@ void MainWindow::action_open() {
     for (const auto& snap : loaded.layers) {
       layers.push_back(layer_from_snapshot(snap));
     }
-    document_ = Document::create(loaded.width, loaded.height, Color::transparent(),
-                                 loaded.layers.front().name);
-    document_->replace_stack(loaded.width, loaded.height, std::move(layers),
-                             static_cast<int>(loaded.layers.size()) - 1);
-    document_->set_path(path);
-    document_->mark_clean();
-    bind_document();
-    update_chrome();
+    auto doc = Document::create(loaded.width, loaded.height, Color::transparent(),
+                                loaded.layers.front().name);
+    doc->replace_stack(loaded.width, loaded.height, std::move(layers),
+                       static_cast<int>(loaded.layers.size()) - 1);
+    doc->set_path(path);
+    doc->mark_clean();
+    adopt_document(std::move(doc), true);
     show_status("Opened " + Glib::path_get_basename(path));
     return;
   }
@@ -559,23 +584,22 @@ void MainWindow::action_open() {
       return;
     }
   }
-  document_ = Document::create(loaded.width, loaded.height, Color::transparent(), loaded.layer_name);
-  document_->layers().active_layer().write_rect(Rect{0, 0, loaded.width, loaded.height},
-                                                loaded.rgba.data());
-  document_->set_path(path);
-  document_->mark_clean();
-  bind_document();
-  update_chrome();
+  auto doc = Document::create(loaded.width, loaded.height, Color::transparent(), loaded.layer_name);
+  doc->layers().active_layer().write_rect(Rect{0, 0, loaded.width, loaded.height},
+                                          loaded.rgba.data());
+  doc->set_path(path);
+  doc->mark_clean();
+  adopt_document(std::move(doc), true);
   show_status("Opened " + Glib::path_get_basename(path));
 }
 
 void MainWindow::action_save() {
-  if (document_->path().empty() || format_from_path(document_->path()) == ImageFormat::Unknown) {
+  if (document().path().empty() || format_from_path(document().path()) == ImageFormat::Unknown) {
     action_save_as();
     return;
   }
-  if (save_to_path(document_->path(), format_from_path(document_->path()))) {
-    document_->mark_clean();
+  if (save_to_path(document().path(), format_from_path(document().path()))) {
+    document().mark_clean();
     update_chrome();
     show_status("Saved");
   }
@@ -588,7 +612,7 @@ void MainWindow::action_save_as() {
     return;
   }
   bool also_ora = false;
-  if (format != ImageFormat::Ora && document_->layers().count() > 1 && !flatten_ora_offered_) {
+  if (format != ImageFormat::Ora && document().layers().count() > 1 && !flatten_ora_offered_) {
     Gtk::MessageDialog warn(*this,
                             "This document has multiple layers. Saving a flat file will flatten visible layers.",
                             false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_NONE, true);
@@ -611,22 +635,29 @@ void MainWindow::action_save_as() {
       }
       ora_path += ".ora";
       std::string error;
-      if (!save_ora(ora_path, *document_, error)) {
+      if (!save_ora(ora_path, document(), error)) {
         Gtk::MessageDialog err(*this, "Saved the flat file, but could not write the .ora copy.",
                                false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK, true);
         err.set_secondary_text(error);
         err.run();
       }
     }
-    document_->set_path(path);
-    document_->mark_clean();
+    document().set_path(path);
+    document().mark_clean();
     update_chrome();
     show_status("Saved");
   }
 }
 
 bool MainWindow::confirm_close() {
-  return confirm_lose_changes();
+  for (int i = 0; i < workspace_.count(); ++i) {
+    workspace_.set_active(i);
+    attach_active_document();
+    if (!confirm_lose_document(workspace_.at(i))) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool MainWindow::on_delete_event(GdkEventAny* event) {
@@ -637,10 +668,15 @@ bool MainWindow::on_delete_event(GdkEventAny* event) {
 }
 
 bool MainWindow::confirm_lose_changes() {
-  if (!document_->dirty()) {
+  return confirm_lose_document(document());
+}
+
+bool MainWindow::confirm_lose_document(Document& document) {
+  if (!document.dirty()) {
     return true;
   }
-  Gtk::MessageDialog dialog(*this, "Save changes to the current image?", false,
+  Glib::ustring name = document.path().empty() ? "Untitled" : Glib::path_get_basename(document.path());
+  Gtk::MessageDialog dialog(*this, "Save changes to " + name + "?", false,
                             Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_NONE, true);
   dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
   dialog.add_button("_Discard", Gtk::RESPONSE_NO);
@@ -650,8 +686,13 @@ bool MainWindow::confirm_lose_changes() {
     return false;
   }
   if (response == Gtk::RESPONSE_YES) {
+    const int idx = workspace_.index_of(&document);
+    if (idx >= 0) {
+      workspace_.set_active(idx);
+      attach_active_document();
+    }
     action_save();
-    return !document_->dirty();
+    return !document.dirty();
   }
   return true;
 }
@@ -659,7 +700,7 @@ bool MainWindow::confirm_lose_changes() {
 bool MainWindow::layer_has_transparency() const {
   std::vector<std::uint8_t> flat;
   composite_visible(flat);
-  const int n = document_->width() * document_->height();
+  const int n = document().width() * document().height();
   for (int i = 0; i < n; ++i) {
     if (flat[static_cast<std::size_t>(i) * 4 + 3] != 255) {
       return true;
@@ -669,16 +710,16 @@ bool MainWindow::layer_has_transparency() const {
 }
 
 void MainWindow::composite_visible(std::vector<std::uint8_t>& dest) const {
-  const int w = document_->width();
-  const int h = document_->height();
+  const int w = document().width();
+  const int h = document().height();
   dest.assign(static_cast<std::size_t>(w) * static_cast<std::size_t>(h) * 4, 0);
-  document_->layers().composite_rect(dest.data(), w * 4, Rect{0, 0, w, h});
+  document().layers().composite_rect(dest.data(), w * 4, Rect{0, 0, w, h});
 }
 
 bool MainWindow::save_to_path(const std::string& path, ImageFormat format) {
   if (format == ImageFormat::Ora) {
     std::string error;
-    if (!save_ora(path, *document_, error)) {
+    if (!save_ora(path, document(), error)) {
       Gtk::MessageDialog err(*this, "Could not save OpenRaster file.", false, Gtk::MESSAGE_ERROR,
                              Gtk::BUTTONS_OK, true);
       err.set_secondary_text(error);
@@ -688,7 +729,7 @@ bool MainWindow::save_to_path(const std::string& path, ImageFormat format) {
     return true;
   }
 
-  const bool multi = document_->layers().count() > 1;
+  const bool multi = document().layers().count() > 1;
   if (multi && format == ImageFormat::Png) {
     Gtk::MessageDialog warn(*this,
                             "PNG will flatten visible layers (alpha is kept).",
@@ -716,8 +757,8 @@ bool MainWindow::save_to_path(const std::string& path, ImageFormat format) {
   std::vector<std::uint8_t> flat;
   composite_visible(flat);
   std::string error;
-  if (!save_flat_image(path, format, flat.data(), document_->width(), document_->height(),
-                       document_->width() * 4, 90, error)) {
+  if (!save_flat_image(path, format, flat.data(), document().width(), document().height(),
+                       document().width() * 4, 90, error)) {
     Gtk::MessageDialog err(*this, "Could not save image.", false, Gtk::MESSAGE_ERROR,
                            Gtk::BUTTONS_OK, true);
     err.set_secondary_text(error);
@@ -784,8 +825,8 @@ bool MainWindow::choose_save_path(std::string& path, ImageFormat& format) {
   bmp->set_name("BMP image (*.bmp)");
   bmp->add_pattern("*.bmp");
   dialog.add_filter(bmp);
-  if (!document_->path().empty()) {
-    dialog.set_filename(document_->path());
+  if (!document().path().empty()) {
+    dialog.set_filename(document().path());
   } else {
     dialog.set_current_name("untitled.ora");
   }
@@ -827,8 +868,8 @@ bool MainWindow::choose_save_path(std::string& path, ImageFormat& format) {
     }
     path += format_extension(format);
   }
-  if (format != ImageFormat::Ora && !document_->path().empty() &&
-      format_from_path(document_->path()) == ImageFormat::Ora && path == document_->path()) {
+  if (format != ImageFormat::Ora && !document().path().empty() &&
+      format_from_path(document().path()) == ImageFormat::Ora && path == document().path()) {
     auto dot = path.find_last_of('.');
     if (dot != std::string::npos) {
       path = path.substr(0, dot);
@@ -840,14 +881,14 @@ bool MainWindow::choose_save_path(std::string& path, ImageFormat& format) {
 
 
 void MainWindow::copy_selection_to_clipboard() {
-  if (document_->selection().empty()) {
+  if (document().selection().empty()) {
     return;
   }
   int w = 0;
   int h = 0;
   std::vector<std::uint8_t> rgba;
-  copy_selection_rgba(document_->layers().active_layer(), document_->selection(), document_->width(),
-                      document_->height(), w, h, rgba);
+  copy_selection_rgba(document().layers().active_layer(), document().selection(), document().width(),
+                      document().height(), w, h, rgba);
   if (w < 1 || h < 1 || rgba.empty()) {
     return;
   }
@@ -890,18 +931,18 @@ bool MainWindow::paste_from_clipboard() {
       drow[x * 4 + 3] = nch >= 4 ? p[3] : 255;
     }
   }
-  document_->paste_floating(0, 0, w, h, std::move(rgba));
+  document().paste_floating(0, 0, w, h, std::move(rgba));
   set_active_tool("rect-select");
   show_status("Pasted");
   return true;
 }
 
 void MainWindow::action_cut() {
-  if (document_->selection().empty()) {
+  if (document().selection().empty()) {
     return;
   }
   copy_selection_to_clipboard();
-  document_->delete_selection();
+  document().delete_selection();
 }
 
 void MainWindow::action_copy() {
@@ -916,27 +957,27 @@ void MainWindow::action_delete() {
   if (focus_is_editable()) {
     return;
   }
-  document_->delete_selection();
+  document().delete_selection();
 }
 
 void MainWindow::action_duplicate() {
-  document_->duplicate_selection();
+  document().duplicate_selection();
   set_active_tool("rect-select");
 }
 
 void MainWindow::action_select_all() {
-  document_->select_all();
+  document().select_all();
 }
 
 void MainWindow::action_deselect() {
   if (active_tool_ != nullptr && active_tool_->is_stroking()) {
     active_tool_->on_cancel();
   }
-  document_->deselect();
+  document().deselect();
 }
 
 void MainWindow::action_invert_selection() {
-  document_->invert_selection();
+  document().invert_selection();
 }
 
 void MainWindow::action_zoom_fit() {
@@ -971,11 +1012,11 @@ bool MainWindow::warn_size(int width, int height) {
 
 void MainWindow::commit_buffer_change(const char* name, int new_w, int new_h,
                                       const std::uint8_t* rgba, int stride) {
-  const Layer& layer = document_->layers().active_layer();
-  auto cmd = LayerBufferCommand::from_buffers(name, document_->width(), document_->height(),
+  const Layer& layer = document().layers().active_layer();
+  auto cmd = LayerBufferCommand::from_buffers(name, document().width(), document().height(),
                                               layer.pixels(), layer.stride(), new_w, new_h, rgba,
-                                              stride, document_->layers().active_index());
-  document_->commit(std::move(cmd));
+                                              stride, document().layers().active_index());
+  document().commit(std::move(cmd));
   canvas_.refresh_size();
   canvas_.invalidate_all();
 }
@@ -983,11 +1024,11 @@ void MainWindow::commit_buffer_change(const char* name, int new_w, int new_h,
 void MainWindow::commit_stack_transform(
     const char* name, int new_w, int new_h,
     const std::function<void(const Layer&, std::vector<std::uint8_t>&, int, int)>& xform) {
-  auto old_layers = document_->snapshot_layers();
+  auto old_layers = document().snapshot_layers();
   std::vector<LayerSnapshot> new_layers;
   new_layers.reserve(old_layers.size());
-  for (int i = 0; i < document_->layers().count(); ++i) {
-    const Layer& layer = document_->layers().at(i);
+  for (int i = 0; i < document().layers().count(); ++i) {
+    const Layer& layer = document().layers().at(i);
     std::vector<std::uint8_t> dest(static_cast<std::size_t>(new_w) * static_cast<std::size_t>(new_h) *
                                    4);
     xform(layer, dest, new_w, new_h);
@@ -1000,17 +1041,17 @@ void MainWindow::commit_stack_transform(
     new_layers.push_back(std::move(snap));
   }
   auto cmd = std::make_unique<AllLayersBufferCommand>(
-      name, document_->width(), document_->height(), document_->layers().active_index(),
-      std::move(old_layers), new_w, new_h, document_->layers().active_index(),
+      name, document().width(), document().height(), document().layers().active_index(),
+      std::move(old_layers), new_w, new_h, document().layers().active_index(),
       std::move(new_layers));
-  document_->commit(std::move(cmd));
+  document().commit(std::move(cmd));
   canvas_.refresh_size();
   canvas_.invalidate_all();
 }
 
 void MainWindow::action_canvas_size() {
-  document_->commit_floating();
-  CanvasSizeDialog dialog(*this, document_->width(), document_->height());
+  document().commit_floating();
+  CanvasSizeDialog dialog(*this, document().width(), document().height());
   if (dialog.run() != Gtk::RESPONSE_OK) {
     return;
   }
@@ -1019,7 +1060,7 @@ void MainWindow::action_canvas_size() {
   if (!warn_size(nw, nh)) {
     return;
   }
-  const Color fill = dialog.fill_color(document_->background());
+  const Color fill = dialog.fill_color(document().background());
   commit_stack_transform("Canvas size", nw, nh, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
                                                     int dw, int dh) {
     resize_canvas(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), dw, dh,
@@ -1028,8 +1069,8 @@ void MainWindow::action_canvas_size() {
 }
 
 void MainWindow::action_scale() {
-  document_->commit_floating();
-  ScaleImageDialog dialog(*this, document_->width(), document_->height());
+  document().commit_floating();
+  ScaleImageDialog dialog(*this, document().width(), document().height());
   if (dialog.run() != Gtk::RESPONSE_OK) {
     return;
   }
@@ -1052,12 +1093,12 @@ void MainWindow::action_scale() {
 }
 
 void MainWindow::action_crop() {
-  document_->commit_floating();
-  const Selection& sel = document_->selection();
+  document().commit_floating();
+  const Selection& sel = document().selection();
   if (sel.empty() || sel.inverted()) {
     return;
   }
-  Rect r = rect_intersect(sel.bounds(), Rect{0, 0, document_->width(), document_->height()});
+  Rect r = rect_intersect(sel.bounds(), Rect{0, 0, document().width(), document().height()});
   if (r.empty()) {
     return;
   }
@@ -1069,8 +1110,8 @@ void MainWindow::action_crop() {
 }
 
 void MainWindow::action_autocrop() {
-  document_->commit_floating();
-  const Layer& layer = document_->layers().active_layer();
+  document().commit_floating();
+  const Layer& layer = document().layers().active_layer();
   const Rect r = autocrop_bounds(layer.pixels(), layer.width(), layer.height(), layer.stride());
   if (r.empty() || (r.x == 0 && r.y == 0 && r.w == layer.width() && r.h == layer.height())) {
     show_status("Nothing to autocrop");
@@ -1084,9 +1125,9 @@ void MainWindow::action_autocrop() {
 }
 
 void MainWindow::action_rotate_90() {
-  document_->commit_floating();
-  const int nw = document_->height();
-  const int nh = document_->width();
+  document().commit_floating();
+  const int nw = document().height();
+  const int nh = document().width();
   commit_stack_transform("Rotate 90", nw, nh, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
                                                   int dw, int dh) {
     rotate_90_cw(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), dw * 4);
@@ -1095,9 +1136,9 @@ void MainWindow::action_rotate_90() {
 }
 
 void MainWindow::action_rotate_180() {
-  document_->commit_floating();
-  const int w = document_->width();
-  const int h = document_->height();
+  document().commit_floating();
+  const int w = document().width();
+  const int h = document().height();
   commit_stack_transform("Rotate 180", w, h, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
                                                  int dw, int dh) {
     dest = copy_layer_pixels(layer);
@@ -1108,9 +1149,9 @@ void MainWindow::action_rotate_180() {
 }
 
 void MainWindow::action_flip_h() {
-  document_->commit_floating();
-  const int w = document_->width();
-  const int h = document_->height();
+  document().commit_floating();
+  const int w = document().width();
+  const int h = document().height();
   commit_stack_transform("Flip horizontal", w, h, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
                                                      int dw, int dh) {
     dest = copy_layer_pixels(layer);
@@ -1121,9 +1162,9 @@ void MainWindow::action_flip_h() {
 }
 
 void MainWindow::action_flip_v() {
-  document_->commit_floating();
-  const int w = document_->width();
-  const int h = document_->height();
+  document().commit_floating();
+  const int w = document().width();
+  const int h = document().height();
   commit_stack_transform("Flip vertical", w, h, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
                                                    int dw, int dh) {
     dest = copy_layer_pixels(layer);
@@ -1134,26 +1175,26 @@ void MainWindow::action_flip_v() {
 }
 
 void MainWindow::action_clear() {
-  if (document_->active_locked()) {
+  if (document().active_locked()) {
     show_status("Layer is locked");
     return;
   }
-  document_->commit_floating();
-  document_->deselect();
-  Layer& layer = document_->layers().active_layer();
+  document().commit_floating();
+  document().deselect();
+  Layer& layer = document().layers().active_layer();
   Layer before(layer.width(), layer.height(), Color::transparent(), "before");
   before.copy_from(layer);
-  layer.fill(document_->background());
+  layer.fill(document().background());
   auto cmd = PixelPatchCommand::from_layers(before, layer, Rect{0, 0, layer.width(), layer.height()},
-                                            "Clear", document_->layers().active_index());
+                                            "Clear", document().layers().active_index());
   if (cmd && !cmd->empty()) {
-    document_->commit(std::move(cmd));
+    document().commit(std::move(cmd));
   }
 }
 
 
 void MainWindow::action_layer_new() {
-  if (document_->layers().count() >= kSoftMaxLayers) {
+  if (document().layers().count() >= kSoftMaxLayers) {
     Gtk::MessageDialog warn(*this,
                             "This document has 64 or more layers and may use a lot of memory.",
                             false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
@@ -1161,18 +1202,18 @@ void MainWindow::action_layer_new() {
       return;
     }
   }
-  document_->add_layer();
+  document().add_layer();
   right_dock_.set_current_page(1);
   show_status("Added layer");
 }
 
 void MainWindow::action_layer_duplicate() {
-  document_->duplicate_layer();
+  document().duplicate_layer();
   show_status("Duplicated layer");
 }
 
 void MainWindow::action_layer_delete() {
-  if (!document_->delete_layer()) {
+  if (!document().delete_layer()) {
     show_status("Cannot delete the last layer");
     return;
   }
@@ -1180,21 +1221,21 @@ void MainWindow::action_layer_delete() {
 }
 
 void MainWindow::action_layer_raise() {
-  if (!document_->raise_layer()) {
+  if (!document().raise_layer()) {
     return;
   }
   show_status("Raised layer");
 }
 
 void MainWindow::action_layer_lower() {
-  if (!document_->lower_layer()) {
+  if (!document().lower_layer()) {
     return;
   }
   show_status("Lowered layer");
 }
 
 void MainWindow::action_layer_merge_down() {
-  if (!document_->merge_down()) {
+  if (!document().merge_down()) {
     show_status("Nothing below to merge");
     return;
   }
@@ -1202,15 +1243,108 @@ void MainWindow::action_layer_merge_down() {
 }
 
 void MainWindow::action_layer_flatten() {
-  if (document_->layers().count() <= 1) {
+  if (document().layers().count() <= 1) {
     return;
   }
-  document_->flatten();
+  document().flatten();
   show_status("Flattened");
 }
 
 void MainWindow::action_layer_properties() {
   layers_panel_.show_properties();
+}
+
+
+std::string MainWindow::tab_title(const Document& document) const {
+  Glib::ustring name = document.path().empty() ? "Untitled" : Glib::path_get_basename(document.path());
+  if (document.dirty()) {
+    name += "*";
+  }
+  return name;
+}
+
+void MainWindow::rebuild_tabs() {
+  switching_tabs_ = true;
+  while (tab_bar_.get_n_pages() > 0) {
+    tab_bar_.remove_page(0);
+  }
+  for (int i = 0; i < workspace_.count(); ++i) {
+    auto* page = Gtk::manage(new Gtk::Box());
+    auto* box = Gtk::manage(new Gtk::Box(Gtk::ORIENTATION_HORIZONTAL, 4));
+    auto* label = Gtk::manage(new Gtk::Label(tab_title(workspace_.at(i))));
+    auto* close = Gtk::manage(new Gtk::Button());
+    close->set_image_from_icon_name("window-close-symbolic", Gtk::ICON_SIZE_MENU);
+    close->set_relief(Gtk::RELIEF_NONE);
+    close->set_can_focus(false);
+    close->set_tooltip_text("Close tab");
+    Document* doc = &workspace_.at(i);
+    close->signal_clicked().connect([this, doc]() {
+      const int idx = workspace_.index_of(doc);
+      if (idx >= 0) {
+        close_document_at(idx);
+      }
+    });
+    box->pack_start(*label, Gtk::PACK_SHRINK);
+    box->pack_start(*close, Gtk::PACK_SHRINK);
+    box->show_all();
+    tab_bar_.append_page(*page, *box);
+  }
+  if (workspace_.count() > 1) {
+    tab_bar_.show();
+    tab_bar_.set_current_page(workspace_.active_index());
+  } else {
+    tab_bar_.hide();
+  }
+  switching_tabs_ = false;
+}
+
+void MainWindow::update_tab_labels() {
+  if (tab_bar_.get_n_pages() != workspace_.count()) {
+    rebuild_tabs();
+    return;
+  }
+  for (int i = 0; i < workspace_.count(); ++i) {
+    auto* widget = tab_bar_.get_tab_label(*tab_bar_.get_nth_page(i));
+    if (auto* box = dynamic_cast<Gtk::Box*>(widget)) {
+      auto children = box->get_children();
+      if (!children.empty()) {
+        if (auto* label = dynamic_cast<Gtk::Label*>(children[0])) {
+          label->set_text(tab_title(workspace_.at(i)));
+        }
+      }
+    }
+  }
+  if (workspace_.count() > 1) {
+    tab_bar_.show();
+  } else {
+    tab_bar_.hide();
+  }
+}
+
+bool MainWindow::close_document_at(int index) {
+  if (index < 0 || index >= workspace_.count()) {
+    return false;
+  }
+  workspace_.set_active(index);
+  attach_active_document();
+  if (!confirm_lose_document(workspace_.at(index))) {
+    return false;
+  }
+  if (active_tool_ != nullptr) {
+    active_tool_->on_cancel();
+  }
+  if (workspace_.count() == 1) {
+    workspace_.replace_active(Document::create(kDefaultWidth, kDefaultHeight, Color::white()));
+  } else {
+    workspace_.close(index);
+  }
+  attach_active_document();
+  rebuild_tabs();
+  return true;
+}
+
+void MainWindow::action_close_tab() {
+  close_document_at(workspace_.active_index());
 }
 
 }  // namespace brushpad

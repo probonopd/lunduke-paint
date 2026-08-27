@@ -23,6 +23,10 @@
       </section>
       <section>
         <item>
+          <attribute name="label" translatable="yes">_Close</attribute>
+          <attribute name="action">win.close-tab</attribute>
+        </item>
+        <item>
           <attribute name="label" translatable="yes">_Print…</attribute>
           <attribute name="action">win.print</attribute>
         </item>
