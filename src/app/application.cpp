@@ -6,6 +6,7 @@
 #include "app/main_window.hpp"
 
 #include <giomm/application.h>
+#include <gtkmm/icontheme.h>
 
 namespace brushpad {
 
@@ -18,6 +19,7 @@ Application::Application()
 
 void Application::on_startup() {
   Gtk::Application::on_startup();
+  Gtk::IconTheme::get_default()->add_resource_path("/org/lunduke/LundukePaint/icons");
 
   add_action(actions::kNew, sigc::mem_fun(*this, &Application::on_action_new));
   add_action(actions::kOpen, sigc::mem_fun(*this, &Application::on_action_open));

@@ -154,6 +154,7 @@ part of the development loop. Target runtime: Linux X11 / XLibre + XFCE.
 - Preferences are `$XDG_CONFIG_HOME/lunduke-paint/brushpad.ini` via GKeyFile (default size, undo limit, checker colors, grid threshold).
 - Print is a single fit-to-page `Gtk::PrintOperation` of the visible composite, painted on white.
 - Unready menu items (Recent, Export, Revert, Copy Merged, Rulers, Fullscreen) are omitted rather than shown disabled.
+- Toolbox tool icons are Pinta scalable symbolic SVGs (Paint.NET/Pinta/Fluent MIT, Material Apache-2.0, some GIMP CC-BY-4.0) plus original spray/curve/polyline icons; see `data/icons/ATTRIBUTION.md`.
 
 ## Layout
 

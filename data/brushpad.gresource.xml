@@ -3,4 +3,25 @@
   <gresource prefix="/org/lunduke/LundukePaint">
     <file>ui/menus.xml</file>
   </gresource>
+  <gresource prefix="/org/lunduke/LundukePaint/icons">
+    <file alias="scalable/actions/tool-select-rectangle-symbolic.svg">icons/hicolor/scalable/actions/tool-select-rectangle-symbolic.svg</file>
+    <file alias="scalable/actions/tool-select-lasso-freeform-symbolic.svg">icons/hicolor/scalable/actions/tool-select-lasso-freeform-symbolic.svg</file>
+    <file alias="scalable/actions/tool-select-ellipse-symbolic.svg">icons/hicolor/scalable/actions/tool-select-ellipse-symbolic.svg</file>
+    <file alias="scalable/actions/tool-pencil-symbolic.svg">icons/hicolor/scalable/actions/tool-pencil-symbolic.svg</file>
+    <file alias="scalable/actions/tool-paintbrush-symbolic.svg">icons/hicolor/scalable/actions/tool-paintbrush-symbolic.svg</file>
+    <file alias="scalable/actions/tool-eraser-symbolic.svg">icons/hicolor/scalable/actions/tool-eraser-symbolic.svg</file>
+    <file alias="scalable/actions/tool-paintbucket-symbolic.svg">icons/hicolor/scalable/actions/tool-paintbucket-symbolic.svg</file>
+    <file alias="scalable/actions/tool-colorpicker-symbolic.svg">icons/hicolor/scalable/actions/tool-colorpicker-symbolic.svg</file>
+    <file alias="scalable/actions/tool-line-symbolic.svg">icons/hicolor/scalable/actions/tool-line-symbolic.svg</file>
+    <file alias="scalable/actions/tool-rectangle-symbolic.svg">icons/hicolor/scalable/actions/tool-rectangle-symbolic.svg</file>
+    <file alias="scalable/actions/tool-ellipse-symbolic.svg">icons/hicolor/scalable/actions/tool-ellipse-symbolic.svg</file>
+    <file alias="scalable/actions/tool-recolor-symbolic.svg">icons/hicolor/scalable/actions/tool-recolor-symbolic.svg</file>
+    <file alias="scalable/actions/tool-spray-symbolic.svg">icons/hicolor/scalable/actions/tool-spray-symbolic.svg</file>
+    <file alias="scalable/actions/tool-rectangle-rounded-symbolic.svg">icons/hicolor/scalable/actions/tool-rectangle-rounded-symbolic.svg</file>
+    <file alias="scalable/actions/tool-polyline-symbolic.svg">icons/hicolor/scalable/actions/tool-polyline-symbolic.svg</file>
+    <file alias="scalable/actions/tool-select-lasso-polygon-symbolic.svg">icons/hicolor/scalable/actions/tool-select-lasso-polygon-symbolic.svg</file>
+    <file alias="scalable/actions/tool-curve-symbolic.svg">icons/hicolor/scalable/actions/tool-curve-symbolic.svg</file>
+    <file alias="scalable/actions/tool-text-symbolic.svg">icons/hicolor/scalable/actions/tool-text-symbolic.svg</file>
+    <file alias="scalable/actions/tool-freeformshape-symbolic.svg">icons/hicolor/scalable/actions/tool-freeformshape-symbolic.svg</file>
+  </gresource>
 </gresources>
