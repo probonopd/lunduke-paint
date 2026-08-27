@@ -51,6 +51,12 @@ constexpr const char* kLayerMergeDown = "layer-merge-down";
 constexpr const char* kLayerFlatten = "layer-flatten";
 constexpr const char* kLayerProperties = "layer-properties";
 
+constexpr const char* kAdjustBrightness = "adjust-brightness";
+constexpr const char* kAdjustInvert = "adjust-invert";
+constexpr const char* kAdjustGrayscale = "adjust-grayscale";
+constexpr const char* kAdjustHue = "adjust-hue";
+constexpr const char* kAdjustPosterize = "adjust-posterize";
+
 }  // namespace actions
 }  // namespace brushpad
 

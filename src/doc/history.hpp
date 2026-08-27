@@ -36,6 +36,7 @@ public:
 
   void clear();
 
+  int depth() const { return depth_; }
   int index() const { return index_; }
   int count() const { return static_cast<int>(commands_.size()); }
   std::string name_at(int i) const;

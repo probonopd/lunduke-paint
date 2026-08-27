@@ -9,7 +9,9 @@
 #include "doc/selection.hpp"
 #include "io/image_io.hpp"
 #include "io/ora.hpp"
+#include "raster/effects.hpp"
 #include "raster/transform.hpp"
+#include "ui/dialogs_adjust.hpp"
 #include "ui/dialogs_image.hpp"
 #include "ui/dialogs_new.hpp"
 #include "tools/tools.hpp"
@@ -96,7 +98,11 @@ MainWindow::MainWindow() {
                                      sigc::mem_fun(*this, &MainWindow::action_layer_flatten));
   add_action(actions::kLayerProperties, sigc::mem_fun(*this, &MainWindow::action_layer_properties));
   add_action(actions::kCloseTab, sigc::mem_fun(*this, &MainWindow::action_close_tab));
-  add_action("adjust-brightness")->set_enabled(false);
+  add_action(actions::kAdjustBrightness, sigc::mem_fun(*this, &MainWindow::action_adjust_brightness));
+  add_action(actions::kAdjustInvert, sigc::mem_fun(*this, &MainWindow::action_adjust_invert));
+  add_action(actions::kAdjustGrayscale, sigc::mem_fun(*this, &MainWindow::action_adjust_grayscale));
+  add_action(actions::kAdjustHue, sigc::mem_fun(*this, &MainWindow::action_adjust_hue));
+  add_action(actions::kAdjustPosterize, sigc::mem_fun(*this, &MainWindow::action_adjust_posterize));
   add_action("effect-blur")->set_enabled(false);
   add_action("about")->set_enabled(false);
 
@@ -1393,6 +1399,89 @@ bool MainWindow::close_document_at(int index) {
 
 void MainWindow::action_close_tab() {
   close_document_at(workspace_.active_index());
+}
+
+void MainWindow::apply_layer_effect(const char* name,
+                                    const std::function<void(std::uint8_t*, int, int, int)>& fn) {
+  if (document().active_locked()) {
+    show_status("Layer is locked");
+    return;
+  }
+  document().commit_floating();
+  Layer& layer = document().layers().active_layer();
+  Layer before(layer.width(), layer.height(), Color::transparent(), "before");
+  before.copy_from(layer);
+  Layer after(layer.width(), layer.height(), Color::transparent(), "after");
+  after.copy_from(layer);
+  fn(after.pixels(), after.width(), after.height(), after.stride());
+  const Selection& sel = document().selection();
+  Rect bounds{0, 0, after.width(), after.height()};
+  if (!sel.empty()) {
+    clip_rect_to_selection(after, before, bounds, sel);
+    if (!sel.inverted()) {
+      bounds = rect_intersect(sel.bounds(), bounds);
+    }
+  }
+  auto cmd = PixelPatchCommand::from_layers(before, after, bounds, name ? name : "Adjust",
+                                            document().layers().active_index());
+  if (cmd && !cmd->empty()) {
+    document().commit(std::move(cmd));
+  }
+}
+
+void MainWindow::action_adjust_brightness() {
+  BrightnessContrastDialog dialog(*this);
+  if (dialog.run() != Gtk::RESPONSE_OK) {
+    return;
+  }
+  const int brightness = dialog.brightness();
+  const int contrast = dialog.contrast();
+  if (brightness == 0 && contrast == 0) {
+    return;
+  }
+  apply_layer_effect("Brightness / Contrast", [brightness, contrast](std::uint8_t* px, int w, int h,
+                                                                     int stride) {
+    brightness_contrast_rgba(px, w, h, stride, brightness, contrast);
+  });
+}
+
+void MainWindow::action_adjust_invert() {
+  apply_layer_effect("Invert", [](std::uint8_t* px, int w, int h, int stride) {
+    invert_rgba(px, w, h, stride);
+  });
+}
+
+void MainWindow::action_adjust_grayscale() {
+  apply_layer_effect("Grayscale", [](std::uint8_t* px, int w, int h, int stride) {
+    grayscale_rgba(px, w, h, stride);
+  });
+}
+
+void MainWindow::action_adjust_hue() {
+  HueSaturationDialog dialog(*this);
+  if (dialog.run() != Gtk::RESPONSE_OK) {
+    return;
+  }
+  const int hue = dialog.hue();
+  const int saturation = dialog.saturation();
+  if (hue == 0 && saturation == 0) {
+    return;
+  }
+  apply_layer_effect("Hue / Saturation", [hue, saturation](std::uint8_t* px, int w, int h,
+                                                           int stride) {
+    hue_saturation_rgba(px, w, h, stride, hue, saturation);
+  });
+}
+
+void MainWindow::action_adjust_posterize() {
+  PosterizeDialog dialog(*this);
+  if (dialog.run() != Gtk::RESPONSE_OK) {
+    return;
+  }
+  apply_layer_effect("Posterize", [levels = dialog.levels()](std::uint8_t* px, int w, int h,
+                                                             int stride) {
+    posterize_rgba(px, w, h, stride, levels);
+  });
 }
 
 }  // namespace brushpad

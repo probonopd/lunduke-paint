@@ -205,6 +205,22 @@
           <attribute name="label" translatable="yes">Brightness / Contrast…</attribute>
           <attribute name="action">win.adjust-brightness</attribute>
         </item>
+        <item>
+          <attribute name="label" translatable="yes">_Invert</attribute>
+          <attribute name="action">win.adjust-invert</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Grayscale</attribute>
+          <attribute name="action">win.adjust-grayscale</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Hue / Saturation…</attribute>
+          <attribute name="action">win.adjust-hue</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Posterize…</attribute>
+          <attribute name="action">win.adjust-posterize</attribute>
+        </item>
       </section>
     </submenu>
     <submenu>

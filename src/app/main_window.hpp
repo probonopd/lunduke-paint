@@ -93,6 +93,11 @@ public:
   void action_layer_flatten();
   void action_layer_properties();
   void action_close_tab();
+  void action_adjust_brightness();
+  void action_adjust_invert();
+  void action_adjust_grayscale();
+  void action_adjust_hue();
+  void action_adjust_posterize();
 
 private:
   void build_ui();
@@ -127,6 +132,8 @@ private:
   bool warn_size(int width, int height);
   void copy_selection_to_clipboard();
   bool paste_from_clipboard();
+  void apply_layer_effect(const char* name,
+                          const std::function<void(std::uint8_t*, int, int, int)>& fn);
 
   Gtk::Box root_{Gtk::ORIENTATION_VERTICAL};
   Gtk::Box toolbar_{Gtk::ORIENTATION_HORIZONTAL};

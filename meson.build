@@ -43,6 +43,7 @@ brushpad_core_sources = files(
   'src/raster/shapes.cpp',
   'src/raster/blend.cpp',
   'src/raster/text.cpp',
+  'src/raster/effects.cpp',
   'src/doc/commands_layers.cpp',
   'src/io/image_io.cpp',
   'src/io/ora.cpp',
@@ -88,6 +89,7 @@ brushpad_sources = files(
   'src/tools/tool_ellipse_select.cpp',
   'src/tools/tool_text.cpp',
   'src/ui/dialogs_image.cpp',
+  'src/ui/dialogs_adjust.cpp',
 )
 
 executable(
@@ -170,6 +172,15 @@ test_stroke = executable(
   install: false,
 )
 test('stroke', test_stroke)
+
+test_effects = executable(
+  'test_effects',
+  files('tests/test_effects.cpp'),
+  include_directories: brushpad_inc,
+  link_with: brushpad_core,
+  install: false,
+)
+test('effects', test_effects)
 
 install_data(
   'data/org.brushpad.Brushpad.desktop',
