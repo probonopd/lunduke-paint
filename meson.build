@@ -95,7 +95,7 @@ brushpad_sources = files(
 )
 
 executable(
-  'brushpad',
+  'lunduke-paint',
   brushpad_sources,
   brushpad_resources,
   dependencies: [gtkmm_dep, cairomm_dep, gdkpixbuf_dep],
@@ -185,16 +185,16 @@ test_effects = executable(
 test('effects', test_effects)
 
 install_data(
-  'data/org.brushpad.Brushpad.desktop',
+  'data/org.lunduke.LundukePaint.desktop',
   install_dir: join_paths(get_option('datadir'), 'applications'),
 )
 
 install_data(
-  'data/org.brushpad.Brushpad.metainfo.xml',
+  'data/org.lunduke.LundukePaint.metainfo.xml',
   install_dir: join_paths(get_option('datadir'), 'metainfo'),
 )
 
 install_data(
-  'data/icons/hicolor/scalable/apps/org.brushpad.Brushpad.svg',
+  'data/icons/hicolor/scalable/apps/org.lunduke.LundukePaint.svg',
   install_dir: join_paths(get_option('datadir'), 'icons/hicolor/scalable/apps'),
 )

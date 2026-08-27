@@ -40,7 +40,7 @@ int clamp_int(int v, int lo, int hi) {
 }  // namespace
 
 std::string Preferences::config_dir() {
-  return Glib::build_filename(Glib::get_user_config_dir(), "brushpad");
+  return Glib::build_filename(Glib::get_user_config_dir(), "lunduke-paint");
 }
 
 std::string Preferences::config_path() {

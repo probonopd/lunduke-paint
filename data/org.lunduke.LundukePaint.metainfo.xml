@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>org.brushpad.Brushpad</id>
+  <id>org.lunduke.LundukePaint</id>
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <name>Lunduke Paint</name>
@@ -17,9 +17,9 @@
       JPEG, and BMP is supported.
     </p>
   </description>
-  <launchable type="desktop-id">org.brushpad.Brushpad.desktop</launchable>
+  <launchable type="desktop-id">org.lunduke.LundukePaint.desktop</launchable>
   <provides>
-    <binary>brushpad</binary>
+    <binary>lunduke-paint</binary>
   </provides>
   <developer_name>Lunduke Paint</developer_name>
   <content_rating type="oars-1.1"/>

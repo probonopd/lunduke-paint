@@ -275,7 +275,7 @@ void MainWindow::build_toolbar() {
 Glib::RefPtr<Gio::MenuModel> MainWindow::load_menubar_model() {
   try {
     auto builder = Gtk::Builder::create_from_resource(
-        "/org/brushpad/Brushpad/ui/menus.xml");
+        "/org/lunduke/LundukePaint/ui/menus.xml");
     auto object = builder->get_object("menubar");
     auto menu = Glib::RefPtr<Gio::Menu>::cast_dynamic(object);
     if (!menu) {

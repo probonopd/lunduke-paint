@@ -6,8 +6,8 @@ user layers.
 
 The **product name** is Lunduke Paint. The **project/code name** is Brushpad.
 
-- Binary: `brushpad`
-- Application id: `org.brushpad.Brushpad`
+- Binary: `lunduke-paint`
+- Application id: `org.lunduke.LundukePaint`
 - License: GPL-3.0-or-later
 - Language: C++17
 - Display: Linux X11 (`GDK_BACKEND=x11`)
@@ -15,7 +15,7 @@ The **product name** is Lunduke Paint. The **project/code name** is Brushpad.
   decorations, no HeaderBar as main chrome)
 - Theme: follows the active GTK3 theme; the app is not skinned
 - Native project file: OpenRaster `.ora` (libarchive + pugixml)
-- Config: `$XDG_CONFIG_HOME/brushpad/brushpad.ini` via GKeyFile
+- Config: `$XDG_CONFIG_HOME/lunduke-paint/brushpad.ini` via GKeyFile
 
 ## 1.0 is done
 
@@ -60,7 +60,7 @@ What works (Phase 0–5):
 - Preferences: default new-document size, undo limit (default 50, cap 200),
   checker colors, grid threshold (default 400%)
 - Help: Keyboard Shortcuts window; About (Lunduke Paint, GPL-3.0-or-later,
-  app id `org.brushpad.Brushpad`)
+  app id `org.lunduke.LundukePaint`)
 - Print: Gtk::PrintOperation, fit-to-page, Ctrl+P
 - AppStream metainfo, `.desktop` (Name=Lunduke Paint), hicolor icon placeholder
 - Headless tests: `dummy`, `fill`, `history`, `selection`, `transform`,
@@ -98,7 +98,7 @@ cd brushpad
 meson setup build
 meson compile -C build
 meson test -C build
-GDK_BACKEND=x11 ./build/brushpad
+GDK_BACKEND=x11 ./build/lunduke-paint
 ```
 
 On Debian 13 the pixbuf development package is `libgdk-pixbuf-2.0-dev`.
@@ -151,7 +151,7 @@ part of the development loop. Target runtime: Linux X11 / XLibre + XFCE.
 - Hue/Saturation is a basic RGB↔HSV shift (hue ±180°, saturation ±100).
 - Posterize quantizes each RGB channel to 2–16 levels.
 - Box blur is separable with edge clamp; radius 1–16. Sharpen is a 3×3 unsharp kernel. Emboss is a 3×3 relief kernel with a +128 bias.
-- Preferences are `$XDG_CONFIG_HOME/brushpad/brushpad.ini` via GKeyFile (default size, undo limit, checker colors, grid threshold).
+- Preferences are `$XDG_CONFIG_HOME/lunduke-paint/brushpad.ini` via GKeyFile (default size, undo limit, checker colors, grid threshold).
 - Print is a single fit-to-page `Gtk::PrintOperation` of the visible composite, painted on white.
 - Unready menu items (Recent, Export, Revert, Copy Merged, Rulers, Fullscreen) are omitted rather than shown disabled.
 
