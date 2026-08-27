@@ -45,6 +45,10 @@ MainWindow::MainWindow() {
   add_action(actions::kZoom100, [this]() { canvas_.set_zoom(1.0); });
 
   tools_.emplace_back(create_pencil_tool());
+  tools_.emplace_back(create_brush_tool());
+  tools_.emplace_back(create_eraser_tool());
+  tools_.emplace_back(create_fill_tool());
+  tools_.emplace_back(create_picker_tool());
   for (auto& tool : tools_) {
     tool->set_host(this);
   }
@@ -73,8 +77,19 @@ void MainWindow::build_ui() {
   canvas_.set_vexpand(true);
 
   toolbox_.add_tool_button("pencil", "Pencil (P)", "document-edit-symbolic");
+  toolbox_.add_tool_button("brush", "Brush (B)", "edit-select-symbolic");
+  toolbox_.add_tool_button("eraser", "Eraser (A)", "edit-clear-symbolic");
+  toolbox_.add_tool_button("fill", "Flood fill (F)", "color-fill-symbolic");
+  toolbox_.add_tool_button("picker", "Color picker (C)", "color-select-symbolic");
   toolbox_.on_tool_chosen = [this](const std::string& id) { set_active_tool(id); };
   toolbox_.on_well_clicked = [this](bool background) { choose_color(background); };
+  colors_panel_.on_swatch = [this](Color color, bool background) {
+    if (background) {
+      document_->set_background(color);
+    } else {
+      document_->set_foreground(color);
+    }
+  };
 
   right_dock_.append_page(colors_panel_, "Colors");
   right_dock_.append_page(layers_panel_, "Layers");

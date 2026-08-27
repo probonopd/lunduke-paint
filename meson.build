@@ -57,6 +57,10 @@ brushpad_sources = files(
   'src/ui/dialogs_new.cpp',
   'src/tools/tool.cpp',
   'src/tools/tool_pencil.cpp',
+  'src/tools/tool_brush.cpp',
+  'src/tools/tool_eraser.cpp',
+  'src/tools/tool_picker.cpp',
+  'src/tools/tool_fill.cpp',
 )
 
 executable(
