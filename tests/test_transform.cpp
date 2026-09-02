@@ -59,6 +59,13 @@ int main() {
     errors += expect(get(dest, 0, 1, 2) == D, "CW bottom-left is D");
     errors += expect(get(dest, 1, 1, 2) == B, "CW bottom-right is B");
 
+    std::vector<std::uint8_t> ccw(16, 0);
+    brushpad::rotate_90_ccw(src.data(), w, h, w * 4, ccw.data(), h * 4);
+    errors += expect(get(ccw, 0, 0, 2) == B, "CCW top-left is B");
+    errors += expect(get(ccw, 1, 0, 2) == D, "CCW top-right is D");
+    errors += expect(get(ccw, 0, 1, 2) == A, "CCW bottom-left is A");
+    errors += expect(get(ccw, 1, 1, 2) == C, "CCW bottom-right is C");
+
     std::vector<std::uint8_t> flipped = src;
     brushpad::flip_h(flipped.data(), w, h, w * 4);
     errors += expect(get(flipped, 0, 0, 2) == B, "flip H top-left is B");

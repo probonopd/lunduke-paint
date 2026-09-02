@@ -10,6 +10,7 @@
 namespace brushpad {
 
 class Layer;
+class LayerStack;
 
 // One selection per document (not per layer). Rect, ellipse, or lasso
 // (optional 8-bit mask). Invert means "canvas minus the chosen region."
@@ -47,6 +48,8 @@ public:
   int float_h() const { return float_h_; }
   int origin_x() const { return origin_x_; }
   int origin_y() const { return origin_y_; }
+  int origin_w() const { return origin_w_; }
+  int origin_h() const { return origin_h_; }
 
   Rect float_rect() const;
   Rect origin_rect() const;
@@ -62,6 +65,7 @@ public:
   bool lift(const Layer& layer);
 
   void set_float_pixels(int x, int y, int w, int h, std::vector<std::uint8_t> rgba);
+  void transform_float(int x, int y, int w, int h, std::vector<std::uint8_t> rgba);
   void move_float(int x, int y);
   void drop_float();
 
@@ -78,6 +82,8 @@ private:
   int float_h_ = 0;
   int origin_x_ = 0;
   int origin_y_ = 0;
+  int origin_w_ = 0;
+  int origin_h_ = 0;
   std::vector<std::uint8_t> float_pixels_;
   std::vector<std::uint8_t> mask_;
   int mask_w_ = 0;
@@ -88,6 +94,8 @@ void clip_rect_to_selection(Layer& dest, const Layer& source, Rect rect, const S
 void fill_selection(Layer& layer, const Selection& sel, Color color, Rect* dirty);
 void copy_selection_rgba(const Layer& layer, const Selection& sel, int canvas_w, int canvas_h,
                          int& out_w, int& out_h, std::vector<std::uint8_t>& out);
+void copy_merged_rgba(const LayerStack& layers, const Selection& sel, int canvas_w, int canvas_h,
+                      int& out_w, int& out_h, std::vector<std::uint8_t>& out);
 void blit_rgba(Layer& dest, int dx, int dy, const std::uint8_t* src, int sw, int sh, int sstride,
                bool skip_transparent);
 

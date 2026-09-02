@@ -9,6 +9,7 @@
 #include "doc/selection.hpp"
 #include "io/image_io.hpp"
 #include "io/ora.hpp"
+#include "io/crash_recovery.hpp"
 #include "raster/effects.hpp"
 #include "raster/transform.hpp"
 #include "ui/dialogs_adjust.hpp"
@@ -21,6 +22,7 @@
 #include <giomm/menu.h>
 #include <gtkmm/builder.h>
 #include <glibmm/miscutils.h>
+#include <glibmm/main.h>
 #include <gtk/gtk.h>
 #include <gdkmm/pixbuf.h>
 #include <gtkmm/button.h>
@@ -35,6 +37,11 @@
 #include <gtkmm/aboutdialog.h>
 #include <gtkmm/printoperation.h>
 #include <gtkmm/grid.h>
+#include <gtkmm/spinbutton.h>
+#include <giomm/file.h>
+#include <gtkmm/menuitem.h>
+#include <gtkmm/targetentry.h>
+#include <gtkmm/separatormenuitem.h>
 #include <algorithm>
 #include <cstring>
 #include <functional>
@@ -75,6 +82,7 @@ MainWindow::MainWindow() {
   add_action(actions::kToggleGrid, sigc::mem_fun(*this, &MainWindow::action_toggle_grid));
   cut_action_ = add_action(actions::kCut, sigc::mem_fun(*this, &MainWindow::action_cut));
   copy_action_ = add_action(actions::kCopy, sigc::mem_fun(*this, &MainWindow::action_copy));
+  copy_merged_action_ = add_action(actions::kCopyMerged, sigc::mem_fun(*this, &MainWindow::action_copy_merged));
   add_action(actions::kPaste, sigc::mem_fun(*this, &MainWindow::action_paste));
   delete_action_ = add_action(actions::kDelete, sigc::mem_fun(*this, &MainWindow::action_delete));
   duplicate_action_ = add_action(actions::kDuplicate, sigc::mem_fun(*this, &MainWindow::action_duplicate));
@@ -88,6 +96,7 @@ MainWindow::MainWindow() {
   add_action(actions::kAutocrop, sigc::mem_fun(*this, &MainWindow::action_autocrop));
   add_action(actions::kRotate90, sigc::mem_fun(*this, &MainWindow::action_rotate_90));
   add_action(actions::kRotate180, sigc::mem_fun(*this, &MainWindow::action_rotate_180));
+  add_action(actions::kRotateCcw, sigc::mem_fun(*this, &MainWindow::action_rotate_ccw));
   add_action(actions::kFlipH, sigc::mem_fun(*this, &MainWindow::action_flip_h));
   add_action(actions::kFlipV, sigc::mem_fun(*this, &MainWindow::action_flip_v));
   add_action(actions::kClear, sigc::mem_fun(*this, &MainWindow::action_clear));
@@ -117,10 +126,19 @@ MainWindow::MainWindow() {
   add_action(actions::kPreferences, sigc::mem_fun(*this, &MainWindow::action_preferences));
   add_action(actions::kShortcuts, sigc::mem_fun(*this, &MainWindow::action_shortcuts));
   add_action(actions::kAbout, sigc::mem_fun(*this, &MainWindow::action_about));
+  add_action(actions::kFullscreen, sigc::mem_fun(*this, &MainWindow::action_fullscreen));
+  revert_action_ = add_action(actions::kRevert, sigc::mem_fun(*this, &MainWindow::action_revert));
+  add_action("recent-none", []() {});
+  add_action(actions::kClearRecent, [this]() {
+    prefs_.recent_files.clear();
+    prefs_.save();
+    rebuild_recent_menu();
+  });
 
   tools_.emplace_back(create_rect_select_tool());
   tools_.emplace_back(create_lasso_tool());
   tools_.emplace_back(create_ellipse_select_tool());
+  tools_.emplace_back(create_magic_wand_tool());
   tools_.emplace_back(create_pencil_tool());
   tools_.emplace_back(create_brush_tool());
   tools_.emplace_back(create_eraser_tool());
@@ -152,13 +170,41 @@ MainWindow::MainWindow() {
   show_all();
   rebuild_tabs();
   update_chrome();
+  rebuild_recent_menu();
+  std::vector<Gtk::TargetEntry> targets;
+  targets.emplace_back("text/uri-list");
+  drag_dest_set(targets, Gtk::DEST_DEFAULT_ALL, Gdk::ACTION_COPY);
+  signal_drag_data_received().connect(sigc::mem_fun(*this, &MainWindow::on_drag_data_received));
+  recovery_timer_ = Glib::signal_timeout().connect_seconds(
+      sigc::mem_fun(*this, &MainWindow::on_recovery_tick), 30);
+  Glib::signal_idle().connect([this]() {
+    offer_recovery();
+    return false;
+  });
 }
 
-MainWindow::~MainWindow() = default;
+MainWindow::~MainWindow() {
+  recovery_timer_.disconnect();
+}
 
 void MainWindow::build_ui() {
   auto model = load_menubar_model();
   auto* menubar = Gtk::make_managed<Gtk::MenuBar>(model);
+  auto mchildren = menubar->get_children();
+  if (!mchildren.empty()) {
+    if (auto* file_item = dynamic_cast<Gtk::MenuItem*>(mchildren[0])) {
+      if (auto* file_menu = file_item->get_submenu()) {
+        for (auto* child : file_menu->get_children()) {
+          if (auto* item = dynamic_cast<Gtk::MenuItem*>(child)) {
+            if (item->get_label().find("Recent") != Glib::ustring::npos) {
+              recent_item_ = item;
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
 
   build_toolbar();
 
@@ -168,6 +214,7 @@ void MainWindow::build_ui() {
   toolbox_.add_tool_button("rect-select", "Rectangle select (S)", "tool-select-rectangle-symbolic");
   toolbox_.add_tool_button("lasso", "Freeform select (M)", "tool-select-lasso-freeform-symbolic");
   toolbox_.add_tool_button("ellipse-select", "Ellipse select (I)", "tool-select-ellipse-symbolic");
+  toolbox_.add_tool_button("magic-wand", "Magic wand (W)", "tool-magicwand-symbolic");
   toolbox_.add_tool_button("pencil", "Pencil (P)", "tool-pencil-symbolic");
   toolbox_.add_tool_button("brush", "Brush (B)", "tool-paintbrush-symbolic");
   toolbox_.add_tool_button("eraser", "Eraser (A)", "tool-eraser-symbolic");
@@ -212,7 +259,7 @@ void MainWindow::build_ui() {
   colors_panel_.set_valign(Gtk::ALIGN_END);
 
   // Wide enough for the "Layers" and "History" tab labels, and no wider.
-  constexpr int kRightDockWidth = 160;
+  constexpr int kRightDockWidth = 240;
   right_sidebar_.set_size_request(kRightDockWidth, -1);
   right_dock_.set_size_request(kRightDockWidth, -1);
   colors_panel_.set_size_request(kRightDockWidth, -1);
@@ -257,7 +304,12 @@ void MainWindow::build_ui() {
       sigc::mem_fun(status_bar_, &StatusBar::show_coordinates));
   canvas_.signal_pointer_left().connect(
       sigc::mem_fun(status_bar_, &StatusBar::clear_coordinates));
-  canvas_.signal_view_changed().connect([this]() { update_chrome(); });
+  canvas_.signal_view_changed().connect([this]() {
+    if (document_ptr() != nullptr) {
+      document().set_view_zoom(canvas_.zoom());
+    }
+    update_chrome();
+  });
 
   add(root_);
 }
@@ -310,6 +362,7 @@ void MainWindow::bind_document() {
 
 void MainWindow::attach_active_document() {
   canvas_.set_document(document_ptr());
+  canvas_.apply_zoom(document().view_zoom());
   canvas_.set_tool(active_tool_);
   layers_panel_.set_document(document_ptr());
   history_panel_.set_document(document_ptr());
@@ -447,6 +500,12 @@ void MainWindow::update_chrome() {
   const bool has_sel = !sel.empty();
   cut_action_->set_enabled(has_sel);
   copy_action_->set_enabled(has_sel);
+  if (copy_merged_action_) {
+    copy_merged_action_->set_enabled(true);
+  }
+  if (revert_action_) {
+    revert_action_->set_enabled(!document().path().empty());
+  }
   delete_action_->set_enabled(has_sel);
   duplicate_action_->set_enabled(has_sel && !sel.inverted());
   deselect_action_->set_enabled(has_sel);
@@ -613,6 +672,13 @@ void MainWindow::action_open() {
   if (path.empty()) {
     return;
   }
+  open_path(path);
+}
+
+bool MainWindow::open_path(const std::string& path, bool force_replace) {
+  if (path.empty()) {
+    return false;
+  }
   if (active_tool_ != nullptr) {
     active_tool_->on_cancel();
   }
@@ -623,21 +689,21 @@ void MainWindow::action_open() {
                              Gtk::BUTTONS_OK, true);
       err.set_secondary_text(loaded.error);
       err.run();
-      return;
+      return false;
     }
     if (loaded.warn_size) {
       Gtk::MessageDialog warn(*this,
                               "This image is larger than 8192 pixels on a side and may use a lot of memory.",
                               false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
       if (warn.run() != Gtk::RESPONSE_OK) {
-        return;
+        return false;
       }
     }
     if (loaded.warn_layers) {
       Gtk::MessageDialog warn(*this, "This file has more than 64 layers and may use a lot of memory.",
                               false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
       if (warn.run() != Gtk::RESPONSE_OK) {
-        return;
+        return false;
       }
     }
     std::vector<std::unique_ptr<Layer>> layers;
@@ -651,9 +717,20 @@ void MainWindow::action_open() {
                        static_cast<int>(loaded.layers.size()) - 1);
     doc->set_path(path);
     doc->mark_clean();
-    adopt_document(std::move(doc), true);
+    if (force_replace) {
+      if (active_tool_ != nullptr) {
+        active_tool_->on_cancel();
+      }
+      doc->history().set_depth(prefs_.undo_limit);
+      workspace_.replace_active(std::move(doc));
+      attach_active_document();
+      rebuild_tabs();
+    } else {
+      adopt_document(std::move(doc), true);
+    }
+    remember_recent(path);
     show_status("Opened " + Glib::path_get_basename(path));
-    return;
+    return true;
   }
   LoadedImage loaded = load_flat_image(path);
   if (!loaded.ok()) {
@@ -661,14 +738,14 @@ void MainWindow::action_open() {
                            Gtk::BUTTONS_OK, true);
     err.set_secondary_text(loaded.error);
     err.run();
-    return;
+    return false;
   }
   if (loaded.width > kSoftMaxSide || loaded.height > kSoftMaxSide) {
     Gtk::MessageDialog warn(*this,
                             "This image is larger than 8192 pixels on a side and may use a lot of memory.",
                             false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_OK_CANCEL, true);
     if (warn.run() != Gtk::RESPONSE_OK) {
-      return;
+      return false;
     }
   }
   auto doc = Document::create(loaded.width, loaded.height, Color::transparent(), loaded.layer_name);
@@ -676,10 +753,21 @@ void MainWindow::action_open() {
                                           loaded.rgba.data());
   doc->set_path(path);
   doc->mark_clean();
-  adopt_document(std::move(doc), true);
+  if (force_replace) {
+    if (active_tool_ != nullptr) {
+      active_tool_->on_cancel();
+    }
+    doc->history().set_depth(prefs_.undo_limit);
+    workspace_.replace_active(std::move(doc));
+    attach_active_document();
+    rebuild_tabs();
+  } else {
+    adopt_document(std::move(doc), true);
+  }
+  remember_recent(path);
   show_status("Opened " + Glib::path_get_basename(path));
+  return true;
 }
-
 void MainWindow::action_save() {
   if (document().path().empty() || format_from_path(document().path()) == ImageFormat::Unknown) {
     action_save_as();
@@ -687,6 +775,8 @@ void MainWindow::action_save() {
   }
   if (save_to_path(document().path(), format_from_path(document().path()))) {
     document().mark_clean();
+    remember_recent(document().path());
+    crash_recovery::clear();
     update_chrome();
     show_status("Saved");
   }
@@ -699,7 +789,7 @@ void MainWindow::action_save_as() {
     return;
   }
   bool also_ora = false;
-  if (format != ImageFormat::Ora && document().layers().count() > 1 && !flatten_ora_offered_) {
+  if (format != ImageFormat::Ora && document().layers().count() > 1) {
     Gtk::MessageDialog warn(*this,
                             "This document has multiple layers. Saving a flat file will flatten visible layers.",
                             false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_NONE, true);
@@ -711,7 +801,6 @@ void MainWindow::action_save_as() {
       return;
     }
     also_ora = response == Gtk::RESPONSE_YES;
-    flatten_ora_offered_ = true;
   }
   if (save_to_path(path, format)) {
     if (also_ora) {
@@ -731,6 +820,8 @@ void MainWindow::action_save_as() {
     }
     document().set_path(path);
     document().mark_clean();
+    remember_recent(path);
+    crash_recovery::clear();
     update_chrome();
     show_status("Saved");
   }
@@ -844,8 +935,14 @@ bool MainWindow::save_to_path(const std::string& path, ImageFormat format) {
   std::vector<std::uint8_t> flat;
   composite_visible(flat);
   std::string error;
+  if (format == ImageFormat::Gif) {
+    Gtk::MessageDialog err(*this, "GIF save is not supported.", false, Gtk::MESSAGE_ERROR,
+                           Gtk::BUTTONS_OK, true);
+    err.run();
+    return false;
+  }
   if (!save_flat_image(path, format, flat.data(), document().width(), document().height(),
-                       document().width() * 4, 90, error)) {
+                       document().width() * 4, jpeg_quality_, error)) {
     Gtk::MessageDialog err(*this, "Could not save image.", false, Gtk::MESSAGE_ERROR,
                            Gtk::BUTTONS_OK, true);
     err.set_secondary_text(error);
@@ -866,6 +963,7 @@ std::string MainWindow::choose_open_path() {
   all->add_pattern("*.jpg");
   all->add_pattern("*.jpeg");
   all->add_pattern("*.bmp");
+  all->add_pattern("*.gif");
   dialog.add_filter(all);
   auto ora = Gtk::FileFilter::create();
   ora->set_name("OpenRaster (*.ora)");
@@ -884,6 +982,10 @@ std::string MainWindow::choose_open_path() {
   bmp->set_name("BMP");
   bmp->add_pattern("*.bmp");
   dialog.add_filter(bmp);
+  auto gif = Gtk::FileFilter::create();
+  gif->set_name("GIF");
+  gif->add_pattern("*.gif");
+  dialog.add_filter(gif);
   if (dialog.run() != Gtk::RESPONSE_ACCEPT) {
     return {};
   }
@@ -917,9 +1019,22 @@ bool MainWindow::choose_save_path(std::string& path, ImageFormat& format) {
   } else {
     dialog.set_current_name("untitled.ora");
   }
+  Gtk::Box extra(Gtk::ORIENTATION_HORIZONTAL, 8);
+  extra.set_border_width(4);
+  auto* qlabel = Gtk::manage(new Gtk::Label("JPEG quality"));
+  auto* qspin = Gtk::manage(new Gtk::SpinButton());
+  qspin->set_range(1, 100);
+  qspin->set_increments(1, 10);
+  qspin->set_digits(0);
+  qspin->set_value(jpeg_quality_);
+  extra.pack_start(*qlabel, Gtk::PACK_SHRINK);
+  extra.pack_start(*qspin, Gtk::PACK_SHRINK);
+  extra.show_all();
+  dialog.set_extra_widget(extra);
   if (dialog.run() != Gtk::RESPONSE_ACCEPT) {
     return false;
   }
+  jpeg_quality_ = qspin->get_value_as_int();
   path = dialog.get_filename();
   format = format_from_path(path);
   ImageFormat forced = ImageFormat::Unknown;
@@ -991,6 +1106,27 @@ void MainWindow::copy_selection_to_clipboard() {
   show_status("Copied");
 }
 
+void MainWindow::copy_merged_to_clipboard() {
+  int w = 0;
+  int h = 0;
+  std::vector<std::uint8_t> rgba;
+  copy_merged_rgba(document().layers(), document().selection(), document().width(),
+                   document().height(), w, h, rgba);
+  if (w < 1 || h < 1 || rgba.empty()) {
+    return;
+  }
+  auto pixbuf = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB, true, 8, w, h);
+  const int dst_stride = pixbuf->get_rowstride();
+  std::uint8_t* dst = pixbuf->get_pixels();
+  for (int y = 0; y < h; ++y) {
+    std::memcpy(dst + static_cast<std::size_t>(y) * dst_stride,
+                rgba.data() + static_cast<std::size_t>(y) * static_cast<std::size_t>(w) * 4,
+                static_cast<std::size_t>(w) * 4);
+  }
+  Gtk::Clipboard::get()->set_image(pixbuf);
+  show_status("Copied merged");
+}
+
 bool MainWindow::paste_from_clipboard() {
   auto pixbuf = Gtk::Clipboard::get()->wait_for_image();
   if (!pixbuf) {
@@ -1018,7 +1154,12 @@ bool MainWindow::paste_from_clipboard() {
       drow[x * 4 + 3] = nch >= 4 ? p[3] : 255;
     }
   }
-  document().paste_floating(0, 0, w, h, std::move(rgba));
+  int px = 0;
+  int py = 0;
+  if (!canvas_.last_pointer(px, py)) {
+    canvas_.viewport_center_canvas(px, py);
+  }
+  document().paste_floating(px, py, w, h, std::move(rgba));
   set_active_tool("rect-select");
   show_status("Pasted");
   return true;
@@ -1034,6 +1175,10 @@ void MainWindow::action_cut() {
 
 void MainWindow::action_copy() {
   copy_selection_to_clipboard();
+}
+
+void MainWindow::action_copy_merged() {
+  copy_merged_to_clipboard();
 }
 
 void MainWindow::action_paste() {
@@ -1231,6 +1376,17 @@ void MainWindow::action_rotate_180() {
     dest = copy_layer_pixels(layer);
     rotate_180(dest.data(), layer.width(), layer.height(), layer.width() * 4);
     (void)dw;
+    (void)dh;
+  });
+}
+
+void MainWindow::action_rotate_ccw() {
+  document().commit_floating();
+  const int nw = document().height();
+  const int nh = document().width();
+  commit_stack_transform("Rotate 270", nw, nh, [&](const Layer& layer, std::vector<std::uint8_t>& dest,
+                                                   int dw, int dh) {
+    rotate_90_ccw(layer.pixels(), layer.width(), layer.height(), layer.stride(), dest.data(), dw * 4);
     (void)dh;
   });
 }
@@ -1597,8 +1753,16 @@ void MainWindow::action_shortcuts() {
       {"Zoom in / out / 100% / fit", "Ctrl++ / Ctrl+- / Ctrl+0 / Ctrl+1"},
       {"Grid / dock / fullscreen", "Ctrl+G / F12 / F11"},
       {"Swap FG-BG / default colors", "X / D"},
+      {"Pencil / Brush / Eraser", "P / B / A"},
+      {"Rectangle select / Lasso / Ellipse select", "S / M / I"},
+      {"Magic wand / Fill / Picker", "W / F / C"},
+      {"Line / Rectangle / Ellipse", "L / R / E"},
+      {"Text / Curve / Polygon", "T / V / G"},
+      {"Spray / Rounded rect / Polyline", "Y / U / N"},
+      {"Color eraser", "O"},
   };
-  for (int i = 0; i < 15; ++i) {
+  const int nrows = static_cast<int>(sizeof(rows) / sizeof(rows[0]));
+  for (int i = 0; i < nrows; ++i) {
     auto* action = Gtk::manage(new Gtk::Label(rows[i][0], Gtk::ALIGN_START));
     auto* keys = Gtk::manage(new Gtk::Label(rows[i][1], Gtk::ALIGN_START));
     grid->attach(*action, 0, i, 1, 1);
@@ -1616,9 +1780,11 @@ void MainWindow::action_about() {
   dialog.set_version(actions::kVersion);
   dialog.set_comments("A traditional X11 paint program.\nApplication id: " +
                       Glib::ustring(actions::kAppId));
-  dialog.set_copyright("GPL-3.0-or-later");
-  dialog.set_license("GPL-3.0-or-later");
+  dialog.set_copyright("Copyright © 2026 The Lunduke Journal");
+  dialog.set_license_type(Gtk::LICENSE_GPL_3_0);
   dialog.set_wrap_license(true);
+  dialog.set_website("https://lunduke.com");
+  dialog.set_website_label("lunduke.com");
   dialog.set_logo_icon_name(actions::kAppId);
   dialog.run();
 }
@@ -1682,6 +1848,135 @@ void MainWindow::action_print() {
     err.set_secondary_text(error.what());
     err.run();
   }
+}
+
+
+void MainWindow::action_fullscreen() {
+  const auto win = get_window();
+  const bool is_full =
+      win && (win->get_state() & Gdk::WINDOW_STATE_FULLSCREEN) != Gdk::WindowState(0);
+  if (is_full) {
+    unfullscreen();
+  } else {
+    fullscreen();
+  }
+}
+
+void MainWindow::action_revert() {
+  const std::string path = document().path();
+  if (path.empty()) {
+    show_status("Nothing to revert");
+    return;
+  }
+  if (document().dirty()) {
+    Gtk::MessageDialog dialog(*this, "Revert to last saved file? Unsaved changes will be lost.",
+                              false, Gtk::MESSAGE_QUESTION, Gtk::BUTTONS_NONE, true);
+    dialog.add_button("_Cancel", Gtk::RESPONSE_CANCEL);
+    dialog.add_button("_Revert", Gtk::RESPONSE_YES);
+    if (dialog.run() != Gtk::RESPONSE_YES) {
+      return;
+    }
+  }
+  if (active_tool_ != nullptr) {
+    active_tool_->on_cancel();
+  }
+  if (!open_path(path, true)) {
+    return;
+  }
+  show_status("Reverted");
+}
+
+void MainWindow::remember_recent(const std::string& path) {
+  if (path.empty() || path[0] != '/') {
+    return;
+  }
+  if (path == crash_recovery::autosave_path()) {
+    return;
+  }
+  prefs_.add_recent(path);
+  rebuild_recent_menu();
+}
+
+void MainWindow::rebuild_recent_menu() {
+  if (recent_item_ == nullptr) {
+    return;
+  }
+  auto* submenu = Gtk::manage(new Gtk::Menu());
+  if (prefs_.recent_files.empty()) {
+    auto* empty = Gtk::manage(new Gtk::MenuItem("(empty)"));
+    empty->set_sensitive(false);
+    submenu->append(*empty);
+  } else {
+    int i = 0;
+    for (const auto& path : prefs_.recent_files) {
+      auto* item = Gtk::manage(new Gtk::MenuItem(path));
+      item->signal_activate().connect([this, path]() { open_path(path); });
+      submenu->append(*item);
+      ++i;
+      if (i >= 10) {
+        break;
+      }
+    }
+    submenu->append(*Gtk::manage(new Gtk::SeparatorMenuItem()));
+    auto* clear = Gtk::manage(new Gtk::MenuItem("Clear Recent"));
+    clear->signal_activate().connect([this]() {
+      prefs_.recent_files.clear();
+      prefs_.save();
+      rebuild_recent_menu();
+    });
+    submenu->append(*clear);
+  }
+  submenu->show_all();
+  recent_item_->set_submenu(*submenu);
+}
+
+void MainWindow::offer_recovery() {
+  using brushpad::crash_recovery::autosave_path;
+  using brushpad::crash_recovery::exists;
+  if (!exists()) {
+    return;
+  }
+  Gtk::MessageDialog dialog(*this, "Recover unsaved document?", false, Gtk::MESSAGE_QUESTION,
+                            Gtk::BUTTONS_NONE, true);
+  dialog.set_secondary_text("A crash-recovery OpenRaster file was found from a previous session.");
+  dialog.add_button("_Discard", Gtk::RESPONSE_NO);
+  dialog.add_button("_Recover", Gtk::RESPONSE_YES);
+  const int response = dialog.run();
+  if (response == Gtk::RESPONSE_YES) {
+    open_path(autosave_path());
+    if (document_ptr() != nullptr) {
+      document().set_path(std::string());
+      document().set_dirty(true);
+    }
+  } else {
+    crash_recovery::clear();
+  }
+}
+
+bool MainWindow::on_recovery_tick() {
+  if (document_ptr() == nullptr || !document().dirty()) {
+    return true;
+  }
+  std::string error;
+  crash_recovery::write_document(document(), error);
+  return true;
+}
+
+void MainWindow::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context, int /*x*/,
+                                      int /*y*/, const Gtk::SelectionData& data, guint /*info*/,
+                                      guint time) {
+  bool ok = false;
+  for (const auto& uri : data.get_uris()) {
+    auto file = Gio::File::create_for_uri(uri);
+    if (!file) {
+      continue;
+    }
+    const std::string path = file->get_path();
+    if (!path.empty() && open_path(path)) {
+      ok = true;
+    }
+  }
+  context->drag_finish(ok, false, time);
 }
 
 }  // namespace brushpad

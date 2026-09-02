@@ -6,6 +6,7 @@
 #include "doc/layer.hpp"
 #include "doc/layer_stack.hpp"
 #include "doc/selection.hpp"
+#include "tools/selection_xform.hpp"
 
 #include <glibmm/main.h>
 #include <gtkmm/adjustment.h>
@@ -482,6 +483,9 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     draw_pixel_grid(cr, ox, oy, vis_x0, vis_y0, vis_x1, vis_y1);
   }
   draw_marching_ants(cr, ox, oy);
+  if (document_ != nullptr) {
+    draw_selection_handles(cr, document_->selection(), ox, oy, zoom_);
+  }
   ensure_ants_timer();
 
   cr->restore();
@@ -496,6 +500,9 @@ bool CanvasView::on_area_motion(GdkEventMotion* event) {
   double cx = 0;
   double cy = 0;
   widget_to_canvas(event->x, event->y, cx, cy);
+  has_pointer_ = true;
+  last_cx_ = cx;
+  last_cy_ = cy;
   signal_pointer_moved_.emit(cx, cy);
 
   if (panning_) {
@@ -510,6 +517,7 @@ bool CanvasView::on_area_motion(GdkEventMotion* event) {
 }
 
 bool CanvasView::on_area_leave(GdkEventCrossing* /*event*/) {
+  has_pointer_ = false;
   signal_pointer_left_.emit();
   return false;
 }
@@ -818,6 +826,37 @@ void CanvasView::invalidate_ants() {
     return;
   }
   invalidate_rect(sel.bounds());
+}
+
+bool CanvasView::last_pointer(int& canvas_x, int& canvas_y) const {
+  if (!has_pointer_) {
+    return false;
+  }
+  canvas_x = static_cast<int>(std::floor(last_cx_));
+  canvas_y = static_cast<int>(std::floor(last_cy_));
+  return true;
+}
+
+void CanvasView::viewport_center_canvas(int& canvas_x, int& canvas_y) const {
+  double wx = 0;
+  double wy = 0;
+  visible_center(wx, wy);
+  double cx = 0;
+  double cy = 0;
+  widget_to_canvas(wx, wy, cx, cy);
+  canvas_x = static_cast<int>(std::floor(cx));
+  canvas_y = static_cast<int>(std::floor(cy));
+}
+
+void CanvasView::apply_zoom(double zoom) {
+  zoom = snapped_zoom(zoom);
+  if (std::abs(zoom - zoom_) < 1e-6) {
+    return;
+  }
+  zoom_ = zoom;
+  update_area_size();
+  invalidate_all();
+  signal_view_changed_.emit();
 }
 
 }  // namespace brushpad

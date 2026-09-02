@@ -5,6 +5,7 @@
 #include "doc/document.hpp"
 #include "io/image_io.hpp"
 #include "raster/blend.hpp"
+#include "raster/transform.hpp"
 
 #include <archive.h>
 #include <archive_entry.h>
@@ -212,6 +213,36 @@ bool save_ora(const std::string& path, const Document& document, std::string& er
   }
   if (!write_zip_entry(a, "mergedimage.png", merged_png.data(), merged_png.size())) {
     error = archive_err(a, "Could not write mergedimage.png");
+    archive_write_free(a);
+    return false;
+  }
+
+  int tw = document.width();
+  int th = document.height();
+  if (tw > 256 || th > 256) {
+    if (tw >= th) {
+      th = std::max(1, th * 256 / tw);
+      tw = 256;
+    } else {
+      tw = std::max(1, tw * 256 / th);
+      th = 256;
+    }
+  }
+  std::vector<std::uint8_t> thumb(
+      static_cast<std::size_t>(tw) * static_cast<std::size_t>(th) * 4, 0);
+  if (tw == document.width() && th == document.height()) {
+    thumb = merged;
+  } else {
+    scale_bilinear(merged.data(), document.width(), document.height(), document.width() * 4,
+                   thumb.data(), tw, th, tw * 4);
+  }
+  std::vector<std::uint8_t> thumb_png;
+  if (!encode_png_memory(thumb.data(), tw, th, tw * 4, thumb_png, error)) {
+    archive_write_free(a);
+    return false;
+  }
+  if (!write_zip_entry(a, "Thumbnails/thumbnail.png", thumb_png.data(), thumb_png.size())) {
+    error = archive_err(a, "Could not write Thumbnails/thumbnail.png");
     archive_write_free(a);
     return false;
   }

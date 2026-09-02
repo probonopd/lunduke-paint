@@ -6,7 +6,7 @@ namespace brushpad {
 namespace actions {
 
 constexpr const char* kAppId = "org.lunduke.LundukePaint";
-constexpr const char* kVersion = "0.1";
+constexpr const char* kVersion = "0.2";
 constexpr const char* kProductName = "Lunduke Paint";
 
 
@@ -28,6 +28,7 @@ constexpr const char* kToggleGrid = "toggle-grid";
 
 constexpr const char* kCut = "cut";
 constexpr const char* kCopy = "copy";
+constexpr const char* kCopyMerged = "copy-merged";
 constexpr const char* kPaste = "paste";
 constexpr const char* kDelete = "delete";
 constexpr const char* kDuplicate = "duplicate";
@@ -41,6 +42,7 @@ constexpr const char* kCrop = "crop";
 constexpr const char* kAutocrop = "autocrop";
 constexpr const char* kRotate90 = "rotate-90";
 constexpr const char* kRotate180 = "rotate-180";
+constexpr const char* kRotateCcw = "rotate-ccw";
 constexpr const char* kFlipH = "flip-h";
 constexpr const char* kFlipV = "flip-v";
 constexpr const char* kClear = "clear";
@@ -68,6 +70,10 @@ constexpr const char* kPreferences = "preferences";
 constexpr const char* kShortcuts = "shortcuts";
 constexpr const char* kAbout = "about";
 constexpr const char* kPrint = "print";
+constexpr const char* kFullscreen = "fullscreen";
+constexpr const char* kRevert = "revert";
+constexpr const char* kClearRecent = "clear-recent";
+
 
 }  // namespace actions
 }  // namespace brushpad

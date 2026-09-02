@@ -26,6 +26,9 @@ public:
   const std::string& path() const { return path_; }
   void set_path(std::string path) { path_ = std::move(path); }
 
+  double view_zoom() const { return view_zoom_; }
+  void set_view_zoom(double zoom) { view_zoom_ = zoom; }
+
   bool dirty() const { return dirty_; }
   void set_dirty(bool dirty);
   void mark_clean();
@@ -79,6 +82,7 @@ public:
   void set_layer_opacity(int index, float opacity);
   void set_layer_blend(int index, BlendMode blend);
   void rename_layer(int index, std::string name);
+  void set_layer_offset(int index, int x, int y);
 
   using ChangedFn = std::function<void()>;
   using InvalidatedFn = std::function<void(Rect)>;
@@ -96,6 +100,7 @@ private:
   int height_ = kDefaultHeight;
   int dpi_ = 96;
   std::string path_;
+  double view_zoom_ = 1.0;
   bool dirty_ = false;
   Color fg_ = Color::black();
   Color bg_ = Color::white();

@@ -417,6 +417,22 @@ void Document::set_layer_blend(int index, BlendMode blend) {
                                              "Layer blend"));
 }
 
+void Document::set_layer_offset(int index, int x, int y) {
+  if (index < 0 || index >= layers_.count()) {
+    return;
+  }
+  Layer& layer = layers_.at(index);
+  if (layer.offset_x() == x && layer.offset_y() == y) {
+    return;
+  }
+  LayerSnapshot before = snapshot_layer_props(layer);
+  LayerSnapshot after = before;
+  after.offset_x = x;
+  after.offset_y = y;
+  commit(std::make_unique<LayerPropsCommand>(index, std::move(before), std::move(after),
+                                             "Layer offset"));
+}
+
 void Document::rename_layer(int index, std::string name) {
   if (index < 0 || index >= layers_.count()) {
     return;

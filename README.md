@@ -15,11 +15,12 @@ The **product name** is Lunduke Paint. The **project/code name** is Brushpad.
   decorations, no HeaderBar as main chrome)
 - Theme: follows the active GTK3 theme; the app is not skinned
 - Native project file: OpenRaster `.ora` (libarchive + pugixml)
+- Version: 0.2
 - Config: `$XDG_CONFIG_HOME/lunduke-paint/brushpad.ini` via GKeyFile
 
-## 1.0 is done
+## 0.2
 
-What works (Phase 0–5):
+What works:
 
 - One or more user layers (bottom → top in storage; Layers list is reversed
   so the top of the list is the top of the stack)
@@ -62,18 +63,15 @@ What works (Phase 0–5):
 - Help: Keyboard Shortcuts window; About (Lunduke Paint, GPL-3.0-or-later,
   app id `org.lunduke.LundukePaint`)
 - Print: Gtk::PrintOperation, fit-to-page, Ctrl+P
-- AppStream metainfo, `.desktop` (Name=Lunduke Paint), hicolor icon placeholder
+- AppStream metainfo (homepage https://lunduke.com, mimetypes), `.desktop` (`%F`, MimeType, StartupWMClass=lunduke-paint), hicolor 32/48/96 icons
 - Headless tests: `dummy`, `fill`, `history`, `selection`, `transform`,
   `blend`, `ora`, `stroke`, `effects`
 
-## Leftover TODO (not in 1.0)
+## Out of scope
 
-Do not treat these as missing 1.0 work. They stay out until someone asks.
-
-- Nicer text-as-object (live editable text instead of rasterize-on-commit)
+- Live text objects (text still rasterizes on commit)
 - Gradient tool
 - Clone stamp
-- Autosave journal
 - ICO load/save
 - Tablet pressure
 
@@ -104,7 +102,7 @@ GDK_BACKEND=x11 ./build/lunduke-paint
 On Debian 13 the pixbuf development package is `libgdk-pixbuf-2.0-dev`.
 
 A missing `DISPLAY` is fine for compile and `meson test`. The GUI is not
-required for the 1.0 headless gate.
+required for the headless gate.
 
 ## Optional human test-build
 
@@ -125,7 +123,7 @@ part of the development loop. Target runtime: Linux X11 / XLibre + XFCE.
 - Delete/Backspace fills the selection with transparency, not the background.
 - Moving a selection is preview-only until deselect; Ctrl during the move copies (original stays).
 - Transparent move skips fully-transparent pixels while dragging and on drop; opaque move replaces the destination rect.
-- Paste creates a floating selection on the active layer at the canvas origin.
+- Paste creates a floating selection on the active layer at the pointer (viewport center if unknown).
 - Crop to selection uses the rectangle bounds (insensitive for an inverted selection).
 - Autocrop trims any outer row/column that is a single uniform color.
 - Rotate 90 is clockwise.
@@ -137,7 +135,7 @@ part of the development loop. Target runtime: Linux X11 / XLibre + XFCE.
 - Layer opacity in the dock commits on Enter or focus-out so a spin does not flood undo.
 - Canvas size, scale, crop, rotate, and flip transform every user layer (KolourPaint/Pinta document ops).
 - New/Open add a tab unless the only document is an unused untitled placeholder, which is replaced.
-- Zoom and pan stay per window, not per tab.
+- Zoom is stored per document/tab.
 - OpenRaster uses libarchive for the zip and pugixml for `stack.xml`.
 - History dock starts with “New document”; later rows are command names; click jumps the per-document stack (not saved in `.ora`).
 - Color eraser replaces FG-similar pixels (Chebyshev) with BG; right-drag swaps the roles.
@@ -153,7 +151,7 @@ part of the development loop. Target runtime: Linux X11 / XLibre + XFCE.
 - Box blur is separable with edge clamp; radius 1–16. Sharpen is a 3×3 unsharp kernel. Emboss is a 3×3 relief kernel with a +128 bias.
 - Preferences are `$XDG_CONFIG_HOME/lunduke-paint/brushpad.ini` via GKeyFile (default size, undo limit, checker colors, grid threshold).
 - Print is a single fit-to-page `Gtk::PrintOperation` of the visible composite, painted on white.
-- Unready menu items (Recent, Export, Revert, Copy Merged, Rulers, Fullscreen) are omitted rather than shown disabled.
+- File menu includes Recent (local paths in brushpad.ini) and Revert. Edit includes Copy Merged. View includes Fullscreen (F11).
 - Toolbox tool icons are Pinta scalable symbolic SVGs (Paint.NET/Pinta/Fluent MIT, Material Apache-2.0, some GIMP CC-BY-4.0) plus original spray/curve/polyline icons; see `data/icons/ATTRIBUTION.md`.
 
 ## Layout

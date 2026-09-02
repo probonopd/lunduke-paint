@@ -12,6 +12,7 @@
 #include <gdk/gdk.h>
 #include <glib.h>
 #include <gtkmm/box.h>
+#include <gtkmm/checkbutton.h>
 #include <gtkmm/comboboxtext.h>
 #include <gtkmm/entry.h>
 #include <gtkmm/label.h>
@@ -19,6 +20,7 @@
 #include <gtkmm/window.h>
 #include <pango/pangocairo.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <memory>
@@ -28,8 +30,9 @@
 namespace brushpad {
 namespace {
 
-bool render_text_rgba(const std::string& text, const std::string& family, int size_pt, Color color,
-                      std::vector<std::uint8_t>& out, int& out_w, int& out_h) {
+bool render_text_rgba(const std::string& text, const std::string& family, int size_pt, bool bold,
+                      bool italic, Color color, std::vector<std::uint8_t>& out, int& out_w,
+                      int& out_h) {
   out.clear();
   out_w = 0;
   out_h = 0;
@@ -43,7 +46,11 @@ bool render_text_rgba(const std::string& text, const std::string& family, int si
   PangoFontDescription* desc = pango_font_description_new();
   pango_font_description_set_family(desc, family.c_str());
   pango_font_description_set_size(desc, size_pt * PANGO_SCALE);
+  pango_font_description_set_weight(desc, bold ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL);
+  pango_font_description_set_style(desc, italic ? PANGO_STYLE_ITALIC : PANGO_STYLE_NORMAL);
   pango_layout_set_font_description(layout, desc);
+  pango_layout_set_width(layout, 40 * size_pt * PANGO_SCALE);
+  pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
   int tw = 0;
   int th = 0;
   pango_layout_get_pixel_size(layout, &tw, &th);
@@ -139,6 +146,8 @@ private:
   unsigned button_ = 1;
   std::string family_{"Sans"};
   int size_pt_ = 16;
+  bool bold_ = false;
+  bool italic_ = false;
   std::unique_ptr<Gtk::Window> popup_;
   Gtk::Entry* entry_{nullptr};
   std::unique_ptr<Gtk::Box> options_;
@@ -149,10 +158,33 @@ Gtk::Widget* TextTool::options_widget() {
     options_ = std::make_unique<Gtk::Box>(Gtk::ORIENTATION_HORIZONTAL, 8);
     auto* flabel = Gtk::manage(new Gtk::Label("Font"));
     auto* font = Gtk::manage(new Gtk::ComboBoxText());
-    font->append("Sans");
-    font->append("Serif");
-    font->append("Monospace");
+    PangoFontMap* map = pango_cairo_font_map_get_default();
+    PangoFontFamily** families = nullptr;
+    int nfam = 0;
+    pango_font_map_list_families(map, &families, &nfam);
+    std::vector<std::string> names;
+    names.reserve(static_cast<std::size_t>(std::max(0, nfam)));
+    for (int i = 0; i < nfam; ++i) {
+      const char* name = pango_font_family_get_name(families[i]);
+      if (name != nullptr && name[0] != '\0') {
+        names.emplace_back(name);
+      }
+    }
+    g_free(families);
+    std::sort(names.begin(), names.end());
+    for (const auto& name : names) {
+      font->append(name);
+    }
+    if (names.empty()) {
+      font->append("Sans");
+      font->append("Serif");
+      font->append("Monospace");
+    }
     font->set_active_text(family_);
+    if (font->get_active_row_number() < 0 && font->get_model()) {
+      font->set_active(0);
+      family_ = font->get_active_text();
+    }
     font->signal_changed().connect([this, font]() { family_ = font->get_active_text(); });
     auto* slabel = Gtk::manage(new Gtk::Label("Size"));
     auto* spin = Gtk::manage(new Gtk::SpinButton());
@@ -161,10 +193,18 @@ Gtk::Widget* TextTool::options_widget() {
     spin->set_digits(0);
     spin->set_value(size_pt_);
     spin->signal_value_changed().connect([this, spin]() { size_pt_ = spin->get_value_as_int(); });
+    auto* bold = Gtk::manage(new Gtk::CheckButton("Bold"));
+    bold->set_active(bold_);
+    bold->signal_toggled().connect([this, bold]() { bold_ = bold->get_active(); });
+    auto* italic = Gtk::manage(new Gtk::CheckButton("Italic"));
+    italic->set_active(italic_);
+    italic->signal_toggled().connect([this, italic]() { italic_ = italic->get_active(); });
     options_->pack_start(*flabel, Gtk::PACK_SHRINK);
     options_->pack_start(*font, Gtk::PACK_SHRINK);
     options_->pack_start(*slabel, Gtk::PACK_SHRINK);
     options_->pack_start(*spin, Gtk::PACK_SHRINK);
+    options_->pack_start(*bold, Gtk::PACK_SHRINK);
+    options_->pack_start(*italic, Gtk::PACK_SHRINK);
     options_->show_all();
   }
   return options_.get();
@@ -230,7 +270,8 @@ void TextTool::rasterize() {
   std::vector<std::uint8_t> rgba;
   int tw = 0;
   int th = 0;
-  if (!render_text_rgba(text, family_, size_pt_, stroke_color(button_), rgba, tw, th)) {
+  if (!render_text_rgba(text, family_, size_pt_, bold_, italic_, stroke_color(button_), rgba, tw,
+                         th)) {
     return;
   }
   doc.layers().copy_active_to_tool();

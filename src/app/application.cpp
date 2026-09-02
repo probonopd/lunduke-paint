@@ -15,7 +15,7 @@ Glib::RefPtr<Application> Application::create() {
 }
 
 Application::Application()
-    : Gtk::Application(actions::kAppId, Gio::APPLICATION_FLAGS_NONE) {}
+    : Gtk::Application(actions::kAppId, Gio::APPLICATION_HANDLES_OPEN) {}
 
 void Application::on_startup() {
   Gtk::Application::on_startup();
@@ -34,6 +34,7 @@ void Application::on_startup() {
   set_accels_for_action("app.quit", {"<Primary>q"});
   set_accels_for_action("win.close-tab", {"<Primary>w"});
   set_accels_for_action("win.toggle-right-dock", {"F12"});
+  set_accels_for_action("win.fullscreen", {"F11"});
   set_accels_for_action("win.undo", {"<Primary>z"});
   set_accels_for_action("win.redo", {"<Primary>y", "<Primary><Shift>z"});
   set_accels_for_action("win.zoom-in", {"<Primary>plus", "<Primary>equal"});
@@ -43,6 +44,7 @@ void Application::on_startup() {
   set_accels_for_action("win.toggle-grid", {"<Primary>g"});
   set_accels_for_action("win.cut", {"<Primary>x"});
   set_accels_for_action("win.copy", {"<Primary>c"});
+  set_accels_for_action("win.copy-merged", {"<Primary><Shift>c"});
   set_accels_for_action("win.paste", {"<Primary>v"});
   set_accels_for_action("win.delete", {"Delete", "BackSpace"});
   set_accels_for_action("win.duplicate", {"<Primary>j"});
@@ -52,19 +54,39 @@ void Application::on_startup() {
   set_accels_for_action("win.layer-merge-down", {"<Primary>e"});
   set_accels_for_action("win.layer-flatten", {"<Primary><Shift>e"});
   set_accels_for_action("win.print", {"<Primary>p"});
+  set_accels_for_action("win.revert", {"<Primary>r"});
+}
+
+void Application::ensure_window() {
+  if (window_ != nullptr) {
+    return;
+  }
+  window_ = new MainWindow();
+  add_window(*window_);
+  window_->signal_hide().connect([this]() {
+    MainWindow* dying = window_;
+    window_ = nullptr;
+    delete dying;
+  });
 }
 
 void Application::on_activate() {
-  if (window_ == nullptr) {
-    window_ = new MainWindow();
-    add_window(*window_);
-    window_->signal_hide().connect([this]() {
-      MainWindow* dying = window_;
-      window_ = nullptr;
-      delete dying;
-    });
-  }
+  ensure_window();
   window_->present();
+}
+
+void Application::on_open(const Gio::Application::type_vec_files& files, const Glib::ustring& /*hint*/) {
+  ensure_window();
+  window_->present();
+  for (const auto& file : files) {
+    if (!file) {
+      continue;
+    }
+    const std::string path = file->get_path();
+    if (!path.empty()) {
+      window_->open_path(path);
+    }
+  }
 }
 
 void Application::on_action_new() {

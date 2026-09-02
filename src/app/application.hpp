@@ -2,6 +2,7 @@
 #ifndef BRUSHPAD_APP_APPLICATION_HPP
 #define BRUSHPAD_APP_APPLICATION_HPP
 
+#include <giomm/file.h>
 #include <glibmm/refptr.h>
 #include <gtkmm/application.h>
 
@@ -20,8 +21,10 @@ protected:
 
   void on_startup() override;
   void on_activate() override;
+  void on_open(const Gio::Application::type_vec_files& files, const Glib::ustring& hint) override;
 
 private:
+  void ensure_window();
   void on_action_new();
   void on_action_open();
   void on_action_save();

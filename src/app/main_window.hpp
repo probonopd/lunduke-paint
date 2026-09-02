@@ -27,6 +27,10 @@
 #include <gtkmm/applicationwindow.h>
 #include <gtkmm/box.h>
 #include <gtkmm/notebook.h>
+#include <gtkmm/menu.h>
+#include <gtkmm/menuitem.h>
+#include <gtkmm/selectiondata.h>
+#include <sigc++/connection.h>
 
 namespace brushpad {
 
@@ -40,6 +44,7 @@ public:
   void show_status(const Glib::ustring& message);
   void action_new();
   void action_open();
+  bool open_path(const std::string& path, bool force_replace = false);
   void action_save();
   void action_save_as();
   bool confirm_close();
@@ -62,12 +67,14 @@ public:
   Color sample_canvas(int x, int y) const override;
   void show_status_hint(const char* message) override;
   bool canvas_to_screen(int canvas_x, int canvas_y, int& screen_x, int& screen_y) override;
+  double canvas_zoom() const override { return canvas_.zoom(); }
 
   void update_chrome();
   void on_undo();
   void on_redo();
   void action_cut();
   void action_copy();
+  void action_copy_merged();
   void action_paste();
   void action_delete();
   void action_duplicate();
@@ -80,6 +87,7 @@ public:
   void action_autocrop();
   void action_rotate_90();
   void action_rotate_180();
+  void action_rotate_ccw();
   void action_flip_h();
   void action_flip_v();
   void action_clear();
@@ -106,6 +114,8 @@ public:
   void action_shortcuts();
   void action_about();
   void action_print();
+  void action_fullscreen();
+  void action_revert();
 
 private:
   void build_ui();
@@ -139,7 +149,14 @@ private:
       const std::function<void(const Layer&, std::vector<std::uint8_t>&, int, int)>& xform);
   bool warn_size(int width, int height);
   void copy_selection_to_clipboard();
+  void copy_merged_to_clipboard();
   bool paste_from_clipboard();
+  void remember_recent(const std::string& path);
+  void rebuild_recent_menu();
+  void offer_recovery();
+  bool on_recovery_tick();
+  void on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context, int x, int y,
+                             const Gtk::SelectionData& data, guint info, guint time);
   void apply_layer_effect(const char* name,
                           const std::function<void(std::uint8_t*, int, int, int)>& fn);
   void apply_preferences();
@@ -166,11 +183,13 @@ private:
   int stroke_size_{1};
   bool brush_aa_{true};
   int fill_tolerance_{0};
-  bool flatten_ora_offered_{false};
+  int jpeg_quality_{90};
   Glib::RefPtr<Gio::SimpleAction> undo_action_;
   Glib::RefPtr<Gio::SimpleAction> redo_action_;
   Glib::RefPtr<Gio::SimpleAction> cut_action_;
   Glib::RefPtr<Gio::SimpleAction> copy_action_;
+  Glib::RefPtr<Gio::SimpleAction> copy_merged_action_;
+  Glib::RefPtr<Gio::SimpleAction> revert_action_;
   Glib::RefPtr<Gio::SimpleAction> delete_action_;
   Glib::RefPtr<Gio::SimpleAction> duplicate_action_;
   Glib::RefPtr<Gio::SimpleAction> deselect_action_;
@@ -181,6 +200,8 @@ private:
   Glib::RefPtr<Gio::SimpleAction> layer_lower_action_;
   Glib::RefPtr<Gio::SimpleAction> layer_merge_action_;
   Glib::RefPtr<Gio::SimpleAction> layer_flatten_action_;
+  Gtk::MenuItem* recent_item_{nullptr};
+  sigc::connection recovery_timer_;
 };
 
 }  // namespace brushpad

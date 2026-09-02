@@ -20,7 +20,7 @@ struct LoadedImage {
   bool ok() const { return error.empty() && width > 0 && height > 0; }
 };
 
-enum class ImageFormat { Png, Jpeg, Bmp, Ora, Unknown };
+enum class ImageFormat { Png, Jpeg, Bmp, Ora, Gif, Unknown };
 
 ImageFormat format_from_path(const std::string& path);
 std::string format_extension(ImageFormat format);

@@ -205,7 +205,7 @@ void LayersPanel::add_row(int stack_index) {
   auto* name = Gtk::manage(new Gtk::Label(layer.name()));
   name->set_xalign(0.0f);
   name->set_ellipsize(Pango::ELLIPSIZE_END);
-  name->set_max_width_chars(8);
+  name->set_max_width_chars(18);
 
   auto* eye = Gtk::manage(new Gtk::ToggleButton());
   eye->set_image_from_icon_name("view-reveal-symbolic", Gtk::ICON_SIZE_MENU);
@@ -343,8 +343,22 @@ void LayersPanel::show_properties() {
   box.pack_start(name, Gtk::PACK_SHRINK);
   box.pack_start(*Gtk::manage(new Gtk::Label("Opacity", 0.0, 0.5)), Gtk::PACK_SHRINK);
   box.pack_start(opacity, Gtk::PACK_SHRINK);
+  Gtk::SpinButton offx;
+  offx.set_range(-16384, 16384);
+  offx.set_increments(1, 16);
+  offx.set_digits(0);
+  offx.set_value(layer.offset_x());
+  Gtk::SpinButton offy;
+  offy.set_range(-16384, 16384);
+  offy.set_increments(1, 16);
+  offy.set_digits(0);
+  offy.set_value(layer.offset_y());
   box.pack_start(*Gtk::manage(new Gtk::Label("Blend", 0.0, 0.5)), Gtk::PACK_SHRINK);
   box.pack_start(blend, Gtk::PACK_SHRINK);
+  box.pack_start(*Gtk::manage(new Gtk::Label("Offset X", 0.0, 0.5)), Gtk::PACK_SHRINK);
+  box.pack_start(offx, Gtk::PACK_SHRINK);
+  box.pack_start(*Gtk::manage(new Gtk::Label("Offset Y", 0.0, 0.5)), Gtk::PACK_SHRINK);
+  box.pack_start(offy, Gtk::PACK_SHRINK);
   dialog.get_content_area()->pack_start(box, Gtk::PACK_SHRINK);
   dialog.show_all();
   if (dialog.run() != Gtk::RESPONSE_OK) {
@@ -353,6 +367,7 @@ void LayersPanel::show_properties() {
   document_->rename_layer(index, name.get_text());
   document_->set_layer_opacity(index, static_cast<float>(opacity.get_value_as_int()) / 100.0f);
   document_->set_layer_blend(index, blend_mode_from_index(blend.get_active_row_number()));
+  document_->set_layer_offset(index, offx.get_value_as_int(), offy.get_value_as_int());
 }
 
 void LayersPanel::update_buttons() {

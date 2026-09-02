@@ -1,7 +1,7 @@
 project(
   'brushpad',
   'cpp',
-  version: '0.1',
+  version: '0.2',
   license: 'GPL-3.0-or-later',
   meson_version: '>=0.56.0',
   default_options: [
@@ -15,6 +15,7 @@ project(
 gtkmm_dep = dependency('gtkmm-3.0', version: '>=3.24')
 cairomm_dep = dependency('cairomm-1.0')
 gdkpixbuf_dep = dependency('gdk-pixbuf-2.0')
+glib_dep = dependency('glib-2.0')
 libarchive_dep = dependency('libarchive')
 pugixml_dep = dependency('pugixml')
 
@@ -47,13 +48,14 @@ brushpad_core_sources = files(
   'src/doc/commands_layers.cpp',
   'src/io/image_io.cpp',
   'src/io/ora.cpp',
+  'src/io/crash_recovery.cpp',
 )
 
 brushpad_core = static_library(
   'brushpad_core',
   brushpad_core_sources,
   include_directories: brushpad_inc,
-  dependencies: [gdkpixbuf_dep, libarchive_dep, pugixml_dep],
+  dependencies: [gdkpixbuf_dep, glib_dep, libarchive_dep, pugixml_dep],
 )
 
 brushpad_sources = files(
@@ -89,6 +91,8 @@ brushpad_sources = files(
   'src/tools/tool_lasso.cpp',
   'src/tools/tool_ellipse_select.cpp',
   'src/tools/tool_text.cpp',
+  'src/tools/tool_magic_wand.cpp',
+  'src/tools/selection_xform.cpp',
   'src/ui/dialogs_image.cpp',
   'src/ui/dialogs_adjust.cpp',
   'src/ui/dialogs_prefs.cpp',
@@ -184,6 +188,26 @@ test_effects = executable(
 )
 test('effects', test_effects)
 
+test_crash_recovery = executable(
+  'test_crash_recovery',
+  files('tests/test_crash_recovery.cpp'),
+  include_directories: brushpad_inc,
+  link_with: brushpad_core,
+  dependencies: [gdkpixbuf_dep, glib_dep, libarchive_dep, pugixml_dep],
+  install: false,
+)
+test('crash_recovery', test_crash_recovery)
+
+test_copy_merged = executable(
+  'test_copy_merged',
+  files('tests/test_copy_merged.cpp'),
+  include_directories: brushpad_inc,
+  link_with: brushpad_core,
+  dependencies: [gdkpixbuf_dep],
+  install: false,
+)
+test('copy_merged', test_copy_merged)
+
 install_data(
   'data/org.lunduke.LundukePaint.desktop',
   install_dir: join_paths(get_option('datadir'), 'applications'),
@@ -197,4 +221,22 @@ install_data(
 install_data(
   'data/icons/hicolor/scalable/apps/org.lunduke.LundukePaint.svg',
   install_dir: join_paths(get_option('datadir'), 'icons/hicolor/scalable/apps'),
+)
+
+install_data(
+  'data/icons/hicolor/32x32/apps/org.lunduke.LundukePaint.png',
+  install_dir: join_paths(get_option('datadir'), 'icons/hicolor/32x32/apps'),
+)
+install_data(
+  'data/icons/hicolor/48x48/apps/org.lunduke.LundukePaint.png',
+  install_dir: join_paths(get_option('datadir'), 'icons/hicolor/48x48/apps'),
+)
+install_data(
+  'data/icons/hicolor/96x96/apps/org.lunduke.LundukePaint.png',
+  install_dir: join_paths(get_option('datadir'), 'icons/hicolor/96x96/apps'),
+)
+
+install_data(
+  'data/mime/org.lunduke.LundukePaint.xml',
+  install_dir: join_paths(get_option('datadir'), 'mime/packages'),
 )

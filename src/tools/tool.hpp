@@ -46,6 +46,7 @@ public:
     screen_y = 0;
     return false;
   }
+  virtual double canvas_zoom() const { return 1.0; }
 };
 
 class Tool {

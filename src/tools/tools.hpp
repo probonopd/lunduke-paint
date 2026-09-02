@@ -24,6 +24,7 @@ Tool* create_curve_tool();
 Tool* create_lasso_tool();
 Tool* create_ellipse_select_tool();
 Tool* create_text_tool();
+Tool* create_magic_wand_tool();
 
 }  // namespace brushpad
 

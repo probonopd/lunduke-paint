@@ -5,6 +5,7 @@
 #include "raster/types.hpp"
 
 #include <string>
+#include <vector>
 
 namespace brushpad {
 
@@ -16,9 +17,11 @@ public:
   Color checker_light{209, 209, 209, 255};
   Color checker_dark{158, 158, 158, 255};
   int grid_threshold = 400;
+  std::vector<std::string> recent_files;
 
   void load();
   bool save() const;
+  void add_recent(const std::string& path);
 
   static std::string config_dir();
   static std::string config_path();

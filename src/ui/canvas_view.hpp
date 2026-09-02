@@ -52,6 +52,9 @@ public:
 
   void widget_to_canvas(double widget_x, double widget_y, double& canvas_x, double& canvas_y) const;
   bool canvas_to_screen(int canvas_x, int canvas_y, int& screen_x, int& screen_y) const;
+  bool last_pointer(int& canvas_x, int& canvas_y) const;
+  void viewport_center_canvas(int& canvas_x, int& canvas_y) const;
+  void apply_zoom(double zoom);
 
   sigc::signal<void, double, double>& signal_pointer_moved() {
     return signal_pointer_moved_;
@@ -111,6 +114,9 @@ private:
   sigc::signal<void, double, double> signal_pointer_moved_;
   sigc::signal<void> signal_pointer_left_;
   sigc::signal<void> signal_view_changed_;
+  bool has_pointer_{false};
+  double last_cx_{0};
+  double last_cy_{0};
 };
 
 }  // namespace brushpad

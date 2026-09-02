@@ -13,15 +13,23 @@
     </p>
     <p>
       It uses a window-manager title bar, a menu bar, and toolbars. The
-      native project format is OpenRaster (.ora). Flat export to PNG,
-      JPEG, and BMP is supported.
+      native project format is OpenRaster (.ora). Load PNG, JPEG, BMP, and
+      GIF. Flat export to PNG, JPEG, and BMP is supported.
     </p>
   </description>
+  <url type="homepage">https://lunduke.com</url>
   <launchable type="desktop-id">org.lunduke.LundukePaint.desktop</launchable>
   <provides>
     <binary>lunduke-paint</binary>
   </provides>
-  <developer_name>Lunduke Paint</developer_name>
+  <mimetypes>
+    <mimetype>image/openraster</mimetype>
+    <mimetype>image/png</mimetype>
+    <mimetype>image/jpeg</mimetype>
+    <mimetype>image/bmp</mimetype>
+    <mimetype>image/gif</mimetype>
+  </mimetypes>
+  <developer_name>The Lunduke Journal</developer_name>
   <content_rating type="oars-1.1"/>
   <categories>
     <category>Graphics</category>
@@ -29,9 +37,9 @@
     <category>RasterGraphics</category>
   </categories>
   <releases>
-    <release version="0.1" date="2026-09-02">
+    <release version="0.2" date="2026-09-02">
       <description>
-        <p>First LCOS 0.3 package of Lunduke Paint (GTK3 layered bitmap paint).</p>
+        <p>Lunduke Paint 0.2 for LCOS: Open from the OS, crash recovery, Copy Merged, system fonts, magic wand, and GIF load.</p>
       </description>
     </release>
   </releases>

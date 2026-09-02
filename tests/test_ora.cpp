@@ -6,6 +6,8 @@
 
 #include <cstdio>
 #include <string>
+#include <archive.h>
+#include <archive_entry.h>
 #include <unistd.h>
 #include <vector>
 
@@ -80,6 +82,27 @@ int main() {
     errors += expect(static_cast<int>(ov.size()) > idx + 3 && ov[idx] == 255 && ov[idx + 1] == 0 &&
                          ov[idx + 2] == 0,
                      "top pixel");
+  }
+
+
+  {
+    archive* a = archive_read_new();
+    errors += expect(a != nullptr, "archive reader");
+    if (a != nullptr) {
+      archive_read_support_format_zip(a);
+      errors += expect(archive_read_open_filename(a, path.c_str(), 16384) == ARCHIVE_OK, "open zip");
+      bool found_thumb = false;
+      archive_entry* entry = nullptr;
+      while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
+        const char* name = archive_entry_pathname(entry);
+        if (name != nullptr && std::string(name) == "Thumbnails/thumbnail.png") {
+          found_thumb = true;
+        }
+        archive_read_data_skip(a);
+      }
+      errors += expect(found_thumb, "Thumbnails/thumbnail.png present");
+      archive_read_free(a);
+    }
   }
 
   unlink(path.c_str());

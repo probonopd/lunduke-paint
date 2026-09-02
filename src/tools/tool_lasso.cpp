@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "tools/tool.hpp"
+#include "tools/selection_xform.hpp"
 
 #include "doc/document.hpp"
 #include "raster/shapes.hpp"
@@ -23,7 +24,7 @@ public:
   const char* hint() const override {
     return "Lasso: drag a freehand path; drag inside to move; Ctrl copies";
   }
-  bool is_stroking() const override { return dragging_ || moving_; }
+  bool is_stroking() const override { return dragging_ || moving_ || xform_.active(); }
   Gtk::Widget* options_widget() override;
 
   void on_press(CanvasEvent event) override;
@@ -48,6 +49,7 @@ private:
   Rect prev_dirty_{};
   std::unique_ptr<Gtk::Box> options_;
   Gtk::CheckButton* transparent_{nullptr};
+  SelectionXform xform_;
 };
 
 Gtk::Widget* LassoTool::options_widget() {
@@ -193,6 +195,9 @@ void LassoTool::on_press(CanvasEvent event) {
   if (host_ == nullptr || (event.button != 1 && event.button != 3)) {
     return;
   }
+  if (xform_.on_press(host_, event, host_->canvas_zoom())) {
+    return;
+  }
   Document& doc = host_->document();
   const int x = static_cast<int>(std::floor(event.x));
   const int y = static_cast<int>(std::floor(event.y));
@@ -235,6 +240,10 @@ void LassoTool::on_motion(CanvasEvent event) {
   if (host_ == nullptr) {
     return;
   }
+  if (xform_.active()) {
+    xform_.on_motion(host_, event);
+    return;
+  }
   Document& doc = host_->document();
   Selection& sel = doc.selection();
   const int x = static_cast<int>(std::floor(event.x));
@@ -256,6 +265,10 @@ void LassoTool::on_motion(CanvasEvent event) {
 }
 
 void LassoTool::on_release(CanvasEvent event) {
+  if (xform_.active()) {
+    xform_.on_release(host_);
+    return;
+  }
   if (moving_) {
     moving_ = false;
     if (host_ != nullptr && (event.modifiers & Modifier::Ctrl) != 0) {
@@ -273,6 +286,10 @@ void LassoTool::on_release(CanvasEvent event) {
 }
 
 void LassoTool::on_cancel() {
+  if (xform_.active()) {
+    xform_.on_cancel(host_);
+    return;
+  }
   if (host_ == nullptr) {
     dragging_ = false;
     moving_ = false;

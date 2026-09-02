@@ -90,16 +90,55 @@ void Preferences::load() {
     }
   } catch (const Glib::KeyFileError&) {
   }
+
+  try {
+    if (key.has_key("recent", "files")) {
+      recent_files.clear();
+      for (const auto& item : key.get_string_list("recent", "files")) {
+        if (!item.empty()) {
+          recent_files.push_back(item);
+        }
+      }
+    }
+  } catch (const Glib::KeyFileError&) {
+  }
+}
+
+void Preferences::add_recent(const std::string& path) {
+  if (path.empty() || path[0] != '/') {
+    return;
+  }
+  recent_files.erase(std::remove(recent_files.begin(), recent_files.end(), path), recent_files.end());
+  recent_files.insert(recent_files.begin(), path);
+  constexpr std::size_t kMaxRecent = 10;
+  if (recent_files.size() > kMaxRecent) {
+    recent_files.resize(kMaxRecent);
+  }
+  save();
 }
 
 bool Preferences::save() const {
   Glib::KeyFile key;
+  try {
+    key.load_from_file(config_path());
+  } catch (const Glib::Error&) {
+  }
   key.set_integer("document", "default_width", default_width);
   key.set_integer("document", "default_height", default_height);
   key.set_integer("history", "undo_limit", undo_limit);
   key.set_string("view", "checker_light", color_to_hex(checker_light));
   key.set_string("view", "checker_dark", color_to_hex(checker_dark));
   key.set_integer("view", "grid_threshold", grid_threshold);
+  if (!recent_files.empty()) {
+    std::vector<Glib::ustring> list;
+    list.reserve(recent_files.size());
+    for (const auto& item : recent_files) {
+      list.emplace_back(item);
+    }
+    key.set_string_list("recent", "files", list);
+  } else if (key.has_group("recent")) {
+    key.remove_group("recent");
+  }
 
   g_mkdir_with_parents(config_dir().c_str(), 0755);
   try {

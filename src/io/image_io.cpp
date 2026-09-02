@@ -104,6 +104,9 @@ ImageFormat format_from_path(const std::string& path) {
   if (ext == ".ora") {
     return ImageFormat::Ora;
   }
+  if (ext == ".gif") {
+    return ImageFormat::Gif;
+  }
   return ImageFormat::Unknown;
 }
 
@@ -117,6 +120,8 @@ std::string format_extension(ImageFormat format) {
       return ".bmp";
     case ImageFormat::Ora:
       return ".ora";
+    case ImageFormat::Gif:
+      return ".gif";
     default:
       return ".png";
   }

@@ -5,6 +5,8 @@
 #include <glib.h>
 
 int main(int argc, char* argv[]) {
+  g_set_prgname("lunduke-paint");
+  g_set_application_name("Lunduke Paint");
   if (g_getenv("GDK_BACKEND") == nullptr) {
     g_setenv("GDK_BACKEND", "x11", FALSE);
   }

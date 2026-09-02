@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "tools/tool.hpp"
+#include "tools/selection_xform.hpp"
 
 #include "doc/document.hpp"
 
@@ -21,7 +22,7 @@ public:
   const char* hint() const override {
     return "Select: drag a rectangle; drag inside to move; Ctrl copies";
   }
-  bool is_stroking() const override { return dragging_ || moving_; }
+  bool is_stroking() const override { return dragging_ || moving_ || xform_.active(); }
   Gtk::Widget* options_widget() override;
 
   void on_press(CanvasEvent event) override;
@@ -46,6 +47,7 @@ private:
   Rect prev_dirty_{};
   std::unique_ptr<Gtk::Box> options_;
   Gtk::CheckButton* transparent_{nullptr};
+  SelectionXform xform_;
 };
 
 Gtk::Widget* RectSelectTool::options_widget() {
@@ -84,6 +86,9 @@ int RectSelectTool::clamp_y(int y) const {
 
 void RectSelectTool::on_press(CanvasEvent event) {
   if (host_ == nullptr || (event.button != 1 && event.button != 3)) {
+    return;
+  }
+  if (xform_.on_press(host_, event, host_->canvas_zoom())) {
     return;
   }
   Document& doc = host_->document();
@@ -129,6 +134,10 @@ void RectSelectTool::on_press(CanvasEvent event) {
 
 void RectSelectTool::on_motion(CanvasEvent event) {
   if (host_ == nullptr) {
+    return;
+  }
+  if (xform_.active()) {
+    xform_.on_motion(host_, event);
     return;
   }
   Document& doc = host_->document();
@@ -178,6 +187,10 @@ void RectSelectTool::finish_rubber() {
 }
 
 void RectSelectTool::on_release(CanvasEvent event) {
+  if (xform_.active()) {
+    xform_.on_release(host_);
+    return;
+  }
   if (moving_) {
     moving_ = false;
     if (host_ != nullptr && (event.modifiers & Modifier::Ctrl) != 0) {
@@ -196,6 +209,10 @@ void RectSelectTool::on_release(CanvasEvent event) {
 }
 
 void RectSelectTool::on_cancel() {
+  if (xform_.active()) {
+    xform_.on_cancel(host_);
+    return;
+  }
   if (host_ == nullptr) {
     dragging_ = false;
     moving_ = false;

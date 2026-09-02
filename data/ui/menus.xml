@@ -12,6 +12,19 @@
           <attribute name="label" translatable="yes">_Open…</attribute>
           <attribute name="action">app.open</attribute>
         </item>
+        <submenu>
+          <attribute name="label" translatable="yes">Open _Recent</attribute>
+          <section>
+            <item>
+              <attribute name="label" translatable="yes">(empty)</attribute>
+              <attribute name="action">win.recent-none</attribute>
+            </item>
+          </section>
+        </submenu>
+        <item>
+          <attribute name="label" translatable="yes">Rever_t</attribute>
+          <attribute name="action">win.revert</attribute>
+        </item>
         <item>
           <attribute name="label" translatable="yes">_Save</attribute>
           <attribute name="action">app.save</attribute>
@@ -56,6 +69,10 @@
         <item>
           <attribute name="label" translatable="yes">_Copy</attribute>
           <attribute name="action">win.copy</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">Copy _Merged</attribute>
+          <attribute name="action">win.copy-merged</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">_Paste</attribute>
@@ -118,6 +135,10 @@
           <attribute name="label" translatable="yes">Right Dock</attribute>
           <attribute name="action">win.toggle-right-dock</attribute>
         </item>
+        <item>
+          <attribute name="label" translatable="yes">_Fullscreen</attribute>
+          <attribute name="action">win.fullscreen</attribute>
+        </item>
       </section>
     </submenu>
     <submenu>
@@ -148,6 +169,10 @@
         <item>
           <attribute name="label" translatable="yes">Rotate 180°</attribute>
           <attribute name="action">win.rotate-180</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">Rotate 270° / CCW</attribute>
+          <attribute name="action">win.rotate-ccw</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">Flip Horizontal</attribute>

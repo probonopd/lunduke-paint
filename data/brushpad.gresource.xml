@@ -5,6 +5,7 @@
   </gresource>
   <gresource prefix="/org/lunduke/LundukePaint/icons">
     <file alias="scalable/actions/tool-select-rectangle-symbolic.svg">icons/hicolor/scalable/actions/tool-select-rectangle-symbolic.svg</file>
+    <file alias="scalable/actions/tool-magicwand-symbolic.svg">icons/hicolor/scalable/actions/tool-magicwand-symbolic.svg</file>
     <file alias="scalable/actions/tool-select-lasso-freeform-symbolic.svg">icons/hicolor/scalable/actions/tool-select-lasso-freeform-symbolic.svg</file>
     <file alias="scalable/actions/tool-select-ellipse-symbolic.svg">icons/hicolor/scalable/actions/tool-select-ellipse-symbolic.svg</file>
     <file alias="scalable/actions/tool-pencil-symbolic.svg">icons/hicolor/scalable/actions/tool-pencil-symbolic.svg</file>

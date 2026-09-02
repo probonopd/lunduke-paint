@@ -6,7 +6,7 @@ namespace brushpad {
 namespace {
 
 // Classic 48-color Paint / KolourPaint-style palette, last cell transparent.
-const Color kPalette[48] = {
+const Color kDefaultPalette[48] = {
     {0, 0, 0, 255},       {128, 128, 128, 255}, {128, 0, 0, 255},     {128, 128, 0, 255},
     {0, 128, 0, 255},     {0, 128, 128, 255},   {0, 0, 128, 255},     {128, 0, 128, 255},
     {128, 128, 64, 255},  {0, 64, 64, 255},     {0, 128, 255, 255},   {0, 64, 128, 255},
@@ -27,17 +27,19 @@ ColorsPanel::ColorsPanel() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 2) {
   set_border_width(3);
   heading_.set_text("Colors");
   heading_.set_xalign(0.0f);
-  hint_.set_text("L:FG  R:BG");
+  hint_.set_text("L:FG  M:BG  R:store FG");
   hint_.set_xalign(0.0f);
   hint_.set_line_wrap(true);
-  hint_.set_max_width_chars(14);
+  hint_.set_max_width_chars(18);
   grid_.set_row_spacing(1);
   grid_.set_column_spacing(1);
   pack_start(heading_, Gtk::PACK_SHRINK);
   pack_start(grid_, Gtk::PACK_SHRINK);
   pack_start(hint_, Gtk::PACK_SHRINK);
-  for (const Color& color : kPalette) {
-    add_swatch(color, color.a == 0 ? "Transparent" : "Palette color");
+  palette_.assign(kDefaultPalette, kDefaultPalette + 48);
+  for (int i = 0; i < static_cast<int>(palette_.size()); ++i) {
+    add_swatch(i, palette_[static_cast<std::size_t>(i)].a == 0 ? "Transparent"
+                                                              : "Palette color");
   }
 }
 
@@ -46,18 +48,19 @@ void ColorsPanel::set_colors(Color fg, Color bg) {
   bg_ = bg;
 }
 
-void ColorsPanel::add_swatch(Color color, const char* tip) {
+void ColorsPanel::add_swatch(int index, const char* tip) {
   auto* area = Gtk::manage(new Gtk::DrawingArea());
   area->set_size_request(16, 16);
   area->set_tooltip_text(tip);
   area->add_events(Gdk::BUTTON_PRESS_MASK);
   area->signal_draw().connect(
-      [this, area, color](const Cairo::RefPtr<Cairo::Context>& cr) {
-        return on_swatch_draw(area, cr, color);
+      [this, area, index](const Cairo::RefPtr<Cairo::Context>& cr) {
+        return on_swatch_draw(area, cr, index);
       });
   area->signal_button_press_event().connect(
-      [this, color](GdkEventButton* event) { return on_swatch_press(event, color); });
+      [this, index](GdkEventButton* event) { return on_swatch_press(event, index); });
   grid_.attach(*area, col_, row_, 1, 1);
+  areas_.push_back(area);
   col_ += 1;
   if (col_ >= 8) {
     col_ = 0;
@@ -66,7 +69,8 @@ void ColorsPanel::add_swatch(Color color, const char* tip) {
 }
 
 bool ColorsPanel::on_swatch_draw(Gtk::DrawingArea* area, const Cairo::RefPtr<Cairo::Context>& cr,
-                                 Color color) {
+                                 int index) {
+  const Color color = palette_[static_cast<std::size_t>(index)];
   const int w = area->get_allocated_width();
   const int h = area->get_allocated_height();
   if (color.a == 0) {
@@ -90,12 +94,32 @@ bool ColorsPanel::on_swatch_draw(Gtk::DrawingArea* area, const Cairo::RefPtr<Cai
   return true;
 }
 
-bool ColorsPanel::on_swatch_press(GdkEventButton* event, Color color) {
-  if (event == nullptr || !on_swatch) {
+bool ColorsPanel::on_swatch_press(GdkEventButton* event, int index) {
+  if (event == nullptr || index < 0 || index >= static_cast<int>(palette_.size())) {
     return false;
   }
-  if (event->button == 1 || event->button == 3) {
-    on_swatch(color, event->button == 3);
+  Color& slot = palette_[static_cast<std::size_t>(index)];
+  const bool last_transparent = (index == static_cast<int>(palette_.size()) - 1);
+  if (event->button == 3 && !last_transparent) {
+    slot = fg_;
+    if (areas_[static_cast<std::size_t>(index)] != nullptr) {
+      areas_[static_cast<std::size_t>(index)]->queue_draw();
+    }
+    return true;
+  }
+  if (!on_swatch) {
+    return false;
+  }
+  if (event->button == 1) {
+    on_swatch(slot, (event->state & GDK_SHIFT_MASK) != 0);
+    return true;
+  }
+  if (event->button == 2) {
+    on_swatch(slot, true);
+    return true;
+  }
+  if (event->button == 3 && last_transparent) {
+    on_swatch(slot, true);
     return true;
   }
   return false;
