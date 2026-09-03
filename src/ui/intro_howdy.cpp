@@ -22,45 +22,57 @@ struct Curve {
 };
 
 // Hand-fit smooth cubics matching refs/howdy-editor-ref.png letterforms.
-// 25 curves — not a PNG skeleton / Chaikin / Catmull-Rom auto-trace.
-// Flat editor proportions: looped h + n-arch, slanted o, twin U w, stem d, looped y.
-constexpr Point kStart{40.0, 150.0};
-constexpr std::array<Curve, 25> kCurves{{
-    // h: short lead-in from baseline into a tall NARROW rounded loop
-    {{32, 115}, {34, 58}, {48, 50}},
-    {{60, 46}, {64, 58}, {62, 96}},
-    // h: almost-vertical stem down to the baseline (x held ~62, y to 150)
-    {{62, 128}, {62, 148}, {62, 150}},
-    // h: THEN one n-arch — right along the floor, up to x-height, back to baseline
-    {{80, 150}, {88, 104}, {104, 100}},
-    {{120, 98}, {128, 128}, {126, 150}},
-    // connector into o
-    {{140, 148}, {152, 142}, {164, 132}},
-    // o: smooth slanted oval; high bridge into w
-    {{152, 150}, {168, 156}, {186, 148}},
-    {{206, 138}, {212, 118}, {196, 106}},
-    {{178, 94}, {158, 104}, {166, 122}},
-    {{178, 138}, {198, 132}, {214, 116}},
-    // w: two distinct U valleys to baseline, middle peak at x-height
-    {{216, 138}, {220, 150}, {238, 150}},
-    {{252, 150}, {256, 104}, {270, 100}},
-    {{284, 100}, {288, 150}, {306, 150}},
-    {{322, 150}, {330, 112}, {334, 108}},
-    // d: o-like bowl
-    {{324, 128}, {330, 154}, {356, 152}},
-    {{380, 150}, {388, 122}, {374, 108}},
-    {{360, 96}, {344, 104}, {348, 122}},
-    // d: tall straight slanted stem (up, then down — not a giant loop)
-    {{360, 132}, {372, 124}, {380, 108}},
-    {{392, 85}, {404, 58}, {410, 55}},
-    {{404, 75}, {394, 125}, {386, 150}},
-    // connector into y
-    {{400, 154}, {416, 144}, {428, 124}},
-    // y: U-cup then smooth descender loop
-    {{438, 138}, {444, 152}, {460, 152}},
-    {{476, 152}, {484, 120}, {488, 110}},
-    {{494, 130}, {498, 172}, {472, 180}},
-    {{452, 186}, {448, 160}, {488, 154}},
+// 22 curves — not a PNG skeleton / Chaikin / Catmull-Rom auto-trace.
+// Same hand: ~20° italic, shared baseline / x-height / ascender, even stroke.
+// h = tall narrow loop + vertical stem to baseline + ONE n-arch.
+// w = two U valleys on the baseline, middle peak at x-height.
+// d = oval bowl joined to a tall stem that grows out of the bowl's right side.
+constexpr Point kStart{27.0, 136.0};
+constexpr std::array<Curve, 22> kCurves{{
+    // h: lead-in up LEFT of tall narrow loop
+    {{29, 116}, {48, 84}, {62, 79}},
+    // h: rounded loop top onto the right / stem
+    {{74, 68}, {92, 70}, {85, 94}},
+    // h: STEM nearly vertical — hits baseline (not an extra hump)
+    {{85, 118}, {83, 142}, {82, 151}},
+    // h: ONE n-arch up to x-height
+    {{88, 148}, {89, 99}, {95, 98}},
+    // h: n-arch down into o
+    {{104, 98}, {114, 149}, {128, 135}},
+    // o: bottom of slanted oval
+    {{135, 153}, {151, 154}, {164, 137}},
+    // o: right side up to x-height
+    {{173, 121}, {170, 97}, {150, 97}},
+    // o: left close
+    {{130, 97}, {120, 114}, {130, 131}},
+    // o: high bridge into w
+    {{144, 142}, {172, 101}, {194, 110}},
+    // w: first U down to baseline
+    {{203, 131}, {203, 151}, {212, 151}},
+    // w: first U up — MIDDLE PEAK at x-height (same as o top)
+    {{220, 150}, {218, 98}, {223, 98}},
+    // w: second U down to baseline
+    {{228, 98}, {237, 151}, {251, 151}},
+    // w: second U up to x-height, into d
+    {{268, 150}, {280, 99}, {303, 98}},
+    // d: enter top-left of bowl, down left, across bottom
+    {{310, 114}, {313, 153}, {332, 151}},
+    // d: up the RIGHT side of the bowl (joined stem family)
+    {{355, 149}, {363, 121}, {360, 102}},
+    // d: continue up that same right edge to ascender (tiny top hook)
+    {{362, 88}, {374, 66}, {376, 70}},
+    // d: retrace down ON the bowl's right edge to baseline (joined d, not o+l)
+    {{376, 76}, {360, 104}, {359, 150}},
+    // d: connector into y
+    {{372, 150}, {387, 122}, {398, 116}},
+    // y: U-valley down to baseline
+    {{406, 135}, {410, 152}, {416, 148}},
+    // y: U-valley up to x-height
+    {{422, 145}, {429, 99}, {425, 98}},
+    // y: descender
+    {{425, 122}, {406, 176}, {414, 174}},
+    // y: loop and exit flourish
+    {{428, 174}, {454, 118}, {474, 133}},
 }};
 
 constexpr int kSteps = 24;
