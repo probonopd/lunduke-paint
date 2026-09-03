@@ -22,29 +22,32 @@ struct Curve {
 };
 
 // Mac 1984 "hello." spirit: slanted connected cursive, uniform felt-tip
-// monoline. Tall looped h with a clear baseline arch, simple oval o,
-// sharp two-valley w, d with oval body + retraced stem (no top loop),
+// monoline. Tall looped h with a wide baseline-landing shoulder, simple
+// oval o, two rounded U-valleys for w, d with oval body + retraced stem,
 // y with looped descender. One continuous trail in writing order.
-constexpr Point kStart{26.0, 158.0};
-constexpr std::array<Curve, 25> kCurves{{
-    // h: tall rounded ascender loop, stem to baseline, wide clear arch to baseline
-    {{16, 90}, {10, 8}, {36, 0}},
-    {{64, -6}, {94, 42}, {86, 160}},
-    // shoulder left: from baseline up to a rounded midline hump
-    {{92, 110}, {108, 78}, {128, 88}},
-    // shoulder right: more vertical drop to baseline, land before o
-    {{138, 98}, {142, 150}, {146, 162}},
-    {{150, 162}, {154, 162}, {158, 160}},
-    // o: oval on the baseline (entry from h landing)
-    {{140, 172}, {160, 174}, {184, 160}},
-    {{210, 144}, {216, 108}, {192, 88}},
-    {{164, 72}, {136, 90}, {150, 122}},
-    {{172, 148}, {200, 136}, {218, 110}},
-    // w: sharp two-valley — deep baseline points, pointed midline peak
-    {{226, 145}, {232, 178}, {252, 168}},
-    {{258, 140}, {260, 84}, {274, 84}},
-    {{288, 84}, {290, 178}, {312, 168}},
-    {{330, 150}, {350, 112}, {368, 102}},
+constexpr Point kStart{28.0, 156.0};
+constexpr std::array<Curve, 26> kCurves{{
+    // h: tall rounded ascender loop (up, round top, down past x-height)
+    {{18, 90}, {14, 8}, {38, 2}},
+    {{52, -6}, {40, 72}, {66, 160}},
+    // h shoulder: wide rounded arch from baseline up to x-height
+    {{74, 118}, {82, 80}, {100, 76}},
+    // rounded crown of the arch
+    {{116, 70}, {126, 74}, {134, 96}},
+    // right stem of the arch: vertical drop all the way to baseline
+    {{136, 124}, {136, 150}, {136, 162}},
+    // sit on baseline, then connector into o
+    {{150, 166}, {166, 158}, {178, 146}},
+    // o: oval on the baseline (kept; entry right of the h landing)
+    {{164, 170}, {184, 174}, {206, 160}},
+    {{232, 144}, {238, 108}, {214, 88}},
+    {{186, 72}, {158, 90}, {172, 122}},
+    {{194, 148}, {222, 136}, {240, 110}},
+    // w: two rounded U-shaped valleys on the baseline, clear middle peak
+    {{246, 128}, {252, 162}, {270, 162}},
+    {{288, 162}, {294, 92}, {304, 82}},
+    {{312, 82}, {318, 162}, {338, 162}},
+    {{356, 162}, {366, 114}, {370, 102}},
     // d: o-like bowl, then tall retraced stem (colinear controls = no top loop)
     {{352, 138}, {358, 168}, {396, 164}},
     {{432, 160}, {440, 116}, {418, 95}},
