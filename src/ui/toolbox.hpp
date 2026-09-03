@@ -33,6 +33,8 @@ public:
   // Layout checks used by the widget tests (need a realized display).
   bool tool_columns_homogeneous() const;
   bool tool_columns_equal_width() const;
+  // True when the toolbox width is essentially the tool grid (+ small border).
+  bool width_tracks_tool_grid() const;
   bool fg_label_right_of_well() const;
   bool bg_label_left_of_well() const;
   bool bg_well_right_justified() const;
@@ -55,8 +57,8 @@ private:
   bool child_origin(const Gtk::Widget& child, int& x, int& y) const;
 
   Gtk::Grid grid_;
-  Gtk::Box fg_row_{Gtk::ORIENTATION_HORIZONTAL, 6};
-  Gtk::Box bg_row_{Gtk::ORIENTATION_HORIZONTAL, 6};
+  Gtk::Box fg_row_{Gtk::ORIENTATION_HORIZONTAL, 4};
+  Gtk::Box bg_row_{Gtk::ORIENTATION_HORIZONTAL, 4};
   Gtk::DrawingArea fg_well_;
   Gtk::DrawingArea bg_well_;
   Gtk::Label fg_label_{"Foreground"};

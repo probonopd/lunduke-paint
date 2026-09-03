@@ -35,7 +35,9 @@ inline const char* css() {
       ".tool-button {"
       "  border: 2px solid transparent;"
       "  border-radius: 3px;"
-      "  padding: 1px;"
+      "  padding: 0px;"
+      "  min-width: 28px;"
+      "  min-height: 28px;"
       "  background-image: none;"
       "}"
       ".tool-button.tool-selected {"
@@ -49,7 +51,7 @@ inline const char* css() {
       "  border: 2px solid #2a5d9f;"
       "}"
       ".toolbox-caption {"
-      "  font-size: 8pt; padding: 0 1px;"
+      "  font-size: 7.5pt; padding: 0;"
       "}";
 }
 

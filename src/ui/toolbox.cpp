@@ -12,7 +12,9 @@ namespace brushpad {
 
 namespace {
 constexpr int kWellSize = 26;
-constexpr int kToolboxWidth = 156;
+// Soft ceiling so a theme cannot inflate the strip far past the tool grid;
+// natural width is driven by the two equal tool columns + FG/BG captions.
+constexpr int kToolboxMaxWidth = 120;
 }  // namespace
 
 // Own CSS, loaded once per screen at APPLICATION priority so the selected tool
@@ -37,14 +39,17 @@ void Toolbox::ensure_css() {
   loaded = true;
 }
 
-Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
+Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 3) {
   ensure_css();
-  set_border_width(4);
-  set_size_request(kToolboxWidth, -1);
+  set_border_width(2);
+  set_halign(Gtk::ALIGN_START);
+  // Width tracks the tool grid (plus FG/BG captions). No large fixed pad.
+  set_size_request(-1, -1);
 
   grid_.set_row_spacing(2);
   grid_.set_column_spacing(2);
   grid_.set_column_homogeneous(true);
+  // Fill the strip so equal columns match caption-row width (no empty side pad).
   grid_.set_hexpand(true);
   grid_.set_halign(Gtk::ALIGN_FILL);
   pack_start(grid_, Gtk::PACK_SHRINK);
@@ -78,7 +83,8 @@ Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
   bg_label_.get_style_context()->add_class(toolbox_style::caption_class());
 
   // Foreground label immediately to the right of the FG well, vertically centered.
-  fg_row_.set_halign(Gtk::ALIGN_START);
+  fg_row_.set_halign(Gtk::ALIGN_FILL);
+  fg_row_.set_hexpand(true);
   fg_row_.set_valign(Gtk::ALIGN_CENTER);
   fg_row_.pack_start(fg_well_, Gtk::PACK_SHRINK);
   fg_row_.pack_start(fg_label_, Gtk::PACK_SHRINK);
@@ -88,20 +94,22 @@ Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
   bg_row_.set_halign(Gtk::ALIGN_FILL);
   bg_row_.set_hexpand(true);
   bg_row_.set_valign(Gtk::ALIGN_CENTER);
-  bg_row_.set_margin_top(10);
+  bg_row_.set_margin_top(8);
   bg_row_.pack_start(bg_label_, Gtk::PACK_EXPAND_WIDGET);
   bg_row_.pack_end(bg_well_, Gtk::PACK_SHRINK);
 
   pack_start(fg_row_, Gtk::PACK_SHRINK);
   pack_start(bg_row_, Gtk::PACK_SHRINK);
 
-  trans_.set_size_request(kToolboxWidth - 12, 18);
+  // Height only — width follows the toolbox/grid, not a fixed pad.
+  trans_.set_size_request(-1, 18);
   trans_.set_hexpand(true);
   trans_.set_tooltip_text("Transparent: left sets FG, right sets BG (punches alpha)");
   trans_.add_events(Gdk::BUTTON_PRESS_MASK);
   trans_.signal_draw().connect(sigc::mem_fun(*this, &Toolbox::on_trans_draw));
   trans_.signal_button_press_event().connect(sigc::mem_fun(*this, &Toolbox::on_trans_press));
   pack_start(trans_, Gtk::PACK_SHRINK);
+
 }
 
 void Toolbox::add_tool_button(const std::string& id, const std::string& tooltip,
@@ -174,6 +182,17 @@ bool Toolbox::tool_columns_equal_width() const {
   const int w0 = buttons_[0]->get_allocated_width();
   const int w1 = buttons_[1]->get_allocated_width();
   return w0 > 8 && std::abs(w0 - w1) <= 1;
+}
+
+bool Toolbox::width_tracks_tool_grid() const {
+  const int box_w = get_allocated_width();
+  const int grid_w = grid_.get_allocated_width();
+  if (box_w < 1 || grid_w < 1) {
+    return false;
+  }
+  // Border plus a little theme chrome — not a large fixed pad like the old 156px.
+  const int pad = box_w - grid_w;
+  return pad >= 0 && pad <= 24 && box_w <= kToolboxMaxWidth + 12;
 }
 
 bool Toolbox::child_origin(const Gtk::Widget& child, int& x, int& y) const {

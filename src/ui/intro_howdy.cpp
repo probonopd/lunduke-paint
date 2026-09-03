@@ -21,33 +21,35 @@ struct Curve {
   Point end;
 };
 
-// Mac 1984 "hello." spirit: upright connected cursive, uniform felt-tip
-// monoline, tall looped h/d, simple oval o, two u-shapes for w, y with a
-// looped descender. One continuous trail in writing order.
+// Mac 1984 "hello." spirit: slanted connected cursive, uniform felt-tip
+// monoline. Tall looped h, simple oval o, two midline valleys for w,
+// d with oval body + retraced stem (no top loop), y with looped descender.
+// One continuous trail in writing order.
 constexpr Point kStart{28.0, 156.0};
-constexpr std::array<Curve, 22> kCurves{{
-    // h: tall upright loop, then n-hump joining at mid height
-    {{16, 86}, {20, 2}, {58, 6}},
-    {{96, 10}, {90, 80}, {80, 158}},
-    {{80, 112}, {112, 90}, {134, 122}},
-    // o: slightly wide oval sitting on the baseline
+constexpr std::array<Curve, 23> kCurves{{
+    // h: tall thin loop, stem down, rounded shoulder into o
+    {{20, 100}, {16, 16}, {42, 4}},
+    {{74, 0}, {88, 28}, {80, 158}},
+    {{80, 108}, {108, 86}, {134, 122}},
+    // o: slightly wide oval sitting on the baseline (kept)
     {{118, 148}, {132, 164}, {166, 162}},
     {{202, 160}, {210, 120}, {184, 98}},
     {{160, 80}, {132, 96}, {148, 124}},
     {{168, 146}, {194, 136}, {212, 114}},
-    // w: two rounded u shapes
-    {{220, 140}, {226, 166}, {250, 162}},
-    {{270, 158}, {276, 108}, {286, 98}},
-    {{296, 90}, {300, 154}, {324, 162}},
-    {{346, 168}, {360, 118}, {368, 108}},
-    // d: o-like bowl, then a tall loop matching the h
-    {{350, 136}, {356, 166}, {390, 164}},
-    {{426, 162}, {432, 118}, {406, 96}},
-    {{384, 80}, {364, 96}, {376, 126}},
-    {{386, 72}, {384, 2}, {416, 6}},
-    {{450, 10}, {442, 80}, {434, 158}},
-    {{436, 168}, {454, 156}, {468, 124}},
-    // y: rounded cup, then a looped descender
+    // w: two clean valleys, exit at midline into d
+    {{220, 142}, {230, 168}, {254, 160}},
+    {{276, 152}, {284, 108}, {292, 98}},
+    {{300, 112}, {304, 168}, {330, 160}},
+    {{352, 152}, {362, 116}, {370, 106}},
+    // d: o-like bowl, then tall retraced stem (colinear controls = no top loop)
+    {{354, 138}, {360, 168}, {398, 164}},
+    {{434, 160}, {442, 116}, {420, 95}},
+    {{400, 78}, {378, 88}, {382, 118}},
+    {{400, 130}, {418, 120}, {422, 95}},
+    {{422, 60}, {422, 28}, {422, 4}},
+    {{422, 40}, {422, 100}, {422, 162}},
+    {{430, 172}, {452, 158}, {468, 124}},
+    // y: rounded cup, then a looped descender (kept)
     {{478, 144}, {484, 168}, {508, 164}},
     {{530, 160}, {538, 112}, {544, 100}},
     {{550, 140}, {556, 210}, {528, 230}},

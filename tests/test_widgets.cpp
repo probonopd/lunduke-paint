@@ -98,6 +98,7 @@ int main(int argc, char** argv) {
 
     expect(toolbox.tool_columns_homogeneous(), "tool grid columns are homogeneous");
     expect(toolbox.tool_columns_equal_width(), "the two tool columns have equal width");
+    expect(toolbox.width_tracks_tool_grid(), "toolbox width tracks the tool grid, not a large pad");
     expect(toolbox.fg_label_right_of_well(), "Foreground sits to the right of the FG well");
     expect(toolbox.bg_label_left_of_well(), "Background sits to the left of the BG well");
     expect(toolbox.bg_well_right_justified(), "BG well is right-justified in the toolbox");
