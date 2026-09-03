@@ -210,8 +210,8 @@ test_effect_preview = executable(
 )
 test('effect_preview', test_effect_preview)
 
-# Non-GUI half of the startup greeting: the Z003 face lookup, the ink extents
-# and the one-second reveal maths. Pango/cairo only, no display needed.
+# Non-GUI half of the startup greeting: bundled path length and the one-second
+# stroke-progress maths. Cairo only, no display or font needed.
 test_intro_howdy = executable(
   'test_intro_howdy',
   files('tests/test_intro_howdy.cpp', 'src/ui/intro_howdy.cpp'),

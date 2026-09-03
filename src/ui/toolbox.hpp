@@ -44,9 +44,9 @@ private:
 
   Gtk::Grid grid_;
   Gtk::DrawingArea wells_;
-  Gtk::Box well_labels_{Gtk::ORIENTATION_HORIZONTAL, 0};
-  Gtk::Label fg_label_{"FG"};
-  Gtk::Label bg_label_{"BG"};
+  Gtk::Box well_labels_{Gtk::ORIENTATION_VERTICAL, 0};
+  Gtk::Label fg_label_{"Foreground"};
+  Gtk::Label bg_label_{"Background"};
   Gtk::DrawingArea trans_;
   std::vector<Gtk::Button*> buttons_;
   ToolSelection selection_;

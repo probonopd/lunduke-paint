@@ -33,34 +33,38 @@ void Toolbox::ensure_css() {
 Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
   ensure_css();
   set_border_width(4);
-  set_size_request(72, -1);
+  set_size_request(120, -1);
 
   grid_.set_row_spacing(2);
   grid_.set_column_spacing(2);
   pack_start(grid_, Gtk::PACK_SHRINK);
 
-  wells_.set_size_request(56, 40);
+  wells_.set_size_request(108, 40);
   wells_.set_tooltip_text("Foreground / background. Click a well to choose a color.");
   wells_.add_events(Gdk::BUTTON_PRESS_MASK);
   wells_.signal_draw().connect(sigc::mem_fun(*this, &Toolbox::on_wells_draw));
   wells_.signal_button_press_event().connect(sigc::mem_fun(*this, &Toolbox::on_wells_press));
   pack_start(wells_, Gtk::PACK_SHRINK);
 
-  // Name the two swatches without needing a tooltip hover. "FG" sits under the
-  // upper-left well, "BG" under the lower-right one, in the same small type as
-  // the rest of the classic toolbox column.
+  // Full color names, stacked so they stay on one line each and stay aligned
+  // with the wells (Foreground with the upper-left well, Background with the
+  // lower-right well).
   fg_label_.set_halign(Gtk::ALIGN_START);
-  bg_label_.set_halign(Gtk::ALIGN_END);
+  bg_label_.set_halign(Gtk::ALIGN_START);
+  fg_label_.set_xalign(0.0);
+  bg_label_.set_xalign(0.0);
+  fg_label_.set_line_wrap(false);
+  bg_label_.set_line_wrap(false);
   fg_label_.set_tooltip_text("Foreground color");
   bg_label_.set_tooltip_text("Background color");
   fg_label_.get_style_context()->add_class(toolbox_style::caption_class());
   bg_label_.get_style_context()->add_class(toolbox_style::caption_class());
-  well_labels_.set_size_request(56, -1);
+  well_labels_.set_size_request(108, -1);
   well_labels_.pack_start(fg_label_, Gtk::PACK_SHRINK);
   well_labels_.pack_end(bg_label_, Gtk::PACK_SHRINK);
   pack_start(well_labels_, Gtk::PACK_SHRINK);
 
-  trans_.set_size_request(56, 18);
+  trans_.set_size_request(108, 18);
   trans_.set_tooltip_text("Transparent: left sets FG, right sets BG (punches alpha)");
   trans_.add_events(Gdk::BUTTON_PRESS_MASK);
   trans_.signal_draw().connect(sigc::mem_fun(*this, &Toolbox::on_trans_draw));

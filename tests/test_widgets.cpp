@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
   }
 
   // --- Startup greeting: one second, skippable, never dirties ------------
-  if (brushpad::intro::font_available()) {
+  {
     Gtk::Window window;
     window.set_default_size(900, 600);
     CanvasView canvas;
@@ -207,8 +207,6 @@ int main(int argc, char** argv) {
     expect(!canvas.intro_active(), "loading another document stops the greeting");
     window.hide();
     pump(50);
-  } else {
-    std::printf("test_widgets: Z003 missing, greeting checks skipped\n");
   }
 
   if (errors != 0) {

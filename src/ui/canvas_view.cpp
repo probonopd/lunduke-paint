@@ -323,9 +323,6 @@ void CanvasView::start_intro() {
   if (intro_active_) {
     return;
   }
-  if (!intro::font_available()) {
-    return;  // no calligraphic face installed: skip the greeting entirely
-  }
   intro_active_ = true;
   intro_start_us_ = g_get_monotonic_time();
   intro_timer_ = Glib::signal_timeout().connect(sigc::mem_fun(*this, &CanvasView::on_intro_tick),
@@ -365,7 +362,7 @@ void CanvasView::draw_intro(const Cairo::RefPtr<Cairo::Context>& cr) {
   if (dw < 48 || dh < 32) {
     return;
   }
-  int size_px = std::clamp(static_cast<int>(dh * 0.38), 18, 160);
+  int size_px = std::clamp(static_cast<int>(dh * 0.45), 18, 190);
   intro::Ink ink;
   if (!intro::measure(size_px, ink) || ink.width <= 0) {
     return;
