@@ -26,13 +26,14 @@ struct Curve {
 // Flat editor proportions: looped h + n-arch, slanted o, twin U w, stem d, looped y.
 constexpr Point kStart{40.0, 150.0};
 constexpr std::array<Curve, 25> kCurves{{
-    // h: short lead-in, tall narrow rounded ascender loop
-    {{36, 125}, {38, 85}, {56, 70}},
-    {{78, 64}, {82, 95}, {76, 148}},
-    // h: clear n-arch touching baseline
-    {{88, 125}, {96, 100}, {114, 98}},
-    {{130, 96}, {138, 108}, {138, 128}},
-    {{138, 142}, {132, 150}, {126, 150}},
+    // h: short lead-in from baseline into a tall NARROW rounded loop
+    {{32, 115}, {34, 58}, {48, 50}},
+    {{60, 46}, {64, 58}, {62, 96}},
+    // h: almost-vertical stem down to the baseline (x held ~62, y to 150)
+    {{62, 128}, {62, 148}, {62, 150}},
+    // h: THEN one n-arch — right along the floor, up to x-height, back to baseline
+    {{80, 150}, {88, 104}, {104, 100}},
+    {{120, 98}, {128, 128}, {126, 150}},
     // connector into o
     {{140, 148}, {152, 142}, {164, 132}},
     // o: smooth slanted oval; high bridge into w
@@ -40,11 +41,11 @@ constexpr std::array<Curve, 25> kCurves{{
     {{206, 138}, {212, 118}, {196, 106}},
     {{178, 94}, {158, 104}, {166, 122}},
     {{178, 138}, {198, 132}, {214, 116}},
-    // w: two identical rounded U valleys
-    {{222, 126}, {228, 150}, {244, 150}},
-    {{260, 150}, {266, 112}, {274, 106}},
-    {{282, 112}, {288, 150}, {304, 150}},
-    {{320, 150}, {328, 118}, {334, 108}},
+    // w: two distinct U valleys to baseline, middle peak at x-height
+    {{216, 138}, {220, 150}, {238, 150}},
+    {{252, 150}, {256, 104}, {270, 100}},
+    {{284, 100}, {288, 150}, {306, 150}},
+    {{322, 150}, {330, 112}, {334, 108}},
     // d: o-like bowl
     {{324, 128}, {330, 154}, {356, 152}},
     {{380, 150}, {388, 122}, {374, 108}},
