@@ -36,10 +36,14 @@ public:
   void focus_canvas();
 
   // Startup greeting overlay (see ui/intro_howdy.hpp). Transient only: it never
-  // touches the document, the layers or the dirty flag.
+  // touches the document, the layers or the dirty flag. After the 1s stroke
+  // finishes the ink stays visible (still not dirty) until skip-during-play,
+  // paint-over, or a new document.
   void start_intro();
   void cancel_intro();
+  void skip_intro();
   bool intro_active() const { return intro_active_; }
+  bool intro_visible() const { return intro_active_ || intro_held_; }
 
   double zoom() const { return zoom_; }
   void set_zoom(double zoom);
@@ -123,6 +127,7 @@ private:
   double pan_vadj_{0};
   bool updating_size_{false};
   bool intro_active_{false};
+  bool intro_held_{false};
   gint64 intro_start_us_{0};
   sigc::connection intro_timer_;
 

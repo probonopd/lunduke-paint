@@ -37,6 +37,11 @@
     <category>RasterGraphics</category>
   </categories>
   <releases>
+    <release version="0.3" date="2026-09-03">
+      <description>
+        <p>Lunduke Paint 0.3: Mac-style howdy intro that stays on the canvas, Foreground/Background well labels, equal-width tool columns.</p>
+      </description>
+    </release>
     <release version="0.2" date="2026-09-02">
       <description>
         <p>Lunduke Paint 0.2 for LCOS: Open from the OS, crash recovery, Copy Merged, system fonts, magic wand, and GIF load.</p>

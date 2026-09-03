@@ -22,7 +22,7 @@ inline const char* selected_class() {
   return "tool-selected";
 }
 
-// Small caption class used by the Foreground / Background labels under the color wells.
+// Small caption class used by the Foreground / Background labels beside the color wells.
 inline const char* caption_class() {
   return "toolbox-caption";
 }

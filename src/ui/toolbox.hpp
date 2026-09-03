@@ -30,6 +30,14 @@ public:
   // True when the button for id currently carries the selected-tool highlight.
   bool tool_button_selected(const std::string& id) const;
 
+  // Layout checks used by the widget tests (need a realized display).
+  bool tool_columns_homogeneous() const;
+  bool tool_columns_equal_width() const;
+  bool fg_label_right_of_well() const;
+  bool bg_label_left_of_well() const;
+  bool bg_well_right_justified() const;
+  bool bg_well_below_fg() const;
+
   std::function<void(const std::string& id)> on_tool_chosen;
   std::function<void(bool background)> on_well_clicked;
   std::function<void(bool background)> on_transparent;
@@ -37,14 +45,20 @@ public:
 private:
   static void ensure_css();
   void apply_selection_style();
-  bool on_wells_draw(const Cairo::RefPtr<Cairo::Context>& cr);
-  bool on_wells_press(GdkEventButton* event);
+  void draw_swatch(const Cairo::RefPtr<Cairo::Context>& cr, Gtk::DrawingArea& area, Color c);
+  bool on_fg_well_draw(const Cairo::RefPtr<Cairo::Context>& cr);
+  bool on_bg_well_draw(const Cairo::RefPtr<Cairo::Context>& cr);
+  bool on_fg_well_press(GdkEventButton* event);
+  bool on_bg_well_press(GdkEventButton* event);
   bool on_trans_draw(const Cairo::RefPtr<Cairo::Context>& cr);
   bool on_trans_press(GdkEventButton* event);
+  bool child_origin(const Gtk::Widget& child, int& x, int& y) const;
 
   Gtk::Grid grid_;
-  Gtk::DrawingArea wells_;
-  Gtk::Box well_labels_{Gtk::ORIENTATION_VERTICAL, 0};
+  Gtk::Box fg_row_{Gtk::ORIENTATION_HORIZONTAL, 6};
+  Gtk::Box bg_row_{Gtk::ORIENTATION_HORIZONTAL, 6};
+  Gtk::DrawingArea fg_well_;
+  Gtk::DrawingArea bg_well_;
   Gtk::Label fg_label_{"Foreground"};
   Gtk::Label bg_label_{"Background"};
   Gtk::DrawingArea trans_;

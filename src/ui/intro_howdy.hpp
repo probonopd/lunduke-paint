@@ -4,9 +4,9 @@
 
 #include <cairo.h>
 
-// Hand-authored cursive howdy. The overlay is a transient stroke of a bundled
-// Bezier path, revealed by travelled length over exactly one second. Nothing
-// here touches the document or any font.
+// Hand-authored cursive howdy in the Mac 1984 "hello." spirit. The overlay is
+// a bundled Bezier path, revealed by travelled length over exactly one second.
+// Nothing here touches the document or any font.
 namespace brushpad {
 namespace intro {
 

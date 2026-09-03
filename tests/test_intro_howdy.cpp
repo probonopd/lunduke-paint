@@ -65,7 +65,7 @@ int main() {
   expect(finished(1000000), "finished() true at 1 s");
 
   expect(path_length() > 0.0, "bundled path has positive length");
-  expect(curve_count() >= 5, "path has multiple letter segments");
+  expect(curve_count() >= 16, "path has enough letter segments for howdy");
   expect(revealed_length(0.0) == 0.0, "nothing revealed at t=0");
   expect(std::fabs(revealed_length(1.0) - path_length()) < 1e-6, "full length at t=1");
   expect(std::fabs(revealed_length(0.5) - path_length() * 0.5) < 1e-6, "half length at t=0.5");
@@ -82,6 +82,7 @@ int main() {
   Ink ink;
   expect(measure(64, ink), "howdy measures at 64 px");
   expect(ink.width > 40 && ink.height > 10, "ink extents are sane");
+  expect(ink.width > ink.height, "howdy is a wide word, not a tall scribble");
   Ink bigger;
   expect(measure(128, bigger), "howdy measures at 128 px");
   expect(bigger.width > ink.width, "bigger size means wider ink");

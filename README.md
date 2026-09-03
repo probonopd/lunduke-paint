@@ -15,8 +15,12 @@ The **product name** is Lunduke Paint. The **project/code name** is Brushpad.
   decorations, no HeaderBar as main chrome)
 - Theme: follows the active GTK3 theme; the app is not skinned
 - Native project file: OpenRaster `.ora` (libarchive + pugixml)
-- Version: 0.2
+- Version: 0.3
 - Config: `$XDG_CONFIG_HOME/lunduke-paint/brushpad.ini` via GKeyFile
+
+## 0.3
+
+Mac-style howdy intro (stays after the 1s stroke), Foreground/Background well labels, equal-width tool columns. Keeps the 0.2 feature set.
 
 ## 0.2
 

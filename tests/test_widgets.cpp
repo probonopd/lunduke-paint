@@ -95,6 +95,13 @@ int main(int argc, char** argv) {
 
     toolbox.set_active_tool("no-such-tool");
     expect(toolbox.tool_button_selected("text"), "an unknown id keeps the current highlight");
+
+    expect(toolbox.tool_columns_homogeneous(), "tool grid columns are homogeneous");
+    expect(toolbox.tool_columns_equal_width(), "the two tool columns have equal width");
+    expect(toolbox.fg_label_right_of_well(), "Foreground sits to the right of the FG well");
+    expect(toolbox.bg_label_left_of_well(), "Background sits to the left of the BG well");
+    expect(toolbox.bg_well_right_justified(), "BG well is right-justified in the toolbox");
+    expect(toolbox.bg_well_below_fg(), "BG well sits below the FG well");
     window.hide();
     pump(50);
   }
@@ -181,30 +188,43 @@ int main(int argc, char** argv) {
 
     canvas.start_intro();
     expect(canvas.intro_active(), "greeting started");
+    expect(canvas.intro_visible(), "greeting is visible while it plays");
     pump(300);
     expect(canvas.intro_active(), "greeting still running after 300 ms");
     expect(!doc->dirty(), "greeting does not dirty the document");
     expect(dump(doc->layers().active_layer()) == pristine,
            "greeting does not paint into the layer");
     pump(900);
-    expect(!canvas.intro_active(), "greeting finished on its own after ~1 s");
+    expect(!canvas.intro_active(), "greeting animation finished on its own after ~1 s");
+    expect(canvas.intro_visible(), "finished howdy stays on the canvas");
     expect(!doc->dirty(), "document still clean when the greeting ends");
     expect(doc->history().count() == 0, "greeting pushed no history");
     expect(dump(doc->layers().active_layer()) == pristine,
            "layer pixels untouched once the greeting ended");
 
-    // Skippable straight away.
-    canvas.start_intro();
-    expect(canvas.intro_active(), "greeting restarted for the cancel check");
-    pump(80);
+    // Skip after complete must leave the finished word.
+    canvas.skip_intro();
+    expect(canvas.intro_visible(), "skip after complete leaves the finished howdy");
+    expect(!doc->dirty(), "skip after complete still does not dirty");
+
+    // Paint-over / explicit cancel clears a finished overlay.
     canvas.cancel_intro();
-    expect(!canvas.intro_active(), "cancel stops the greeting immediately");
-    expect(!doc->dirty(), "cancel leaves the document clean");
+    expect(!canvas.intro_visible(), "cancel after complete clears the overlay");
+
+    // Skip mid-animation dismisses (does not hold a partial stroke).
+    canvas.start_intro();
+    expect(canvas.intro_active(), "greeting restarted for the skip check");
+    pump(80);
+    canvas.skip_intro();
+    expect(!canvas.intro_active(), "skip stops the greeting immediately");
+    expect(!canvas.intro_visible(), "skip during animation clears the intro");
+    expect(!doc->dirty(), "skip leaves the document clean");
 
     // Replacing the document also stops it.
     canvas.start_intro();
     canvas.set_document(nullptr);
     expect(!canvas.intro_active(), "loading another document stops the greeting");
+    expect(!canvas.intro_visible(), "loading another document clears the overlay");
     window.hide();
     pump(50);
   }

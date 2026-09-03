@@ -623,7 +623,7 @@ bool MainWindow::on_key_press(GdkEventKey* event) {
   if (event == nullptr) {
     return false;
   }
-  canvas_.cancel_intro();  // any key dismisses the startup greeting
+  canvas_.skip_intro();  // skip mid-animation; a finished howdy stays
   if (event->keyval == GDK_KEY_space) {
     canvas_.set_space_down(true);
     return false;

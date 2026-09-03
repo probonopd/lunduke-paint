@@ -323,6 +323,8 @@ void CanvasView::start_intro() {
   if (intro_active_) {
     return;
   }
+  intro_timer_.disconnect();
+  intro_held_ = false;
   intro_active_ = true;
   intro_start_us_ = g_get_monotonic_time();
   intro_timer_ = Glib::signal_timeout().connect(sigc::mem_fun(*this, &CanvasView::on_intro_tick),
@@ -331,12 +333,21 @@ void CanvasView::start_intro() {
 }
 
 void CanvasView::cancel_intro() {
-  if (!intro_active_) {
+  if (!intro_active_ && !intro_held_) {
     return;
   }
   intro_active_ = false;
+  intro_held_ = false;
   intro_timer_.disconnect();
   invalidate_all();
+}
+
+void CanvasView::skip_intro() {
+  // Skip aborts a running animation. A completed howdy stays on the canvas.
+  if (!intro_active_) {
+    return;
+  }
+  cancel_intro();
 }
 
 bool CanvasView::on_intro_tick() {
@@ -345,7 +356,8 @@ bool CanvasView::on_intro_tick() {
   }
   if (intro::finished(g_get_monotonic_time() - intro_start_us_)) {
     intro_active_ = false;
-    invalidate_all();  // one last repaint wipes the overlay
+    intro_held_ = true;
+    invalidate_all();  // last frame is the finished word; leave it there
     return false;
   }
   invalidate_all();
@@ -353,7 +365,8 @@ bool CanvasView::on_intro_tick() {
 }
 
 void CanvasView::draw_intro(const Cairo::RefPtr<Cairo::Context>& cr) {
-  const double p = intro::progress(g_get_monotonic_time() - intro_start_us_);
+  const double p =
+      intro_held_ ? 1.0 : intro::progress(g_get_monotonic_time() - intro_start_us_);
   if (p <= 0.0) {
     return;
   }
@@ -590,7 +603,7 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
   if (document_ != nullptr) {
     draw_selection_handles(cr, document_->selection(), ox, oy, zoom_);
   }
-  if (intro_active_) {
+  if (intro_active_ || intro_held_) {
     draw_intro(cr);
   }
   ensure_ants_timer();
