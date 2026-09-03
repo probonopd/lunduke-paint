@@ -4,7 +4,7 @@
 
 #include <cairo.h>
 
-// Cursive howdy traced from refs/howdy-editor-ref.png (skeleton → fitted cubics).
+// Cursive howdy: hand-fit smooth cubics matching refs/howdy-editor-ref.png letterforms.
 // The overlay is revealed by travelled length over exactly one second.
 // Nothing here touches the document or any font.
 namespace brushpad {
