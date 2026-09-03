@@ -35,10 +35,10 @@ constexpr std::array<Curve, 22> kCurves{{
     {{74, 68}, {92, 70}, {85, 94}},
     // h: STEM nearly vertical — hits baseline (not an extra hump)
     {{85, 118}, {83, 142}, {82, 151}},
-    // h: ONE n-arch up to x-height
-    {{88, 148}, {89, 99}, {95, 98}},
+    // h: n-arch grows from the stem's baseline point (no floor gap)
+    {{95, 125}, {108, 98}, {118, 98}},
     // h: n-arch down into o
-    {{104, 98}, {114, 149}, {128, 135}},
+    {{128, 98}, {126, 148}, {128, 135}},
     // o: bottom of slanted oval
     {{135, 153}, {151, 154}, {164, 137}},
     // o: right side up to x-height
@@ -55,14 +55,14 @@ constexpr std::array<Curve, 22> kCurves{{
     {{228, 98}, {237, 151}, {251, 151}},
     // w: second U up to x-height, into d
     {{268, 150}, {280, 99}, {303, 98}},
-    // d: enter top-left of bowl, down left, across bottom
-    {{310, 114}, {313, 153}, {332, 151}},
-    // d: up the RIGHT side of the bowl (joined stem family)
-    {{355, 149}, {363, 121}, {360, 102}},
-    // d: continue up that same right edge to ascender (tiny top hook)
-    {{362, 88}, {374, 66}, {376, 70}},
+    // d: enter bowl from w's high exit, around oval (do not close as a separate o)
+    {{292, 118}, {294, 154}, {326, 152}},
+    // d: up the RIGHT side of the bowl — that edge IS the stem
+    {{350, 152}, {360, 130}, {358, 104}},
+    // d: continue up that same right edge; small loop at h-loop height
+    {{360, 86}, {366, 68}, {370, 72}},
     // d: retrace down ON the bowl's right edge to baseline (joined d, not o+l)
-    {{376, 76}, {360, 104}, {359, 150}},
+    {{360, 90}, {358, 120}, {356, 150}},
     // d: connector into y
     {{372, 150}, {387, 122}, {398, 116}},
     // y: U-valley down to baseline
