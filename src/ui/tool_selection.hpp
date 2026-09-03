@@ -22,7 +22,7 @@ inline const char* selected_class() {
   return "tool-selected";
 }
 
-// Small caption class used by the Foreground / Background labels beside the color wells.
+// Small caption class used by the short FG / BG labels beside the color wells.
 inline const char* caption_class() {
   return "toolbox-caption";
 }
@@ -36,8 +36,8 @@ inline const char* css() {
       "  border: 2px solid transparent;"
       "  border-radius: 3px;"
       "  padding: 0px;"
-      "  min-width: 28px;"
-      "  min-height: 28px;"
+      "  min-width: 24px;"
+      "  min-height: 24px;"
       "  background-image: none;"
       "}"
       ".tool-button.tool-selected {"

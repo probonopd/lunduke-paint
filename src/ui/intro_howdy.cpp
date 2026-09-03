@@ -22,39 +22,43 @@ struct Curve {
 };
 
 // Mac 1984 "hello." spirit: slanted connected cursive, uniform felt-tip
-// monoline. Tall looped h, simple oval o, two midline valleys for w,
-// d with oval body + retraced stem (no top loop), y with looped descender.
-// One continuous trail in writing order.
-constexpr Point kStart{28.0, 156.0};
-constexpr std::array<Curve, 23> kCurves{{
-    // h: tall thin loop, stem down, rounded shoulder into o
-    {{20, 100}, {16, 16}, {42, 4}},
-    {{74, 0}, {88, 28}, {80, 158}},
-    {{80, 108}, {108, 86}, {134, 122}},
-    // o: slightly wide oval sitting on the baseline (kept)
-    {{118, 148}, {132, 164}, {166, 162}},
-    {{202, 160}, {210, 120}, {184, 98}},
-    {{160, 80}, {132, 96}, {148, 124}},
-    {{168, 146}, {194, 136}, {212, 114}},
-    // w: two clean valleys, exit at midline into d
-    {{220, 142}, {230, 168}, {254, 160}},
-    {{276, 152}, {284, 108}, {292, 98}},
-    {{300, 112}, {304, 168}, {330, 160}},
-    {{352, 152}, {362, 116}, {370, 106}},
+// monoline. Tall looped h with a clear baseline arch, simple oval o,
+// sharp two-valley w, d with oval body + retraced stem (no top loop),
+// y with looped descender. One continuous trail in writing order.
+constexpr Point kStart{26.0, 158.0};
+constexpr std::array<Curve, 25> kCurves{{
+    // h: tall rounded ascender loop, stem to baseline, wide clear arch to baseline
+    {{16, 90}, {10, 8}, {36, 0}},
+    {{64, -6}, {94, 42}, {86, 160}},
+    // shoulder left: from baseline up to a rounded midline hump
+    {{92, 110}, {108, 78}, {128, 88}},
+    // shoulder right: more vertical drop to baseline, land before o
+    {{138, 98}, {142, 150}, {146, 162}},
+    {{150, 162}, {154, 162}, {158, 160}},
+    // o: oval on the baseline (entry from h landing)
+    {{140, 172}, {160, 174}, {184, 160}},
+    {{210, 144}, {216, 108}, {192, 88}},
+    {{164, 72}, {136, 90}, {150, 122}},
+    {{172, 148}, {200, 136}, {218, 110}},
+    // w: sharp two-valley — deep baseline points, pointed midline peak
+    {{226, 145}, {232, 178}, {252, 168}},
+    {{258, 140}, {260, 84}, {274, 84}},
+    {{288, 84}, {290, 178}, {312, 168}},
+    {{330, 150}, {350, 112}, {368, 102}},
     // d: o-like bowl, then tall retraced stem (colinear controls = no top loop)
-    {{354, 138}, {360, 168}, {398, 164}},
-    {{434, 160}, {442, 116}, {420, 95}},
-    {{400, 78}, {378, 88}, {382, 118}},
-    {{400, 130}, {418, 120}, {422, 95}},
-    {{422, 60}, {422, 28}, {422, 4}},
-    {{422, 40}, {422, 100}, {422, 162}},
-    {{430, 172}, {452, 158}, {468, 124}},
+    {{352, 138}, {358, 168}, {396, 164}},
+    {{432, 160}, {440, 116}, {418, 95}},
+    {{398, 78}, {376, 88}, {380, 118}},
+    {{398, 130}, {416, 120}, {420, 95}},
+    {{420, 60}, {420, 28}, {420, 4}},
+    {{420, 40}, {420, 100}, {420, 162}},
+    {{428, 172}, {450, 158}, {466, 124}},
     // y: rounded cup, then a looped descender (kept)
-    {{478, 144}, {484, 168}, {508, 164}},
-    {{530, 160}, {538, 112}, {544, 100}},
-    {{550, 140}, {556, 210}, {528, 230}},
-    {{502, 248}, {480, 234}, {488, 208}},
-    {{496, 190}, {516, 188}, {528, 200}},
+    {{476, 144}, {482, 168}, {506, 164}},
+    {{528, 160}, {536, 112}, {542, 100}},
+    {{548, 140}, {554, 210}, {526, 230}},
+    {{500, 248}, {478, 234}, {486, 208}},
+    {{494, 190}, {514, 188}, {526, 200}},
 }};
 
 constexpr int kSteps = 24;

@@ -11,10 +11,11 @@
 namespace brushpad {
 
 namespace {
-constexpr int kWellSize = 26;
-// Soft ceiling so a theme cannot inflate the strip far past the tool grid;
-// natural width is driven by the two equal tool columns + FG/BG captions.
-constexpr int kToolboxMaxWidth = 120;
+constexpr int kWellSize = 22;
+// Soft ceiling: two ~28px icon columns + spacing + a few px of border only.
+constexpr int kToolboxMaxWidth = 80;
+// Outer width may exceed the tool grid by this many pixels (border/theme).
+constexpr int kGridWidthSlop = 12;
 }  // namespace
 
 // Own CSS, loaded once per screen at APPLICATION priority so the selected tool
@@ -39,20 +40,23 @@ void Toolbox::ensure_css() {
   loaded = true;
 }
 
-Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 3) {
+Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 2) {
   ensure_css();
-  set_border_width(2);
+  get_style_context()->add_class("toolbox-strip");
+  set_border_width(1);
   set_halign(Gtk::ALIGN_START);
-  // Width tracks the tool grid (plus FG/BG captions). No large fixed pad.
+  set_hexpand(false);
+  // Width hugs the tool grid; FG/BG use short labels so they cannot force width.
   set_size_request(-1, -1);
 
   grid_.set_row_spacing(2);
   grid_.set_column_spacing(2);
   grid_.set_column_homogeneous(true);
-  // Fill the strip so equal columns match caption-row width (no empty side pad).
-  grid_.set_hexpand(true);
-  grid_.set_halign(Gtk::ALIGN_FILL);
+  // Natural width of two equal icon columns — do not expand into empty chrome.
+  grid_.set_hexpand(false);
+  grid_.set_halign(Gtk::ALIGN_START);
   pack_start(grid_, Gtk::PACK_SHRINK);
+  grid_.signal_size_allocate().connect(sigc::mem_fun(*this, &Toolbox::on_grid_size_allocate));
 
   auto setup_well = [](Gtk::DrawingArea& well, const char* tip) {
     well.set_size_request(kWellSize, kWellSize);
@@ -60,10 +64,10 @@ Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 3) {
     well.set_tooltip_text(tip);
     well.add_events(Gdk::BUTTON_PRESS_MASK);
   };
-  setup_well(fg_well_, "Foreground color");
-  setup_well(bg_well_, "Background color");
+  setup_well(fg_well_, "Foreground");
+  setup_well(bg_well_, "Background");
   fg_well_.set_halign(Gtk::ALIGN_START);
-  bg_well_.set_halign(Gtk::ALIGN_END);
+  bg_well_.set_halign(Gtk::ALIGN_START);
   fg_well_.signal_draw().connect(sigc::mem_fun(*this, &Toolbox::on_fg_well_draw));
   bg_well_.signal_draw().connect(sigc::mem_fun(*this, &Toolbox::on_bg_well_draw));
   fg_well_.signal_button_press_event().connect(sigc::mem_fun(*this, &Toolbox::on_fg_well_press));
@@ -72,38 +76,39 @@ Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 3) {
   fg_label_.set_valign(Gtk::ALIGN_CENTER);
   bg_label_.set_valign(Gtk::ALIGN_CENTER);
   fg_label_.set_halign(Gtk::ALIGN_START);
-  bg_label_.set_halign(Gtk::ALIGN_END);
+  bg_label_.set_halign(Gtk::ALIGN_START);
   fg_label_.set_xalign(0.0);
-  bg_label_.set_xalign(1.0);
+  bg_label_.set_xalign(0.0);
   fg_label_.set_line_wrap(false);
   bg_label_.set_line_wrap(false);
-  fg_label_.set_tooltip_text("Foreground color");
-  bg_label_.set_tooltip_text("Background color");
+  fg_label_.set_tooltip_text("Foreground");
+  bg_label_.set_tooltip_text("Background");
   fg_label_.get_style_context()->add_class(toolbox_style::caption_class());
   bg_label_.get_style_context()->add_class(toolbox_style::caption_class());
 
-  // Foreground label immediately to the right of the FG well, vertically centered.
-  fg_row_.set_halign(Gtk::ALIGN_FILL);
-  fg_row_.set_hexpand(true);
+  // Stacked under the grid: well + short label per row, width ≤ tool grid.
+  fg_row_.set_halign(Gtk::ALIGN_START);
+  fg_row_.set_hexpand(false);
   fg_row_.set_valign(Gtk::ALIGN_CENTER);
+  fg_row_.set_spacing(3);
   fg_row_.pack_start(fg_well_, Gtk::PACK_SHRINK);
   fg_row_.pack_start(fg_label_, Gtk::PACK_SHRINK);
 
-  // Background label immediately to the left of the BG well; well is
-  // right-justified and dropped a bit so the two captions cannot overlap.
-  bg_row_.set_halign(Gtk::ALIGN_FILL);
-  bg_row_.set_hexpand(true);
+  bg_row_.set_halign(Gtk::ALIGN_START);
+  bg_row_.set_hexpand(false);
   bg_row_.set_valign(Gtk::ALIGN_CENTER);
-  bg_row_.set_margin_top(8);
-  bg_row_.pack_start(bg_label_, Gtk::PACK_EXPAND_WIDGET);
-  bg_row_.pack_end(bg_well_, Gtk::PACK_SHRINK);
+  bg_row_.set_spacing(3);
+  bg_row_.set_margin_top(2);
+  bg_row_.pack_start(bg_well_, Gtk::PACK_SHRINK);
+  bg_row_.pack_start(bg_label_, Gtk::PACK_SHRINK);
 
   pack_start(fg_row_, Gtk::PACK_SHRINK);
   pack_start(bg_row_, Gtk::PACK_SHRINK);
 
-  // Height only — width follows the toolbox/grid, not a fixed pad.
-  trans_.set_size_request(-1, 18);
-  trans_.set_hexpand(true);
+  // Height only — width clamped to the tool grid after allocate.
+  trans_.set_size_request(-1, 14);
+  trans_.set_hexpand(false);
+  trans_.set_halign(Gtk::ALIGN_FILL);
   trans_.set_tooltip_text("Transparent: left sets FG, right sets BG (punches alpha)");
   trans_.add_events(Gdk::BUTTON_PRESS_MASK);
   trans_.signal_draw().connect(sigc::mem_fun(*this, &Toolbox::on_trans_draw));
@@ -124,6 +129,8 @@ void Toolbox::add_tool_button(const std::string& id, const std::string& tooltip,
   button->set_tooltip_text(tooltip);
   button->set_relief(Gtk::RELIEF_NONE);
   button->set_can_focus(false);
+  // Cap preferred size so a wide SVG cannot inflate the two-column grid.
+  button->set_size_request(28, 28);
   button->set_hexpand(true);
   button->set_halign(Gtk::ALIGN_FILL);
   button->get_style_context()->add_class(toolbox_style::button_class());
@@ -184,15 +191,41 @@ bool Toolbox::tool_columns_equal_width() const {
   return w0 > 8 && std::abs(w0 - w1) <= 1;
 }
 
+int Toolbox::tool_grid_natural_width() const {
+  // Two equal columns at the capped tool-button size + column spacing.
+  constexpr int kBtn = 28;
+  return kBtn * 2 + grid_.get_column_spacing();
+}
+
+void Toolbox::get_preferred_width_vfunc(int& minimum_width, int& natural_width) const {
+  const int border = static_cast<int>(get_border_width()) * 2;
+  const int w = tool_grid_natural_width() + border;
+  minimum_width = w;
+  natural_width = w;
+}
+
+void Toolbox::on_grid_size_allocate(Gtk::Allocation& allocation) {
+  (void)allocation;
+  const int grid_w = tool_grid_natural_width();
+  const int border = static_cast<int>(get_border_width()) * 2;
+  const int want = grid_w + border;
+  int req_w = 0;
+  int req_h = 0;
+  get_size_request(req_w, req_h);
+  if (req_w != want) {
+    set_size_request(want, -1);
+    trans_.set_size_request(grid_w, 14);
+  }
+}
+
 bool Toolbox::width_tracks_tool_grid() const {
   const int box_w = get_allocated_width();
-  const int grid_w = grid_.get_allocated_width();
+  const int grid_w = tool_grid_natural_width();
   if (box_w < 1 || grid_w < 1) {
     return false;
   }
-  // Border plus a little theme chrome — not a large fixed pad like the old 156px.
   const int pad = box_w - grid_w;
-  return pad >= 0 && pad <= 24 && box_w <= kToolboxMaxWidth + 12;
+  return pad >= 0 && pad <= kGridWidthSlop && box_w <= kToolboxMaxWidth + kGridWidthSlop;
 }
 
 bool Toolbox::child_origin(const Gtk::Widget& child, int& x, int& y) const {
@@ -217,6 +250,8 @@ bool Toolbox::fg_label_right_of_well() const {
 }
 
 bool Toolbox::bg_label_left_of_well() const {
+  // Stacked layout: BG label sits to the right of the BG well (same row pattern as FG).
+  // Name kept for tests; returns true when label is immediately beside the well.
   int lx = 0;
   int ly = 0;
   int wx = 0;
@@ -224,22 +259,20 @@ bool Toolbox::bg_label_left_of_well() const {
   if (!child_origin(bg_label_, lx, ly) || !child_origin(bg_well_, wx, wy)) {
     return false;
   }
-  const int label_right = lx + bg_label_.get_allocated_width();
+  const int well_right = wx + bg_well_.get_allocated_width();
   const int label_cx = ly + bg_label_.get_allocated_height() / 2;
   const int well_cx = wy + bg_well_.get_allocated_height() / 2;
-  // Immediately left of the well (small gap for the row spacing).
-  return label_right <= wx + 2 && label_right >= wx - 16 && std::abs(label_cx - well_cx) <= 10;
+  return lx >= well_right - 1 && std::abs(label_cx - well_cx) <= 10;
 }
 
 bool Toolbox::bg_well_right_justified() const {
+  // Stacked under a narrow grid: well stays within the toolbox left edge (no wide chrome).
   int wx = 0;
   int wy = 0;
   if (!child_origin(bg_well_, wx, wy)) {
     return false;
   }
-  const int well_right = wx + bg_well_.get_allocated_width();
-  const int box_right = get_allocated_width();
-  return well_right >= box_right - 16;
+  return wx <= 12;
 }
 
 bool Toolbox::bg_well_below_fg() const {

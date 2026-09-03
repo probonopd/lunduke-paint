@@ -55,14 +55,17 @@ private:
   bool on_trans_draw(const Cairo::RefPtr<Cairo::Context>& cr);
   bool on_trans_press(GdkEventButton* event);
   bool child_origin(const Gtk::Widget& child, int& x, int& y) const;
+  void on_grid_size_allocate(Gtk::Allocation& allocation);
+  void get_preferred_width_vfunc(int& minimum_width, int& natural_width) const override;
+  int tool_grid_natural_width() const;
 
   Gtk::Grid grid_;
   Gtk::Box fg_row_{Gtk::ORIENTATION_HORIZONTAL, 4};
   Gtk::Box bg_row_{Gtk::ORIENTATION_HORIZONTAL, 4};
   Gtk::DrawingArea fg_well_;
   Gtk::DrawingArea bg_well_;
-  Gtk::Label fg_label_{"Foreground"};
-  Gtk::Label bg_label_{"Background"};
+  Gtk::Label fg_label_{"FG"};
+  Gtk::Label bg_label_{"BG"};
   Gtk::DrawingArea trans_;
   std::vector<Gtk::Button*> buttons_;
   ToolSelection selection_;
