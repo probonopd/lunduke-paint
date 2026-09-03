@@ -12,10 +12,11 @@ namespace brushpad {
 
 namespace {
 constexpr int kWellSize = 22;
-// Soft ceiling: two ~28px icon columns + spacing + a few px of border only.
+// Soft ceiling: two ~28px icon columns + spacing + a few px of border/pad.
 constexpr int kToolboxMaxWidth = 80;
-// Outer width may exceed the tool grid by this many pixels (border/theme).
-constexpr int kGridWidthSlop = 12;
+// Outer width may exceed the tool grid by this many pixels (border/theme/pad).
+constexpr int kGridWidthSlop = 20;
+// Border width 4 vs 1 adds ~6px total so the strip is not cramped.
 }  // namespace
 
 // Own CSS, loaded once per screen at APPLICATION priority so the selected tool
@@ -43,11 +44,9 @@ void Toolbox::ensure_css() {
 Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 2) {
   ensure_css();
   get_style_context()->add_class("toolbox-strip");
-  set_border_width(1);
+  set_border_width(4);
   set_halign(Gtk::ALIGN_START);
   set_hexpand(false);
-  // Width hugs the tool grid; FG/BG use short labels so they cannot force width.
-  set_size_request(-1, -1);
 
   grid_.set_row_spacing(2);
   grid_.set_column_spacing(2);
@@ -56,6 +55,9 @@ Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 2) {
   grid_.set_hexpand(false);
   grid_.set_halign(Gtk::ALIGN_START);
   pack_start(grid_, Gtk::PACK_SHRINK);
+  // Width hugs the tool grid plus a few px of pad so the strip is not cramped.
+  set_size_request(tool_grid_natural_width() + static_cast<int>(get_border_width()) * 2,
+                   -1);
   grid_.signal_size_allocate().connect(sigc::mem_fun(*this, &Toolbox::on_grid_size_allocate));
 
   auto setup_well = [](Gtk::DrawingArea& well, const char* tip) {
