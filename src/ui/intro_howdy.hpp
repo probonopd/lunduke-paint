@@ -4,8 +4,8 @@
 
 #include <cairo.h>
 
-// Hand-authored cursive howdy in the Mac 1984 "hello." spirit. The overlay is
-// a bundled Bezier path, revealed by travelled length over exactly one second.
+// Cursive howdy traced from refs/howdy-editor-ref.png (skeleton → fitted cubics).
+// The overlay is revealed by travelled length over exactly one second.
 // Nothing here touches the document or any font.
 namespace brushpad {
 namespace intro {

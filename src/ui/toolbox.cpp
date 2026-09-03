@@ -12,11 +12,12 @@ namespace brushpad {
 
 namespace {
 constexpr int kWellSize = 22;
-// Soft ceiling: two ~28px icon columns + spacing + a few px of border/pad.
-constexpr int kToolboxMaxWidth = 80;
-// Outer width may exceed the tool grid by this many pixels (border/theme/pad).
-constexpr int kGridWidthSlop = 20;
-// Border width 4 vs 1 adds ~6px total so the strip is not cramped.
+// Soft ceiling: two ~28px icon columns + spacing + side air + border.
+constexpr int kToolboxMaxWidth = 92;
+// Outer width may exceed the tool grid by this many pixels (border/theme/air).
+constexpr int kGridWidthSlop = 36;
+// Extra air each side of the 2-col grid (0.3-4 was border-only; this is ~+16px).
+constexpr int kSideAir = 8;
 }  // namespace
 
 // Own CSS, loaded once per screen at APPLICATION priority so the selected tool
@@ -54,9 +55,12 @@ Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 2) {
   // Natural width of two equal icon columns — do not expand into empty chrome.
   grid_.set_hexpand(false);
   grid_.set_halign(Gtk::ALIGN_START);
+  grid_.set_margin_start(kSideAir);
+  grid_.set_margin_end(kSideAir);
   pack_start(grid_, Gtk::PACK_SHRINK);
-  // Width hugs the tool grid plus a few px of pad so the strip is not cramped.
-  set_size_request(tool_grid_natural_width() + static_cast<int>(get_border_width()) * 2,
+  // Width hugs the tool grid plus border and side air (not a huge chrome region).
+  set_size_request(tool_grid_natural_width() + static_cast<int>(get_border_width()) * 2 +
+                       kSideAir * 2,
                    -1);
   grid_.signal_size_allocate().connect(sigc::mem_fun(*this, &Toolbox::on_grid_size_allocate));
 
@@ -93,6 +97,8 @@ Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 2) {
   fg_row_.set_hexpand(false);
   fg_row_.set_valign(Gtk::ALIGN_CENTER);
   fg_row_.set_spacing(3);
+  fg_row_.set_margin_start(kSideAir);
+  fg_row_.set_margin_end(kSideAir);
   fg_row_.pack_start(fg_well_, Gtk::PACK_SHRINK);
   fg_row_.pack_start(fg_label_, Gtk::PACK_SHRINK);
 
@@ -101,6 +107,8 @@ Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 2) {
   bg_row_.set_valign(Gtk::ALIGN_CENTER);
   bg_row_.set_spacing(3);
   bg_row_.set_margin_top(2);
+  bg_row_.set_margin_start(kSideAir);
+  bg_row_.set_margin_end(kSideAir);
   bg_row_.pack_start(bg_well_, Gtk::PACK_SHRINK);
   bg_row_.pack_start(bg_label_, Gtk::PACK_SHRINK);
 
@@ -111,6 +119,8 @@ Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 2) {
   trans_.set_size_request(-1, 14);
   trans_.set_hexpand(false);
   trans_.set_halign(Gtk::ALIGN_FILL);
+  trans_.set_margin_start(kSideAir);
+  trans_.set_margin_end(kSideAir);
   trans_.set_tooltip_text("Transparent: left sets FG, right sets BG (punches alpha)");
   trans_.add_events(Gdk::BUTTON_PRESS_MASK);
   trans_.signal_draw().connect(sigc::mem_fun(*this, &Toolbox::on_trans_draw));
@@ -201,7 +211,7 @@ int Toolbox::tool_grid_natural_width() const {
 
 void Toolbox::get_preferred_width_vfunc(int& minimum_width, int& natural_width) const {
   const int border = static_cast<int>(get_border_width()) * 2;
-  const int w = tool_grid_natural_width() + border;
+  const int w = tool_grid_natural_width() + border + kSideAir * 2;
   minimum_width = w;
   natural_width = w;
 }
@@ -210,7 +220,7 @@ void Toolbox::on_grid_size_allocate(Gtk::Allocation& allocation) {
   (void)allocation;
   const int grid_w = tool_grid_natural_width();
   const int border = static_cast<int>(get_border_width()) * 2;
-  const int want = grid_w + border;
+  const int want = grid_w + border + kSideAir * 2;
   int req_w = 0;
   int req_h = 0;
   get_size_request(req_w, req_h);
@@ -274,7 +284,7 @@ bool Toolbox::bg_well_right_justified() const {
   if (!child_origin(bg_well_, wx, wy)) {
     return false;
   }
-  return wx <= 12;
+  return wx <= 20;
 }
 
 bool Toolbox::bg_well_below_fg() const {
