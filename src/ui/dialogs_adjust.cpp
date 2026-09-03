@@ -21,8 +21,40 @@ void setup_scale(Gtk::Scale& scale, double lo, double hi, double value) {
 
 }  // namespace
 
+LivePreviewDialog::LivePreviewDialog(const Glib::ustring& title, Gtk::Window& parent)
+    : Gtk::Dialog(title, parent, true) {
+  live_.set_tooltip_text("Apply the change to the canvas while you drag");
+  live_.signal_toggled().connect(sigc::mem_fun(*this, &LivePreviewDialog::on_live_toggled));
+}
+
+void LivePreviewDialog::add_live_preview(Gtk::Grid& grid, int row, int width) {
+  grid.attach(live_, 0, row, width, 1);
+}
+
+void LivePreviewDialog::watch(Gtk::Range& range) {
+  range.signal_value_changed().connect(sigc::mem_fun(*this, &LivePreviewDialog::fire_preview));
+}
+
+void LivePreviewDialog::watch(Gtk::SpinButton& spin) {
+  spin.signal_value_changed().connect(sigc::mem_fun(*this, &LivePreviewDialog::fire_preview));
+}
+
+void LivePreviewDialog::on_live_toggled() {
+  if (live_.get_active()) {
+    fire_preview();
+  } else if (on_preview_reset) {
+    on_preview_reset();
+  }
+}
+
+void LivePreviewDialog::fire_preview() {
+  if (live_.get_active() && on_preview) {
+    on_preview();
+  }
+}
+
 BrightnessContrastDialog::BrightnessContrastDialog(Gtk::Window& parent)
-    : Gtk::Dialog("Brightness / Contrast", parent, true) {
+    : LivePreviewDialog("Brightness / Contrast", parent) {
   add_button("_Cancel", Gtk::RESPONSE_CANCEL);
   add_button("_OK", Gtk::RESPONSE_OK);
   set_default_response(Gtk::RESPONSE_OK);
@@ -39,6 +71,9 @@ BrightnessContrastDialog::BrightnessContrastDialog(Gtk::Window& parent)
   grid->attach(brightness_, 1, 0, 1, 1);
   grid->attach(*Gtk::manage(new Gtk::Label("Contrast")), 0, 1, 1, 1);
   grid->attach(contrast_, 1, 1, 1, 1);
+  add_live_preview(*grid, 2);
+  watch(brightness_);
+  watch(contrast_);
   get_content_area()->pack_start(*grid, Gtk::PACK_SHRINK);
   show_all();
 }
@@ -52,7 +87,7 @@ int BrightnessContrastDialog::contrast() const {
 }
 
 HueSaturationDialog::HueSaturationDialog(Gtk::Window& parent)
-    : Gtk::Dialog("Hue / Saturation", parent, true) {
+    : LivePreviewDialog("Hue / Saturation", parent) {
   add_button("_Cancel", Gtk::RESPONSE_CANCEL);
   add_button("_OK", Gtk::RESPONSE_OK);
   set_default_response(Gtk::RESPONSE_OK);
@@ -69,6 +104,9 @@ HueSaturationDialog::HueSaturationDialog(Gtk::Window& parent)
   grid->attach(hue_, 1, 0, 1, 1);
   grid->attach(*Gtk::manage(new Gtk::Label("Saturation")), 0, 1, 1, 1);
   grid->attach(saturation_, 1, 1, 1, 1);
+  add_live_preview(*grid, 2);
+  watch(hue_);
+  watch(saturation_);
   get_content_area()->pack_start(*grid, Gtk::PACK_SHRINK);
   show_all();
 }
@@ -81,7 +119,7 @@ int HueSaturationDialog::saturation() const {
   return static_cast<int>(saturation_.get_value());
 }
 
-PosterizeDialog::PosterizeDialog(Gtk::Window& parent) : Gtk::Dialog("Posterize", parent, true) {
+PosterizeDialog::PosterizeDialog(Gtk::Window& parent) : LivePreviewDialog("Posterize", parent) {
   add_button("_Cancel", Gtk::RESPONSE_CANCEL);
   add_button("_OK", Gtk::RESPONSE_OK);
   set_default_response(Gtk::RESPONSE_OK);
@@ -98,6 +136,8 @@ PosterizeDialog::PosterizeDialog(Gtk::Window& parent) : Gtk::Dialog("Posterize",
   grid->set_border_width(8);
   grid->attach(*Gtk::manage(new Gtk::Label("Levels")), 0, 0, 1, 1);
   grid->attach(levels_, 1, 0, 1, 1);
+  add_live_preview(*grid, 1);
+  watch(levels_);
   get_content_area()->pack_start(*grid, Gtk::PACK_SHRINK);
   show_all();
 }
@@ -106,7 +146,7 @@ int PosterizeDialog::levels() const {
   return levels_.get_value_as_int();
 }
 
-BlurDialog::BlurDialog(Gtk::Window& parent) : Gtk::Dialog("Blur", parent, true) {
+BlurDialog::BlurDialog(Gtk::Window& parent) : LivePreviewDialog("Blur", parent) {
   add_button("_Cancel", Gtk::RESPONSE_CANCEL);
   add_button("_OK", Gtk::RESPONSE_OK);
   set_default_response(Gtk::RESPONSE_OK);
@@ -123,6 +163,8 @@ BlurDialog::BlurDialog(Gtk::Window& parent) : Gtk::Dialog("Blur", parent, true) 
   grid->set_border_width(8);
   grid->attach(*Gtk::manage(new Gtk::Label("Radius")), 0, 0, 1, 1);
   grid->attach(radius_, 1, 0, 1, 1);
+  add_live_preview(*grid, 1);
+  watch(radius_);
   get_content_area()->pack_start(*grid, Gtk::PACK_SHRINK);
   show_all();
 }

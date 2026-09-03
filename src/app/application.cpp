@@ -57,9 +57,9 @@ void Application::on_startup() {
   set_accels_for_action("win.revert", {"<Primary>r"});
 }
 
-void Application::ensure_window() {
+bool Application::ensure_window() {
   if (window_ != nullptr) {
-    return;
+    return false;
   }
   window_ = new MainWindow();
   add_window(*window_);
@@ -68,14 +68,21 @@ void Application::ensure_window() {
     window_ = nullptr;
     delete dying;
   });
+  return true;
 }
 
 void Application::on_activate() {
-  ensure_window();
+  const bool created = ensure_window();
   window_->present();
+  if (created) {
+    // Fresh launch with an empty canvas: say howdy. A second activation that
+    // only re-presents the existing window must not replay it.
+    window_->play_intro();
+  }
 }
 
 void Application::on_open(const Gio::Application::type_vec_files& files, const Glib::ustring& /*hint*/) {
+  // No greeting on this path: the user asked for a file, not an empty canvas.
   ensure_window();
   window_->present();
   for (const auto& file : files) {

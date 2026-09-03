@@ -7,7 +7,9 @@
 #include "doc/layer_stack.hpp"
 #include "doc/selection.hpp"
 #include "tools/selection_xform.hpp"
+#include "ui/intro_howdy.hpp"
 
+#include <glib.h>
 #include <glibmm/main.h>
 #include <gtkmm/adjustment.h>
 
@@ -20,6 +22,12 @@ namespace {
 
 constexpr double kZoomMin = 0.125;
 constexpr double kZoomMax = 16.0;
+
+// The scrolled window never asks its ancestors for more than this, whatever the
+// image size is: scrollbars take care of the overflow, so opening a 4000-pixel
+// photo cannot inflate the toplevel window.
+constexpr int kMinContentWidth = 240;
+constexpr int kMinContentHeight = 180;
 
 void write_argb32(std::uint8_t* dst, Color c) {
   const int a = c.a;
@@ -56,6 +64,13 @@ CanvasView::CanvasView() {
   set_hexpand(true);
   set_vexpand(true);
   set_shadow_type(Gtk::SHADOW_IN);
+  // Keep our own size request small and bounded. min-content-* pins the
+  // minimum, and propagate-natural-* stays off so the inner Gtk::Layout's
+  // content-sized request (see update_area_size()) never reaches the window.
+  set_min_content_width(kMinContentWidth);
+  set_min_content_height(kMinContentHeight);
+  set_propagate_natural_width(false);
+  set_propagate_natural_height(false);
 
   area_.set_can_focus(true);
   area_.set_hexpand(false);
@@ -83,6 +98,7 @@ CanvasView::CanvasView() {
 }
 
 void CanvasView::set_document(Document* document) {
+  cancel_intro();
   document_ = document;
   update_area_size();
   queue_draw();
@@ -245,17 +261,39 @@ void CanvasView::widget_to_canvas(double widget_x, double widget_y, double& canv
 }
 
 bool CanvasView::canvas_to_screen(int canvas_x, int canvas_y, int& screen_x, int& screen_y) const {
-  const double wx = static_cast<double>(origin_x()) + static_cast<double>(canvas_x) * zoom_;
-  const double wy = static_cast<double>(origin_y()) + static_cast<double>(canvas_y) * zoom_;
-  const auto win = area_.get_window();
+  const int wx = static_cast<int>(static_cast<double>(origin_x()) +
+                                  static_cast<double>(canvas_x) * zoom_);
+  const int wy = static_cast<int>(static_cast<double>(origin_y()) +
+                                  static_cast<double>(canvas_y) * zoom_);
+  Gtk::DrawingArea& area = const_cast<Gtk::DrawingArea&>(area_);
+  // Go through the toplevel rather than the drawing area's own GdkWindow: the
+  // area is moved inside the Gtk::Layout to centre the canvas and is shifted
+  // again by the scroll offset, and translate_coordinates() accounts for both
+  // whether or not the area happens to own a window.
+  Gtk::Widget* top = area.get_toplevel();
+  if (top != nullptr && top->get_is_toplevel()) {
+    int tx = 0;
+    int ty = 0;
+    if (area.translate_coordinates(*top, wx, wy, tx, ty)) {
+      if (const auto win = top->get_window()) {
+        int ox = 0;
+        int oy = 0;
+        win->get_origin(ox, oy);
+        screen_x = ox + tx;
+        screen_y = oy + ty;
+        return true;
+      }
+    }
+  }
+  const auto win = area.get_window();
   if (!win) {
     return false;
   }
   int ox = 0;
   int oy = 0;
   win->get_origin(ox, oy);
-  screen_x = ox + static_cast<int>(wx);
-  screen_y = oy + static_cast<int>(wy);
+  screen_x = ox + wx;
+  screen_y = oy + wy;
   return true;
 }
 
@@ -273,6 +311,75 @@ int CanvasView::origin_x() const {
 
 int CanvasView::origin_y() const {
   return margin();
+}
+
+void CanvasView::focus_canvas() {
+  if (area_.get_realized() || area_.get_mapped()) {
+    area_.grab_focus();
+  }
+}
+
+void CanvasView::start_intro() {
+  if (intro_active_) {
+    return;
+  }
+  if (!intro::font_available()) {
+    return;  // no calligraphic face installed: skip the greeting entirely
+  }
+  intro_active_ = true;
+  intro_start_us_ = g_get_monotonic_time();
+  intro_timer_ = Glib::signal_timeout().connect(sigc::mem_fun(*this, &CanvasView::on_intro_tick),
+                                                16);
+  invalidate_all();
+}
+
+void CanvasView::cancel_intro() {
+  if (!intro_active_) {
+    return;
+  }
+  intro_active_ = false;
+  intro_timer_.disconnect();
+  invalidate_all();
+}
+
+bool CanvasView::on_intro_tick() {
+  if (!intro_active_) {
+    return false;
+  }
+  if (intro::finished(g_get_monotonic_time() - intro_start_us_)) {
+    intro_active_ = false;
+    invalidate_all();  // one last repaint wipes the overlay
+    return false;
+  }
+  invalidate_all();
+  return true;
+}
+
+void CanvasView::draw_intro(const Cairo::RefPtr<Cairo::Context>& cr) {
+  const double p = intro::progress(g_get_monotonic_time() - intro_start_us_);
+  if (p <= 0.0) {
+    return;
+  }
+  const int dw = content_pixel_width();
+  const int dh = content_pixel_height();
+  if (dw < 48 || dh < 32) {
+    return;
+  }
+  int size_px = std::clamp(static_cast<int>(dh * 0.38), 18, 160);
+  intro::Ink ink;
+  if (!intro::measure(size_px, ink) || ink.width <= 0) {
+    return;
+  }
+  const double max_width = dw * 0.7;
+  if (ink.width > max_width) {
+    size_px = std::max(14, static_cast<int>(size_px * max_width / ink.width));
+    if (!intro::measure(size_px, ink) || ink.width <= 0) {
+      return;
+    }
+  }
+  const double x = origin_x() + (dw - ink.width) * 0.5;
+  const double y = origin_y() + (dh - ink.height) * 0.5;
+  intro::draw(cr->cobj(), x, y, size_px, p);
 }
 
 void CanvasView::on_size_allocate(Gtk::Allocation& allocation) {
@@ -486,6 +593,9 @@ bool CanvasView::on_area_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
   if (document_ != nullptr) {
     draw_selection_handles(cr, document_->selection(), ox, oy, zoom_);
   }
+  if (intro_active_) {
+    draw_intro(cr);
+  }
   ensure_ants_timer();
 
   cr->restore();
@@ -526,6 +636,7 @@ bool CanvasView::on_area_button_press(GdkEventButton* event) {
   if (event == nullptr) {
     return false;
   }
+  cancel_intro();
   area_.grab_focus();
   if (event->button == 2 || (event->button == 1 && space_down_)) {
     begin_pan(event->x, event->y);

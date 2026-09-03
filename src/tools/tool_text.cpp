@@ -215,13 +215,32 @@ void TextTool::start_editor(int x, int y, unsigned button) {
     return;
   }
   host_->document().commit_floating();
+  // While editing_ is true the canvas draws the (empty) tool layer in place of
+  // the active layer, so mirror the layer into it: without this the picture
+  // appears to vanish behind the entry until the text is committed.
+  host_->document().layers().copy_active_to_tool();
   x_ = x;
   y_ = y;
   button_ = button;
   editing_ = true;
-  popup_ = std::make_unique<Gtk::Window>(Gtk::WINDOW_POPUP);
+  // A Gtk::WINDOW_POPUP is an override-redirect X11 window: the window manager
+  // never manages it, so under X11/XFCE it does not get the keyboard focus and
+  // everything typed went nowhere. Use a real toplevel, undecorated and hinted
+  // as a utility window, parented to the main window, and present() it after
+  // show_all() so the WM actually hands it X input focus.
+  popup_ = std::make_unique<Gtk::Window>(Gtk::WINDOW_TOPLEVEL);
   popup_->set_decorated(false);
+  popup_->set_type_hint(Gdk::WINDOW_TYPE_HINT_UTILITY);
+  popup_->set_skip_taskbar_hint(true);
+  popup_->set_skip_pager_hint(true);
+  popup_->set_accept_focus(true);
+  popup_->set_focus_on_map(true);
+  popup_->set_resizable(false);
+  popup_->set_position(Gtk::WIN_POS_NONE);
   popup_->set_border_width(2);
+  if (Gtk::Window* parent = host_->host_window()) {
+    popup_->set_transient_for(*parent);
+  }
   entry_ = Gtk::manage(new Gtk::Entry());
   entry_->set_width_chars(16);
   entry_->signal_activate().connect([this]() { on_commit(); });
@@ -237,10 +256,16 @@ void TextTool::start_editor(int x, int y, unsigned button) {
   popup_->add(*entry_);
   int sx = 0;
   int sy = 0;
-  if (host_->canvas_to_screen(x, y, sx, sy)) {
+  const bool placed = host_->canvas_to_screen(x, y, sx, sy);
+  if (placed) {
     popup_->move(sx, sy);
   }
   popup_->show_all();
+  if (placed) {
+    // xfwm4 can re-place a utility window on map; put it back on the click.
+    popup_->move(sx, sy);
+  }
+  popup_->present();
   entry_->grab_focus();
   if (host_ != nullptr) {
     host_->show_status_hint("Text: type, then Enter to stamp");
@@ -251,6 +276,10 @@ void TextTool::close_editor() {
   entry_ = nullptr;
   popup_.reset();
   editing_ = false;
+  if (host_ != nullptr) {
+    host_->document().layers().clear_tool_layer();
+    host_->invalidate_canvas(Rect{});
+  }
 }
 
 void TextTool::rasterize() {

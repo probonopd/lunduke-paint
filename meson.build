@@ -18,6 +18,7 @@ gdkpixbuf_dep = dependency('gdk-pixbuf-2.0')
 glib_dep = dependency('glib-2.0')
 libarchive_dep = dependency('libarchive')
 pugixml_dep = dependency('pugixml')
+pangocairo_dep = dependency('pangocairo')
 
 gnome = import('gnome')
 brushpad_resources = gnome.compile_resources(
@@ -37,6 +38,7 @@ brushpad_core_sources = files(
   'src/doc/history.cpp',
   'src/doc/commands_pixels.cpp',
   'src/doc/commands_image.cpp',
+  'src/doc/effect_preview.cpp',
   'src/doc/selection.cpp',
   'src/raster/fill.cpp',
   'src/raster/stroke.cpp',
@@ -65,6 +67,7 @@ brushpad_sources = files(
   'src/app/actions.cpp',
   'src/app/preferences.cpp',
   'src/ui/canvas_view.cpp',
+  'src/ui/intro_howdy.cpp',
   'src/ui/toolbox.cpp',
   'src/ui/tool_options_bar.cpp',
   'src/ui/colors_panel.cpp',
@@ -102,7 +105,7 @@ executable(
   'lunduke-paint',
   brushpad_sources,
   brushpad_resources,
-  dependencies: [gtkmm_dep, cairomm_dep, gdkpixbuf_dep],
+  dependencies: [gtkmm_dep, cairomm_dep, gdkpixbuf_dep, pangocairo_dep],
   include_directories: brushpad_inc,
   link_with: brushpad_core,
   install: true,
@@ -197,6 +200,40 @@ test_crash_recovery = executable(
   install: false,
 )
 test('crash_recovery', test_crash_recovery)
+
+test_effect_preview = executable(
+  'test_effect_preview',
+  files('tests/test_effect_preview.cpp'),
+  include_directories: brushpad_inc,
+  link_with: brushpad_core,
+  install: false,
+)
+test('effect_preview', test_effect_preview)
+
+# Non-GUI half of the startup greeting: the Z003 face lookup, the ink extents
+# and the one-second reveal maths. Pango/cairo only, no display needed.
+test_intro_howdy = executable(
+  'test_intro_howdy',
+  files('tests/test_intro_howdy.cpp', 'src/ui/intro_howdy.cpp'),
+  include_directories: brushpad_inc,
+  dependencies: [pangocairo_dep, glib_dep],
+  install: false,
+)
+test('intro_howdy', test_intro_howdy)
+
+# Widget-level checks that need an X display: skipped (exit 77) when there is
+# none, so `meson test` stays clean headless and can be re-run under xvfb-run.
+test_widgets = executable(
+  'test_widgets',
+  files('tests/test_widgets.cpp', 'src/ui/canvas_view.cpp', 'src/ui/toolbox.cpp',
+        'src/ui/intro_howdy.cpp', 'src/tools/tool.cpp', 'src/tools/selection_xform.cpp'),
+  brushpad_resources,
+  include_directories: brushpad_inc,
+  dependencies: [gtkmm_dep, cairomm_dep, gdkpixbuf_dep, pangocairo_dep],
+  link_with: brushpad_core,
+  install: false,
+)
+test('widgets', test_widgets)
 
 test_copy_merged = executable(
   'test_copy_merged',

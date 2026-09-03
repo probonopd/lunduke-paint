@@ -6,6 +6,7 @@
 
 namespace Gtk {
 class Widget;
+class Window;
 }
 
 namespace brushpad {
@@ -47,6 +48,8 @@ public:
     return false;
   }
   virtual double canvas_zoom() const { return 1.0; }
+  // Toplevel to parent transient popups on (the text tool's entry).
+  virtual Gtk::Window* host_window() { return nullptr; }
 };
 
 class Tool {

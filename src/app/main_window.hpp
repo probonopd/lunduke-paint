@@ -4,6 +4,7 @@
 
 #include "app/preferences.hpp"
 #include "doc/document.hpp"
+#include "doc/effect_preview.hpp"
 #include "doc/workspace.hpp"
 #include "io/image_io.hpp"
 #include "tools/tool.hpp"
@@ -34,6 +35,8 @@
 
 namespace brushpad {
 
+class LivePreviewDialog;
+
 class MainWindow : public Gtk::ApplicationWindow, public ToolHost {
 public:
   MainWindow();
@@ -41,6 +44,8 @@ public:
 
   void reset_canvas();
   void new_document(int width, int height, Color background);
+  // Plays the startup greeting once, and only on a fresh empty canvas.
+  void play_intro();
   void show_status(const Glib::ustring& message);
   void action_new();
   void action_open();
@@ -68,6 +73,7 @@ public:
   void show_status_hint(const char* message) override;
   bool canvas_to_screen(int canvas_x, int canvas_y, int& screen_x, int& screen_y) override;
   double canvas_zoom() const override { return canvas_.zoom(); }
+  Gtk::Window* host_window() override { return this; }
 
   void update_chrome();
   void on_undo();
@@ -125,6 +131,7 @@ private:
   void bind_document();
   void adopt_document(std::unique_ptr<Document> document, bool prefer_replace);
   void attach_active_document();
+  void detach_document();
   void rebuild_tabs();
   void update_tab_labels();
   bool confirm_lose_document(Document& document);
@@ -159,6 +166,10 @@ private:
                              const Gtk::SelectionData& data, guint info, guint time);
   void apply_layer_effect(const char* name,
                           const std::function<void(std::uint8_t*, int, int, int)>& fn);
+  // Runs a modal adjustment dialog with optional live preview. build_effect
+  // returns the effect for the dialog's current values, or nullptr for a no-op.
+  bool run_adjust_dialog(LivePreviewDialog& dialog, const char* name,
+                         const std::function<EffectPreview::EffectFn()>& build_effect);
   void apply_preferences();
 
   Gtk::Box root_{Gtk::ORIENTATION_VERTICAL};
@@ -184,6 +195,7 @@ private:
   bool brush_aa_{true};
   int fill_tolerance_{0};
   int jpeg_quality_{90};
+  bool intro_played_{false};
   Glib::RefPtr<Gio::SimpleAction> undo_action_;
   Glib::RefPtr<Gio::SimpleAction> redo_action_;
   Glib::RefPtr<Gio::SimpleAction> cut_action_;

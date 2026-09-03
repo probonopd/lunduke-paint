@@ -24,7 +24,9 @@ protected:
   void on_open(const Gio::Application::type_vec_files& files, const Glib::ustring& hint) override;
 
 private:
-  void ensure_window();
+  // Returns true when this call actually created the window (a genuinely fresh
+  // launch), false when an existing window was reused.
+  bool ensure_window();
   void on_action_new();
   void on_action_open();
   void on_action_save();

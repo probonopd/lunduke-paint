@@ -2,12 +2,36 @@
 
 #include "ui/toolbox.hpp"
 
+#include <gdkmm/screen.h>
 #include <gtkmm/image.h>
 #include <gtkmm/stylecontext.h>
 
 namespace brushpad {
 
+// Own CSS, loaded once per screen at APPLICATION priority so the selected tool
+// looks selected no matter which GTK3 theme is in play.
+void Toolbox::ensure_css() {
+  static bool loaded = false;
+  if (loaded) {
+    return;
+  }
+  auto screen = Gdk::Screen::get_default();
+  if (!screen) {
+    return;
+  }
+  auto provider = Gtk::CssProvider::create();
+  try {
+    provider->load_from_data(toolbox_style::css());
+  } catch (const Glib::Error&) {
+    return;
+  }
+  Gtk::StyleContext::add_provider_for_screen(screen, provider,
+                                             GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+  loaded = true;
+}
+
 Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
+  ensure_css();
   set_border_width(4);
   set_size_request(72, -1);
 
@@ -21,6 +45,20 @@ Toolbox::Toolbox() : Gtk::Box(Gtk::ORIENTATION_VERTICAL, 4) {
   wells_.signal_draw().connect(sigc::mem_fun(*this, &Toolbox::on_wells_draw));
   wells_.signal_button_press_event().connect(sigc::mem_fun(*this, &Toolbox::on_wells_press));
   pack_start(wells_, Gtk::PACK_SHRINK);
+
+  // Name the two swatches without needing a tooltip hover. "FG" sits under the
+  // upper-left well, "BG" under the lower-right one, in the same small type as
+  // the rest of the classic toolbox column.
+  fg_label_.set_halign(Gtk::ALIGN_START);
+  bg_label_.set_halign(Gtk::ALIGN_END);
+  fg_label_.set_tooltip_text("Foreground color");
+  bg_label_.set_tooltip_text("Background color");
+  fg_label_.get_style_context()->add_class(toolbox_style::caption_class());
+  bg_label_.get_style_context()->add_class(toolbox_style::caption_class());
+  well_labels_.set_size_request(56, -1);
+  well_labels_.pack_start(fg_label_, Gtk::PACK_SHRINK);
+  well_labels_.pack_end(bg_label_, Gtk::PACK_SHRINK);
+  pack_start(well_labels_, Gtk::PACK_SHRINK);
 
   trans_.set_size_request(56, 18);
   trans_.set_tooltip_text("Transparent: left sets FG, right sets BG (punches alpha)");
@@ -42,6 +80,7 @@ void Toolbox::add_tool_button(const std::string& id, const std::string& tooltip,
   button->set_tooltip_text(tooltip);
   button->set_relief(Gtk::RELIEF_NONE);
   button->set_can_focus(false);
+  button->get_style_context()->add_class(toolbox_style::button_class());
   const std::string captured = id;
   button->signal_clicked().connect([this, captured]() {
     if (on_tool_chosen) {
@@ -55,17 +94,37 @@ void Toolbox::add_tool_button(const std::string& id, const std::string& tooltip,
     next_row_ += 1;
   }
   buttons_.push_back(button);
-  ids_.push_back(id);
+  selection_.add(id);
+  apply_selection_style();
 }
 
 void Toolbox::set_active_tool(const std::string& id) {
-  for (std::size_t i = 0; i < buttons_.size(); ++i) {
-    if (ids_[i] == id) {
-      buttons_[i]->get_style_context()->add_class("suggested-action");
+  selection_.select(id);
+  apply_selection_style();
+}
+
+void Toolbox::apply_selection_style() {
+  const std::vector<std::string>& ids = selection_.ids();
+  for (std::size_t i = 0; i < buttons_.size() && i < ids.size(); ++i) {
+    auto context = buttons_[i]->get_style_context();
+    if (selection_.is_selected(ids[i])) {
+      context->add_class(toolbox_style::selected_class());
+      // Keep the theme hint too, for themes that style it nicely.
+      context->add_class("suggested-action");
     } else {
-      buttons_[i]->get_style_context()->remove_class("suggested-action");
+      context->remove_class(toolbox_style::selected_class());
+      context->remove_class("suggested-action");
     }
   }
+}
+
+bool Toolbox::tool_button_selected(const std::string& id) const {
+  const int index = tool_index(selection_.ids(), id);
+  if (index < 0 || index >= static_cast<int>(buttons_.size())) {
+    return false;
+  }
+  return buttons_[static_cast<std::size_t>(index)]->get_style_context()->has_class(
+      toolbox_style::selected_class());
 }
 
 void Toolbox::set_colors(Color fg, Color bg) {

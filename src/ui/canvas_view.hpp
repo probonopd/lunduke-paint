@@ -31,6 +31,16 @@ public:
   void invalidate_all();
   void refresh_size();
 
+  // Give the drawing area keyboard focus so the single-letter tool shortcuts
+  // reach MainWindow::on_key_press instead of the Size entry.
+  void focus_canvas();
+
+  // Startup greeting overlay (see ui/intro_howdy.hpp). Transient only: it never
+  // touches the document, the layers or the dirty flag.
+  void start_intro();
+  void cancel_intro();
+  bool intro_active() const { return intro_active_; }
+
   double zoom() const { return zoom_; }
   void set_zoom(double zoom);
   void zoom_in();
@@ -91,6 +101,8 @@ private:
   void draw_marching_ants(const Cairo::RefPtr<Cairo::Context>& cr, int ox, int oy);
   void ensure_ants_timer();
   void invalidate_ants();
+  void draw_intro(const Cairo::RefPtr<Cairo::Context>& cr);
+  bool on_intro_tick();
 
   Gtk::Layout layout_;
   Gtk::DrawingArea area_;
@@ -110,6 +122,9 @@ private:
   double pan_hadj_{0};
   double pan_vadj_{0};
   bool updating_size_{false};
+  bool intro_active_{false};
+  gint64 intro_start_us_{0};
+  sigc::connection intro_timer_;
 
   sigc::signal<void, double, double> signal_pointer_moved_;
   sigc::signal<void> signal_pointer_left_;

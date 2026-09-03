@@ -6,6 +6,7 @@
 #include "doc/commands_image.hpp"
 #include "doc/commands_layers.hpp"
 #include "doc/commands_pixels.hpp"
+#include "doc/effect_preview.hpp"
 #include "doc/selection.hpp"
 #include "io/image_io.hpp"
 #include "io/ora.hpp"
@@ -168,6 +169,10 @@ MainWindow::MainWindow() {
   bind_document();
   set_active_tool("pencil");
   show_all();
+  // Without this the Size spin button in the tool options bar owns the initial
+  // keyboard focus, focus_is_editable() is true and every single-letter tool
+  // shortcut is eaten by that entry (so the toolbox highlight never moved).
+  canvas_.focus_canvas();
   rebuild_tabs();
   update_chrome();
   rebuild_recent_menu();
@@ -230,7 +235,12 @@ void MainWindow::build_ui() {
   toolbox_.add_tool_button("polygon", "Polygon (G)", "tool-select-lasso-polygon-symbolic");
   toolbox_.add_tool_button("curve", "Curve (V)", "tool-curve-symbolic");
   toolbox_.add_tool_button("text", "Text (T)", "tool-text-symbolic");
-  toolbox_.on_tool_chosen = [this](const std::string& id) { set_active_tool(id); };
+  toolbox_.on_tool_chosen = [this](const std::string& id) {
+    set_active_tool(id);
+    // Clicking a tool should leave the keyboard on the canvas, so the letter
+    // shortcuts keep working afterwards.
+    canvas_.focus_canvas();
+  };
   toolbox_.on_well_clicked = [this](bool background) { choose_color(background); };
   toolbox_.on_transparent = [this](bool background) {
     if (background) {
@@ -360,12 +370,24 @@ void MainWindow::bind_document() {
   attach_active_document();
 }
 
+void MainWindow::detach_document() {
+  // The panels keep a raw Document*. Clear them before the workspace frees the
+  // document they point at, otherwise the refresh that canvas_.set_document()
+  // triggers reads freed memory (this crashed every File > Open).
+  canvas_.cancel_intro();
+  layers_panel_.set_document(nullptr);
+  history_panel_.set_document(nullptr);
+  canvas_.set_document(nullptr);
+}
+
 void MainWindow::attach_active_document() {
+  // Panels first: canvas_.set_document() emits view-changed, which runs
+  // update_chrome(), which refreshes both panels.
+  layers_panel_.set_document(document_ptr());
+  history_panel_.set_document(document_ptr());
   canvas_.set_document(document_ptr());
   canvas_.apply_zoom(document().view_zoom());
   canvas_.set_tool(active_tool_);
-  layers_panel_.set_document(document_ptr());
-  history_panel_.set_document(document_ptr());
   history_panel_.on_jump = [this](int index) {
     if (active_tool_ != nullptr) {
       active_tool_->on_cancel();
@@ -394,6 +416,7 @@ void MainWindow::adopt_document(std::unique_ptr<Document> document, bool prefer_
   if (active_tool_ != nullptr) {
     active_tool_->on_cancel();
   }
+  detach_document();
   if (prefer_replace && workspace_.count() == 1 && workspace_.is_placeholder(0)) {
     workspace_.replace_active(std::move(document));
   } else {
@@ -401,6 +424,22 @@ void MainWindow::adopt_document(std::unique_ptr<Document> document, bool prefer_
   }
   attach_active_document();
   rebuild_tabs();
+}
+
+void MainWindow::play_intro() {
+  if (intro_played_) {
+    return;
+  }
+  intro_played_ = true;
+  const Document* doc = workspace_.active_ptr();
+  if (doc == nullptr) {
+    return;
+  }
+  // Only a genuinely untouched, unsaved, empty canvas gets the greeting.
+  if (doc->dirty() || !doc->path().empty() || doc->history().can_undo()) {
+    return;
+  }
+  canvas_.start_intro();
 }
 
 void MainWindow::show_status(const Glib::ustring& message) {
@@ -584,6 +623,7 @@ bool MainWindow::on_key_press(GdkEventKey* event) {
   if (event == nullptr) {
     return false;
   }
+  canvas_.cancel_intro();  // any key dismisses the startup greeting
   if (event->keyval == GDK_KEY_space) {
     canvas_.set_space_down(true);
     return false;
@@ -722,6 +762,7 @@ bool MainWindow::open_path(const std::string& path, bool force_replace) {
         active_tool_->on_cancel();
       }
       doc->history().set_depth(prefs_.undo_limit);
+      detach_document();
       workspace_.replace_active(std::move(doc));
       attach_active_document();
       rebuild_tabs();
@@ -758,6 +799,7 @@ bool MainWindow::open_path(const std::string& path, bool force_replace) {
       active_tool_->on_cancel();
     }
     doc->history().set_depth(prefs_.undo_limit);
+    detach_document();
     workspace_.replace_active(std::move(doc));
     attach_active_document();
     rebuild_tabs();
@@ -1576,6 +1618,7 @@ bool MainWindow::close_document_at(int index) {
   if (active_tool_ != nullptr) {
     active_tool_->on_cancel();
   }
+  detach_document();
   if (workspace_.count() == 1) {
     auto blank = Document::create(prefs_.default_width, prefs_.default_height, Color::white());
     blank->history().set_depth(prefs_.undo_limit);
@@ -1599,40 +1642,73 @@ void MainWindow::apply_layer_effect(const char* name,
     return;
   }
   document().commit_floating();
-  Layer& layer = document().layers().active_layer();
-  Layer before(layer.width(), layer.height(), Color::transparent(), "before");
-  before.copy_from(layer);
-  Layer after(layer.width(), layer.height(), Color::transparent(), "after");
-  after.copy_from(layer);
-  fn(after.pixels(), after.width(), after.height(), after.stride());
-  const Selection& sel = document().selection();
-  Rect bounds{0, 0, after.width(), after.height()};
-  if (!sel.empty()) {
-    clip_rect_to_selection(after, before, bounds, sel);
-    if (!sel.inverted()) {
-      bounds = rect_intersect(sel.bounds(), bounds);
+  EffectPreview effect(document());
+  if (!effect.valid()) {
+    return;
+  }
+  effect.commit(name != nullptr ? name : "Adjust", fn);
+}
+
+bool MainWindow::run_adjust_dialog(LivePreviewDialog& dialog, const char* name,
+                                   const std::function<EffectPreview::EffectFn()>& build_effect) {
+  if (document().active_locked()) {
+    show_status("Layer is locked");
+    return false;
+  }
+  document().commit_floating();
+  EffectPreview effect(document());
+  if (!effect.valid()) {
+    return false;
+  }
+  // Live preview repaints the layer in place, straight from the snapshot, so
+  // dragging never stacks and never pushes history.
+  dialog.on_preview = [this, &effect, &build_effect]() {
+    const EffectPreview::EffectFn fn = build_effect();
+    if (fn) {
+      effect.preview(fn);
+    } else {
+      effect.restore();
     }
+    canvas_.invalidate_all();
+  };
+  dialog.on_preview_reset = [this, &effect]() {
+    effect.restore();
+    canvas_.invalidate_all();
+  };
+
+  const int response = dialog.run();
+  const EffectPreview::EffectFn fn = build_effect();
+  dialog.hide();
+  // The callbacks captured locals; make sure a late signal cannot reach them.
+  dialog.on_preview = nullptr;
+  dialog.on_preview_reset = nullptr;
+
+  if (response != Gtk::RESPONSE_OK || !fn) {
+    // Cancel (or a no-op setting): put the original pixels back exactly.
+    if (effect.restore()) {
+      canvas_.invalidate_all();
+      update_chrome();
+    }
+    return false;
   }
-  auto cmd = PixelPatchCommand::from_layers(before, after, bounds, name ? name : "Adjust",
-                                            document().layers().active_index());
-  if (cmd && !cmd->empty()) {
-    document().commit(std::move(cmd));
-  }
+  // OK: discard the preview pixels and apply once, as a single undo step.
+  const bool committed = effect.commit(name != nullptr ? name : "Adjust", fn);
+  canvas_.invalidate_all();
+  update_chrome();
+  return committed;
 }
 
 void MainWindow::action_adjust_brightness() {
   BrightnessContrastDialog dialog(*this);
-  if (dialog.run() != Gtk::RESPONSE_OK) {
-    return;
-  }
-  const int brightness = dialog.brightness();
-  const int contrast = dialog.contrast();
-  if (brightness == 0 && contrast == 0) {
-    return;
-  }
-  apply_layer_effect("Brightness / Contrast", [brightness, contrast](std::uint8_t* px, int w, int h,
-                                                                     int stride) {
-    brightness_contrast_rgba(px, w, h, stride, brightness, contrast);
+  run_adjust_dialog(dialog, "Brightness / Contrast", [&dialog]() -> EffectPreview::EffectFn {
+    const int brightness = dialog.brightness();
+    const int contrast = dialog.contrast();
+    if (brightness == 0 && contrast == 0) {
+      return nullptr;
+    }
+    return [brightness, contrast](std::uint8_t* px, int w, int h, int stride) {
+      brightness_contrast_rgba(px, w, h, stride, brightness, contrast);
+    };
   });
 }
 
@@ -1650,41 +1726,37 @@ void MainWindow::action_adjust_grayscale() {
 
 void MainWindow::action_adjust_hue() {
   HueSaturationDialog dialog(*this);
-  if (dialog.run() != Gtk::RESPONSE_OK) {
-    return;
-  }
-  const int hue = dialog.hue();
-  const int saturation = dialog.saturation();
-  if (hue == 0 && saturation == 0) {
-    return;
-  }
-  apply_layer_effect("Hue / Saturation", [hue, saturation](std::uint8_t* px, int w, int h,
-                                                           int stride) {
-    hue_saturation_rgba(px, w, h, stride, hue, saturation);
+  run_adjust_dialog(dialog, "Hue / Saturation", [&dialog]() -> EffectPreview::EffectFn {
+    const int hue = dialog.hue();
+    const int saturation = dialog.saturation();
+    if (hue == 0 && saturation == 0) {
+      return nullptr;
+    }
+    return [hue, saturation](std::uint8_t* px, int w, int h, int stride) {
+      hue_saturation_rgba(px, w, h, stride, hue, saturation);
+    };
   });
 }
 
 void MainWindow::action_adjust_posterize() {
   PosterizeDialog dialog(*this);
-  if (dialog.run() != Gtk::RESPONSE_OK) {
-    return;
-  }
-  apply_layer_effect("Posterize", [levels = dialog.levels()](std::uint8_t* px, int w, int h,
-                                                             int stride) {
-    posterize_rgba(px, w, h, stride, levels);
+  run_adjust_dialog(dialog, "Posterize", [&dialog]() -> EffectPreview::EffectFn {
+    const int levels = dialog.levels();
+    return [levels](std::uint8_t* px, int w, int h, int stride) {
+      posterize_rgba(px, w, h, stride, levels);
+    };
   });
 }
 
 void MainWindow::action_effect_blur() {
   BlurDialog dialog(*this);
-  if (dialog.run() != Gtk::RESPONSE_OK) {
-    return;
-  }
-  const int radius = dialog.radius();
-  apply_layer_effect("Blur", [radius](std::uint8_t* px, int w, int h, int stride) {
-    std::vector<std::uint8_t> src(static_cast<std::size_t>(h) * static_cast<std::size_t>(stride));
-    std::memcpy(src.data(), px, src.size());
-    box_blur_rgba(src.data(), w, h, stride, px, stride, radius);
+  run_adjust_dialog(dialog, "Blur", [&dialog]() -> EffectPreview::EffectFn {
+    const int radius = dialog.radius();
+    return [radius](std::uint8_t* px, int w, int h, int stride) {
+      std::vector<std::uint8_t> src(static_cast<std::size_t>(h) * static_cast<std::size_t>(stride));
+      std::memcpy(src.data(), px, src.size());
+      box_blur_rgba(src.data(), w, h, stride, px, stride, radius);
+    };
   });
 }
 
