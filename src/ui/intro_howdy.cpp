@@ -21,10 +21,14 @@ struct Curve {
   Point end;
 };
 
-// Centerline from refs/howdy-reference-exact.png:
+// Centerline from refs/howdy-reference-exact.jpeg:
 // DT-ridge walk → light Chaikin + mild B-spline → 28 long-handle cubics.
-// Exact JPEG letterforms preserved; bold monoline; one L→R stroke.
-constexpr double kPen = 14.50;
+// Open teardrop h / open y descender; thin monoline; one L→R stroke.
+// JPEG ink ≈817px, stroke diam ≈40px (DT) → ratio ≈0.049.
+// kPen ≈ ratio * design_W ≈ 0.049*406.9 ≈ 20 overfills this path's
+// counters; tuned to 10.00 so height-matched vs-ref diam/width ≈ 0.048
+// (JPEG ≈ 0.050) with open h/y loops (user 54/816 overfills). Verify by vs-ref.
+constexpr double kPen = 10.00;
 constexpr double kDesignHeight = 250.0;
 constexpr Point kStart{28.00, 130.59};
 constexpr std::array<Curve, 28> kCurves{{
