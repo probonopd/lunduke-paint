@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cstring>
 
-namespace brushpad {
+namespace lundukepaint {
 
 Layer::Layer(int width, int height, Color fill, std::string name)
     : name_(std::move(name)), width_(width), height_(height), stride_(width * 4) {
@@ -277,4 +277,4 @@ std::unique_ptr<Layer> layer_from_snapshot(const LayerSnapshot& snap) {
   return layer;
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

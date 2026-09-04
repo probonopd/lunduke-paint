@@ -16,11 +16,11 @@
 
 namespace {
 
-using brushpad::Color;
-using brushpad::Document;
-using brushpad::EffectPreview;
-using brushpad::Layer;
-using brushpad::Rect;
+using lundukepaint::Color;
+using lundukepaint::Document;
+using lundukepaint::EffectPreview;
+using lundukepaint::Layer;
+using lundukepaint::Rect;
 
 int errors = 0;
 
@@ -42,7 +42,7 @@ std::vector<std::uint8_t> dump(const Layer& layer) {
 
 EffectPreview::EffectFn brightness(int amount) {
   return [amount](std::uint8_t* px, int w, int h, int stride) {
-    brushpad::brightness_contrast_rgba(px, w, h, stride, amount, 0);
+    lundukepaint::brightness_contrast_rgba(px, w, h, stride, amount, 0);
   };
 }
 
@@ -126,7 +126,7 @@ int main() {
              for (std::size_t i = 0; i < src.size(); ++i) {
                src[i] = px[i];
              }
-             brushpad::box_blur_rgba(src.data(), w, h, stride, px, stride, 2);
+             lundukepaint::box_blur_rgba(src.data(), w, h, stride, px, stride, 2);
            }),
            "blur committed without a preview");
     expect(doc->history().count() == 1, "one entry for the un-previewed apply");
@@ -138,7 +138,7 @@ int main() {
       src[i] = ref_layer.pixels()[i];
     }
     std::vector<std::uint8_t> out(src.size());
-    brushpad::box_blur_rgba(src.data(), ref_layer.width(), ref_layer.height(), ref_layer.stride(),
+    lundukepaint::box_blur_rgba(src.data(), ref_layer.width(), ref_layer.height(), ref_layer.stride(),
                             out.data(), ref_layer.stride(), 2);
     ref_layer.write_rect(Rect{0, 0, ref_layer.width(), ref_layer.height()}, out.data());
     expect(dump(doc->layers().active_layer()) == dump(ref_layer),

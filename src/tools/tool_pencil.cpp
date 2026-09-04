@@ -15,7 +15,7 @@
 #include <memory>
 #include <string>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class PencilTool : public Tool {
 public:
@@ -154,4 +154,4 @@ Tool* create_pencil_tool() {
   return new PencilTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

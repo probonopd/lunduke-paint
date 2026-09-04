@@ -16,7 +16,7 @@
 #include <cmath>
 #include <memory>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class RoundedRectTool : public Tool {
 public:
@@ -188,4 +188,4 @@ Tool* create_rounded_rect_tool() {
   return new RoundedRectTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

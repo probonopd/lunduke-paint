@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_UI_CANVAS_VIEW_HPP
-#define BRUSHPAD_UI_CANVAS_VIEW_HPP
+#ifndef LUNDUKEPAINT_UI_CANVAS_VIEW_HPP
+#define LUNDUKEPAINT_UI_CANVAS_VIEW_HPP
 
 #include "raster/types.hpp"
 #include "tools/tool.hpp"
@@ -12,7 +12,7 @@
 #include <sigc++/connection.h>
 #include <sigc++/signal.h>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Document;
 class Layer;
@@ -139,6 +139,6 @@ private:
   double last_cy_{0};
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

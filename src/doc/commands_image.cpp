@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <cstring>
 
-namespace brushpad {
+namespace lundukepaint {
 
 std::vector<std::uint8_t> copy_layer_pixels(const Layer& layer) {
   std::vector<std::uint8_t> out(static_cast<std::size_t>(layer.width()) *
@@ -68,4 +68,4 @@ Rect LayerBufferCommand::dirty_rect() const {
   return {0, 0, std::max(old_w_, new_w_), std::max(old_h_, new_h_)};
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

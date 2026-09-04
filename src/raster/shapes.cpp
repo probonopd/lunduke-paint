@@ -8,7 +8,7 @@
 #include <cmath>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 void fill_rect_color(std::uint8_t* rgba, int width, int height, int stride, Rect rect, Color color,
@@ -469,4 +469,4 @@ void stroke_polyline_mask(std::uint8_t* mask, int width, int height, const int* 
   }
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_RASTER_SHAPES_HPP
-#define BRUSHPAD_RASTER_SHAPES_HPP
+#ifndef LUNDUKEPAINT_RASTER_SHAPES_HPP
+#define LUNDUKEPAINT_RASTER_SHAPES_HPP
 
 #include "raster/types.hpp"
 
 #include <cstdint>
 
-namespace brushpad {
+namespace lundukepaint {
 
 enum class ShapeFillMode { Stroke, Fill, Both };
 
@@ -48,6 +48,6 @@ void stroke_polyline_mask(std::uint8_t* mask, int width, int height, const int* 
 void constrain_line_45(int x0, int y0, int* x1, int* y1);
 void constrain_square(int x0, int y0, int* x1, int* y1);
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

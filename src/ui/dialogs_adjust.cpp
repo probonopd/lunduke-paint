@@ -5,7 +5,7 @@
 #include <gtkmm/grid.h>
 #include <gtkmm/label.h>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 void setup_scale(Gtk::Scale& scale, double lo, double hi, double value) {
@@ -173,4 +173,4 @@ int BlurDialog::radius() const {
   return radius_.get_value_as_int();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

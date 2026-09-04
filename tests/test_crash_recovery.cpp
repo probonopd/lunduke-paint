@@ -11,12 +11,12 @@
 
 namespace {
 
-using brushpad::Color;
-using brushpad::Document;
-using brushpad::crash_recovery::autosave_path;
-using brushpad::crash_recovery::clear;
-using brushpad::crash_recovery::exists;
-using brushpad::crash_recovery::write_document;
+using lundukepaint::Color;
+using lundukepaint::Document;
+using lundukepaint::crash_recovery::autosave_path;
+using lundukepaint::crash_recovery::clear;
+using lundukepaint::crash_recovery::exists;
+using lundukepaint::crash_recovery::write_document;
 
 int expect(bool cond, const char* msg) {
   if (!cond) {
@@ -29,7 +29,7 @@ int expect(bool cond, const char* msg) {
 }  // namespace
 
 int main() {
-  char dir[] = "/tmp/brushpad-state-XXXXXX";
+  char dir[] = "/tmp/lunduke-paint-state-XXXXXX";
   if (mkdtemp(dir) == nullptr) {
     std::fprintf(stderr, "test_crash_recovery: mkdtemp failed\n");
     return 1;

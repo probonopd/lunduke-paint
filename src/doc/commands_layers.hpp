@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_DOC_COMMANDS_LAYERS_HPP
-#define BRUSHPAD_DOC_COMMANDS_LAYERS_HPP
+#ifndef LUNDUKEPAINT_DOC_COMMANDS_LAYERS_HPP
+#define LUNDUKEPAINT_DOC_COMMANDS_LAYERS_HPP
 
 #include "doc/command.hpp"
 #include "doc/layer.hpp"
@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class AddLayerCommand : public Command {
 public:
@@ -136,6 +136,6 @@ private:
   std::vector<LayerSnapshot> new_layers_;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

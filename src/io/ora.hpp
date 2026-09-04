@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_IO_ORA_HPP
-#define BRUSHPAD_IO_ORA_HPP
+#ifndef LUNDUKEPAINT_IO_ORA_HPP
+#define LUNDUKEPAINT_IO_ORA_HPP
 
 #include "doc/layer.hpp"
 
 #include <string>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Document;
 
@@ -24,6 +24,6 @@ struct LoadedOra {
 LoadedOra load_ora(const std::string& path);
 bool save_ora(const std::string& path, const Document& document, std::string& error);
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

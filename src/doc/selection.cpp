@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <cstring>
 
-namespace brushpad {
+namespace lundukepaint {
 
 Rect Selection::bounds() const {
   if (empty_) {
@@ -527,4 +527,4 @@ void copy_merged_rgba(const LayerStack& layers, const Selection& sel, int canvas
   }
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

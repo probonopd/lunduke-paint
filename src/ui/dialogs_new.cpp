@@ -7,7 +7,7 @@
 #include <gtkmm/grid.h>
 #include <gtkmm/label.h>
 
-namespace brushpad {
+namespace lundukepaint {
 
 NewImageDialog::NewImageDialog(Gtk::Window& parent, int width, int height)
     : Gtk::Dialog("New Image", parent, true),
@@ -88,4 +88,4 @@ bool NewImageDialog::oversized() const {
   return image_width() > kSoftMaxSide || image_height() > kSoftMaxSide;
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

@@ -10,7 +10,7 @@
 
 #include <utility>
 
-namespace brushpad {
+namespace lundukepaint {
 
 EffectPreview::EffectPreview(Document& document) : document_(&document) {
   layer_index_ = document.layers().active_index();
@@ -97,4 +97,4 @@ bool EffectPreview::commit(const std::string& name, const EffectFn& fn) {
   return true;
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

@@ -14,7 +14,7 @@
 #include <cmath>
 #include <memory>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class ColorEraserTool : public Tool {
 public:
@@ -158,4 +158,4 @@ Tool* create_color_eraser_tool() {
   return new ColorEraserTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

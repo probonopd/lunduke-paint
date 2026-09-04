@@ -16,7 +16,7 @@
 #include <memory>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class PolylineTool : public Tool {
 public:
@@ -195,4 +195,4 @@ Tool* create_polyline_tool() {
   return new PolylineTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

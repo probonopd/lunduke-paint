@@ -17,7 +17,7 @@
 #include <memory>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class PolygonTool : public Tool {
 public:
@@ -221,4 +221,4 @@ Tool* create_polygon_tool() {
   return new PolygonTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_APP_ACTIONS_HPP
-#define BRUSHPAD_APP_ACTIONS_HPP
+#ifndef LUNDUKEPAINT_APP_ACTIONS_HPP
+#define LUNDUKEPAINT_APP_ACTIONS_HPP
 
-namespace brushpad {
+namespace lundukepaint {
 namespace actions {
 
 constexpr const char* kAppId = "org.lunduke.LundukePaint";
@@ -76,6 +76,6 @@ constexpr const char* kClearRecent = "clear-recent";
 
 
 }  // namespace actions
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

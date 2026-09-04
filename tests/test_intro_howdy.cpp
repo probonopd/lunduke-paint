@@ -27,7 +27,7 @@ void render(double progress, int size_px, int& painted, int& rightmost) {
   const int h = 400;
   cairo_surface_t* surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
   cairo_t* cr = cairo_create(surface);
-  brushpad::intro::draw(cr, 40.0, 40.0, size_px, progress);
+  lundukepaint::intro::draw(cr, 40.0, 40.0, size_px, progress);
   cairo_surface_flush(surface);
   const unsigned char* data = cairo_image_surface_get_data(surface);
   const int stride = cairo_image_surface_get_stride(surface);
@@ -51,7 +51,7 @@ void render(double progress, int size_px, int& painted, int& rightmost) {
 }  // namespace
 
 int main() {
-  using namespace brushpad::intro;
+  using namespace lundukepaint::intro;
 
   expect(std::strcmp(text(), "howdy") == 0, "the greeting is howdy");
   expect(kDurationUs == 1000000, "duration is exactly 1 s");

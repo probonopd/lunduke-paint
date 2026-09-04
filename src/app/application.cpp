@@ -8,7 +8,7 @@
 #include <giomm/application.h>
 #include <gtkmm/icontheme.h>
 
-namespace brushpad {
+namespace lundukepaint {
 
 Glib::RefPtr<Application> Application::create() {
   return Glib::RefPtr<Application>(new Application());
@@ -127,4 +127,4 @@ void Application::on_action_quit() {
   quit();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

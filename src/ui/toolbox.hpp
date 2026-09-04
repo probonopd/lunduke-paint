@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_UI_TOOLBOX_HPP
-#define BRUSHPAD_UI_TOOLBOX_HPP
+#ifndef LUNDUKEPAINT_UI_TOOLBOX_HPP
+#define LUNDUKEPAINT_UI_TOOLBOX_HPP
 
 #include <functional>
 #include <glibmm/refptr.h>
@@ -16,7 +16,7 @@
 #include "raster/types.hpp"
 #include "ui/tool_selection.hpp"
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Toolbox : public Gtk::Box {
 public:
@@ -75,6 +75,6 @@ private:
   int next_row_ = 0;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

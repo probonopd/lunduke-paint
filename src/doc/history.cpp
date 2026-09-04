@@ -2,7 +2,7 @@
 
 #include "doc/history.hpp"
 
-namespace brushpad {
+namespace lundukepaint {
 
 History::History(int depth) {
   set_depth(depth);
@@ -104,4 +104,4 @@ void History::trim() {
   }
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_UI_COLORS_PANEL_HPP
-#define BRUSHPAD_UI_COLORS_PANEL_HPP
+#ifndef LUNDUKEPAINT_UI_COLORS_PANEL_HPP
+#define LUNDUKEPAINT_UI_COLORS_PANEL_HPP
 
 #include "raster/types.hpp"
 
@@ -11,7 +11,7 @@
 #include <gtkmm/label.h>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class ColorsPanel : public Gtk::Box {
 public:
@@ -37,6 +37,6 @@ private:
   int row_ = 0;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

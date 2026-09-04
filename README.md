@@ -4,7 +4,6 @@ Lunduke Paint is a traditional Linux X11 paint program built with GTK 3.24 and
 gtkmm-3.0. Look and feel: classic MS Paint + KolourPaint, with Pinta-style
 user layers.
 
-The **product name** is Lunduke Paint. The **project/code name** is Brushpad.
 
 - Binary: `lunduke-paint`
 - Application id: `org.lunduke.LundukePaint`
@@ -16,7 +15,7 @@ The **product name** is Lunduke Paint. The **project/code name** is Brushpad.
 - Theme: follows the active GTK3 theme; the app is not skinned
 - Native project file: OpenRaster `.ora` (libarchive + pugixml)
 - Version: 0.3
-- Config: `$XDG_CONFIG_HOME/lunduke-paint/brushpad.ini` via GKeyFile
+- Config: `$XDG_CONFIG_HOME/lunduke-paint/lunduke-paint.ini` via GKeyFile
 
 ## 0.3
 
@@ -42,7 +41,7 @@ What works:
   down (Ctrl+E), Flatten (Ctrl+Shift+E), Properties
 - Each layer op is one named, undoable Command
 - OpenRaster `.ora` read/write (`mimetype` uncompressed first, `stack.xml`,
-  `data/layer-N.png`, `mergedimage.png`; lock as `brushpad:locked`)
+  `data/layer-N.png`, `mergedimage.png`; lock as `lundukepaint:locked`)
 - Non-ORA files still open as a single layer named after the file
 - Save As can pick ora/png/jpeg/bmp; multi-layer flat export warns and can
   also keep a `.ora`; never silently overwrites an `.ora` with a flat PNG
@@ -96,7 +95,7 @@ sudo apt install -y build-essential meson ninja-build \
   libgtkmm-3.0-dev libcairomm-1.0-dev libgdk-pixbuf-2.0-dev \
   libarchive-dev libpugixml-dev
 
-cd brushpad
+cd lunduke-paint
 meson setup build
 meson compile -C build
 meson test -C build
@@ -153,9 +152,9 @@ part of the development loop. Target runtime: Linux X11 / XLibre + XFCE.
 - Hue/Saturation is a basic RGB↔HSV shift (hue ±180°, saturation ±100).
 - Posterize quantizes each RGB channel to 2–16 levels.
 - Box blur is separable with edge clamp; radius 1–16. Sharpen is a 3×3 unsharp kernel. Emboss is a 3×3 relief kernel with a +128 bias.
-- Preferences are `$XDG_CONFIG_HOME/lunduke-paint/brushpad.ini` via GKeyFile (default size, undo limit, checker colors, grid threshold).
+- Preferences are `$XDG_CONFIG_HOME/lunduke-paint/lunduke-paint.ini` via GKeyFile (default size, undo limit, checker colors, grid threshold).
 - Print is a single fit-to-page `Gtk::PrintOperation` of the visible composite, painted on white.
-- File menu includes Recent (local paths in brushpad.ini) and Revert. Edit includes Copy Merged. View includes Fullscreen (F11).
+- File menu includes Recent (local paths in lunduke-paint.ini) and Revert. Edit includes Copy Merged. View includes Fullscreen (F11).
 - Toolbox tool icons are Pinta scalable symbolic SVGs (Paint.NET/Pinta/Fluent MIT, Material Apache-2.0, some GIMP CC-BY-4.0) plus original spray/curve/polyline icons; see `data/icons/ATTRIBUTION.md`.
 
 ## Layout

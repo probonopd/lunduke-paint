@@ -8,7 +8,7 @@
 
 #include <utility>
 
-namespace brushpad {
+namespace lundukepaint {
 
 Document::Document(int width, int height, Color background, std::string layer_name)
     : width_(width), height_(height), canvas_bg_(background) {
@@ -448,4 +448,4 @@ void Document::rename_layer(int index, std::string name) {
                                              "Rename layer"));
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 void put_replace(std::uint8_t* p, Color color) {
@@ -311,4 +311,4 @@ void spray_dots(std::uint8_t* rgba, int width, int height, int stride, double cx
   }
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

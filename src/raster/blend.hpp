@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_RASTER_BLEND_HPP
-#define BRUSHPAD_RASTER_BLEND_HPP
+#ifndef LUNDUKEPAINT_RASTER_BLEND_HPP
+#define LUNDUKEPAINT_RASTER_BLEND_HPP
 
 #include "raster/types.hpp"
 
 #include <cstdint>
 
-namespace brushpad {
+namespace lundukepaint {
 
 enum class BlendMode {
   Normal = 0,
@@ -34,6 +34,6 @@ void blend_layer_rect(std::uint8_t* dest, int dest_w, int dest_h, int dest_strid
                       const std::uint8_t* src, int src_w, int src_h, int src_stride,
                       int offset_x, int offset_y, Rect dest_doc, BlendMode mode, float opacity);
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

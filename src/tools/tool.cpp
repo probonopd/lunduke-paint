@@ -4,7 +4,7 @@
 
 #include "doc/document.hpp"
 
-namespace brushpad {
+namespace lundukepaint {
 
 Color Tool::stroke_color(unsigned button) const {
   if (host_ == nullptr) {
@@ -27,4 +27,4 @@ bool Tool::ensure_editable() {
   return true;
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

@@ -17,7 +17,7 @@
 #include <cmath>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 constexpr double kZoomMin = 0.125;
@@ -980,4 +980,4 @@ void CanvasView::apply_zoom(double zoom) {
   signal_view_changed_.emit();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

@@ -7,7 +7,7 @@
 #include <gtkmm/grid.h>
 #include <gtkmm/label.h>
 
-namespace brushpad {
+namespace lundukepaint {
 
 CanvasSizeDialog::CanvasSizeDialog(Gtk::Window& parent, int width, int height)
     : Gtk::Dialog("Canvas Size", parent, true), bg_("Background color"),
@@ -145,4 +145,4 @@ bool ScaleImageDialog::oversized() const {
   return image_width() > kSoftMaxSide || image_height() > kSoftMaxSide;
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

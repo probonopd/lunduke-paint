@@ -7,7 +7,7 @@
 #include <cstring>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 Color get(const std::uint8_t* rgba, int stride, int x, int y) {
@@ -216,4 +216,4 @@ Rect autocrop_bounds(const std::uint8_t* rgba, int width, int height, int stride
   return {left, top, right - left + 1, bottom - top + 1};
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

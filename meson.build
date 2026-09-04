@@ -1,5 +1,5 @@
 project(
-  'brushpad',
+  'lunduke-paint',
   'cpp',
   version: '0.3',
   license: 'GPL-3.0-or-later',
@@ -21,16 +21,16 @@ pugixml_dep = dependency('pugixml')
 pangocairo_dep = dependency('pangocairo')
 
 gnome = import('gnome')
-brushpad_resources = gnome.compile_resources(
-  'brushpad-resources',
-  'data/brushpad.gresource.xml',
+lunduke_paint_resources = gnome.compile_resources(
+  'lunduke-paint-resources',
+  'data/lunduke-paint.gresource.xml',
   source_dir: 'data',
-  c_name: 'brushpad',
+  c_name: 'lunduke_paint',
 )
 
-brushpad_inc = include_directories('src')
+lunduke_paint_inc = include_directories('src')
 
-brushpad_core_sources = files(
+lunduke_paint_core_sources = files(
   'src/doc/document.cpp',
   'src/doc/workspace.cpp',
   'src/doc/layer.cpp',
@@ -53,14 +53,14 @@ brushpad_core_sources = files(
   'src/io/crash_recovery.cpp',
 )
 
-brushpad_core = static_library(
-  'brushpad_core',
-  brushpad_core_sources,
-  include_directories: brushpad_inc,
+lunduke_paint_core = static_library(
+  'lunduke_paint_core',
+  lunduke_paint_core_sources,
+  include_directories: lunduke_paint_inc,
   dependencies: [gdkpixbuf_dep, glib_dep, libarchive_dep, pugixml_dep],
 )
 
-brushpad_sources = files(
+lunduke_paint_sources = files(
   'src/main.cpp',
   'src/app/application.cpp',
   'src/app/main_window.cpp',
@@ -103,11 +103,11 @@ brushpad_sources = files(
 
 executable(
   'lunduke-paint',
-  brushpad_sources,
-  brushpad_resources,
+  lunduke_paint_sources,
+  lunduke_paint_resources,
   dependencies: [gtkmm_dep, cairomm_dep, gdkpixbuf_dep, pangocairo_dep],
-  include_directories: brushpad_inc,
-  link_with: brushpad_core,
+  include_directories: lunduke_paint_inc,
+  link_with: lunduke_paint_core,
   install: true,
 )
 
@@ -121,8 +121,8 @@ test('dummy', test_dummy)
 test_fill = executable(
   'test_fill',
   files('tests/test_fill.cpp'),
-  include_directories: brushpad_inc,
-  link_with: brushpad_core,
+  include_directories: lunduke_paint_inc,
+  link_with: lunduke_paint_core,
   install: false,
 )
 test('fill', test_fill)
@@ -130,8 +130,8 @@ test('fill', test_fill)
 test_history = executable(
   'test_history',
   files('tests/test_history.cpp'),
-  include_directories: brushpad_inc,
-  link_with: brushpad_core,
+  include_directories: lunduke_paint_inc,
+  link_with: lunduke_paint_core,
   install: false,
 )
 test('history', test_history)
@@ -139,8 +139,8 @@ test('history', test_history)
 test_selection = executable(
   'test_selection',
   files('tests/test_selection.cpp'),
-  include_directories: brushpad_inc,
-  link_with: brushpad_core,
+  include_directories: lunduke_paint_inc,
+  link_with: lunduke_paint_core,
   install: false,
 )
 test('selection', test_selection)
@@ -148,8 +148,8 @@ test('selection', test_selection)
 test_transform = executable(
   'test_transform',
   files('tests/test_transform.cpp'),
-  include_directories: brushpad_inc,
-  link_with: brushpad_core,
+  include_directories: lunduke_paint_inc,
+  link_with: lunduke_paint_core,
   install: false,
 )
 test('transform', test_transform)
@@ -157,8 +157,8 @@ test('transform', test_transform)
 test_blend = executable(
   'test_blend',
   files('tests/test_blend.cpp'),
-  include_directories: brushpad_inc,
-  link_with: brushpad_core,
+  include_directories: lunduke_paint_inc,
+  link_with: lunduke_paint_core,
   install: false,
 )
 test('blend', test_blend)
@@ -166,8 +166,8 @@ test('blend', test_blend)
 test_ora = executable(
   'test_ora',
   files('tests/test_ora.cpp'),
-  include_directories: brushpad_inc,
-  link_with: brushpad_core,
+  include_directories: lunduke_paint_inc,
+  link_with: lunduke_paint_core,
   dependencies: [gdkpixbuf_dep, libarchive_dep, pugixml_dep],
   install: false,
 )
@@ -176,8 +176,8 @@ test('ora', test_ora)
 test_stroke = executable(
   'test_stroke',
   files('tests/test_stroke.cpp'),
-  include_directories: brushpad_inc,
-  link_with: brushpad_core,
+  include_directories: lunduke_paint_inc,
+  link_with: lunduke_paint_core,
   install: false,
 )
 test('stroke', test_stroke)
@@ -185,8 +185,8 @@ test('stroke', test_stroke)
 test_effects = executable(
   'test_effects',
   files('tests/test_effects.cpp'),
-  include_directories: brushpad_inc,
-  link_with: brushpad_core,
+  include_directories: lunduke_paint_inc,
+  link_with: lunduke_paint_core,
   install: false,
 )
 test('effects', test_effects)
@@ -194,8 +194,8 @@ test('effects', test_effects)
 test_crash_recovery = executable(
   'test_crash_recovery',
   files('tests/test_crash_recovery.cpp'),
-  include_directories: brushpad_inc,
-  link_with: brushpad_core,
+  include_directories: lunduke_paint_inc,
+  link_with: lunduke_paint_core,
   dependencies: [gdkpixbuf_dep, glib_dep, libarchive_dep, pugixml_dep],
   install: false,
 )
@@ -204,8 +204,8 @@ test('crash_recovery', test_crash_recovery)
 test_effect_preview = executable(
   'test_effect_preview',
   files('tests/test_effect_preview.cpp'),
-  include_directories: brushpad_inc,
-  link_with: brushpad_core,
+  include_directories: lunduke_paint_inc,
+  link_with: lunduke_paint_core,
   install: false,
 )
 test('effect_preview', test_effect_preview)
@@ -215,7 +215,7 @@ test('effect_preview', test_effect_preview)
 test_intro_howdy = executable(
   'test_intro_howdy',
   files('tests/test_intro_howdy.cpp', 'src/ui/intro_howdy.cpp'),
-  include_directories: brushpad_inc,
+  include_directories: lunduke_paint_inc,
   dependencies: [pangocairo_dep, glib_dep],
   install: false,
 )
@@ -227,10 +227,10 @@ test_widgets = executable(
   'test_widgets',
   files('tests/test_widgets.cpp', 'src/ui/canvas_view.cpp', 'src/ui/toolbox.cpp',
         'src/ui/intro_howdy.cpp', 'src/tools/tool.cpp', 'src/tools/selection_xform.cpp'),
-  brushpad_resources,
-  include_directories: brushpad_inc,
+  lunduke_paint_resources,
+  include_directories: lunduke_paint_inc,
   dependencies: [gtkmm_dep, cairomm_dep, gdkpixbuf_dep, pangocairo_dep],
-  link_with: brushpad_core,
+  link_with: lunduke_paint_core,
   install: false,
 )
 test('widgets', test_widgets)
@@ -238,8 +238,8 @@ test('widgets', test_widgets)
 test_copy_merged = executable(
   'test_copy_merged',
   files('tests/test_copy_merged.cpp'),
-  include_directories: brushpad_inc,
-  link_with: brushpad_core,
+  include_directories: lunduke_paint_inc,
+  link_with: lunduke_paint_core,
   dependencies: [gdkpixbuf_dep],
   install: false,
 )

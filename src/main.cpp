@@ -11,6 +11,6 @@ int main(int argc, char* argv[]) {
     g_setenv("GDK_BACKEND", "x11", FALSE);
   }
 
-  auto app = brushpad::Application::create();
+  auto app = lundukepaint::Application::create();
   return app->run(argc, argv);
 }

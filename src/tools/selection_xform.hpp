@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_TOOLS_SELECTION_XFORM_HPP
-#define BRUSHPAD_TOOLS_SELECTION_XFORM_HPP
+#ifndef LUNDUKEPAINT_TOOLS_SELECTION_XFORM_HPP
+#define LUNDUKEPAINT_TOOLS_SELECTION_XFORM_HPP
 
 #include "raster/types.hpp"
 #include "tools/tool.hpp"
@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Selection;
 
@@ -39,6 +39,6 @@ private:
   double start_angle_ = 0;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

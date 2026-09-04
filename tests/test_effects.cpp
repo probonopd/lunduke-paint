@@ -9,11 +9,11 @@
 
 namespace {
 
-using brushpad::Color;
-using brushpad::Document;
-using brushpad::Layer;
-using brushpad::PixelPatchCommand;
-using brushpad::Rect;
+using lundukepaint::Color;
+using lundukepaint::Document;
+using lundukepaint::Layer;
+using lundukepaint::PixelPatchCommand;
+using lundukepaint::Rect;
 
 int expect(bool cond, const char* msg) {
   if (!cond) {
@@ -53,7 +53,7 @@ int main() {
     set(buf.data(), stride, 1, 0, Color{255, 128, 0, 200});
     set(buf.data(), stride, 0, 1, Color{10, 20, 30, 0});
     set(buf.data(), stride, 1, 1, Color{255, 255, 255, 255});
-    brushpad::invert_rgba(buf.data(), w, h, stride);
+    lundukepaint::invert_rgba(buf.data(), w, h, stride);
     errors += expect(get(buf.data(), stride, 0, 0) == (Color{255, 255, 255, 255}),
                      "invert black -> white");
     errors += expect(get(buf.data(), stride, 1, 0) == (Color{0, 127, 255, 200}),
@@ -68,7 +68,7 @@ int main() {
     const int w = 1;
     const int h = 1;
     std::vector<std::uint8_t> buf{255, 0, 0, 255};
-    brushpad::grayscale_rgba(buf.data(), w, h, 4);
+    lundukepaint::grayscale_rgba(buf.data(), w, h, 4);
     errors += expect(buf[0] == buf[1] && buf[1] == buf[2], "grayscale equal channels");
     errors += expect(buf[0] > 0 && buf[0] < 255, "red luma is mid-dark");
     errors += expect(buf[3] == 255, "grayscale keeps alpha");
@@ -80,7 +80,7 @@ int main() {
     Layer& layer = doc->layers().active_layer();
     Layer before(layer.width(), layer.height(), Color::transparent(), "before");
     before.copy_from(layer);
-    brushpad::invert_rgba(layer.pixels(), layer.width(), layer.height(), layer.stride());
+    lundukepaint::invert_rgba(layer.pixels(), layer.width(), layer.height(), layer.stride());
     Layer after(layer.width(), layer.height(), Color::transparent(), "after");
     after.copy_from(layer);
     auto cmd = PixelPatchCommand::from_layers(before, after, Rect{0, 0, 4, 3}, "Invert");
@@ -104,7 +104,7 @@ int main() {
       src[static_cast<std::size_t>(i)] = 255;
     }
     set(src.data(), stride, 1, 1, Color{255, 255, 255, 255});
-    brushpad::box_blur_rgba(src.data(), w, h, stride, dest.data(), stride, 1);
+    lundukepaint::box_blur_rgba(src.data(), w, h, stride, dest.data(), stride, 1);
     const Color center = get(dest.data(), stride, 1, 1);
     errors += expect(center.r < 255 && center.r > 0, "blur softens white center");
     errors += expect(center.a == 255, "blur keeps opaque alpha at center");
@@ -118,7 +118,7 @@ int main() {
     before.copy_from(layer);
     std::vector<std::uint8_t> out(static_cast<std::size_t>(layer.stride()) *
                                  static_cast<std::size_t>(layer.height()));
-    brushpad::box_blur_rgba(layer.pixels(), layer.width(), layer.height(), layer.stride(),
+    lundukepaint::box_blur_rgba(layer.pixels(), layer.width(), layer.height(), layer.stride(),
                             out.data(), layer.stride(), 1);
     layer.write_rect(Rect{0, 0, 3, 3}, out.data());
     Layer after(layer.width(), layer.height(), Color::transparent(), "after");

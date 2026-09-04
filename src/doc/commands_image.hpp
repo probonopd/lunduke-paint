@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_DOC_COMMANDS_IMAGE_HPP
-#define BRUSHPAD_DOC_COMMANDS_IMAGE_HPP
+#ifndef LUNDUKEPAINT_DOC_COMMANDS_IMAGE_HPP
+#define LUNDUKEPAINT_DOC_COMMANDS_IMAGE_HPP
 
 #include "doc/command.hpp"
 
@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Layer;
 
@@ -40,6 +40,6 @@ private:
 
 std::vector<std::uint8_t> copy_layer_pixels(const Layer& layer);
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

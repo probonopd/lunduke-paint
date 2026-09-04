@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_RASTER_TYPES_HPP
-#define BRUSHPAD_RASTER_TYPES_HPP
+#ifndef LUNDUKEPAINT_RASTER_TYPES_HPP
+#define LUNDUKEPAINT_RASTER_TYPES_HPP
 
 #include <algorithm>
 #include <cstdint>
 
-namespace brushpad {
+namespace lundukepaint {
 
 struct Color {
   std::uint8_t r = 0;
@@ -96,6 +96,6 @@ constexpr int kSoftMaxLayers = 64;
 constexpr int kThumbWidth = 48;
 constexpr int kThumbHeight = 36;
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

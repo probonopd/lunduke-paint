@@ -16,11 +16,11 @@
 #include <map>
 #include <sstream>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 constexpr const char* kMimetype = "image/openraster";
-constexpr const char* kBrushpadNs = "http://brushpad.org/ns";
+constexpr const char* kLundukePaintNs = "http://lunduke.com/ns/lunduke-paint";
 
 struct ZipEntry {
   std::string path;
@@ -130,7 +130,7 @@ std::string make_stack_xml(const Document& document) {
   image.append_attribute("version") = "0.0.3";
   image.append_attribute("w") = document.width();
   image.append_attribute("h") = document.height();
-  image.append_attribute("xmlns:brushpad") = kBrushpadNs;
+  image.append_attribute("xmlns:lundukepaint") = kLundukePaintNs;
   auto stack = image.append_child("stack");
   for (int i = document.layers().count() - 1; i >= 0; --i) {
     const Layer& layer = document.layers().at(i);
@@ -143,7 +143,7 @@ std::string make_stack_xml(const Document& document) {
     node.append_attribute("opacity") = layer.opacity();
     node.append_attribute("visibility") = layer.visible() ? "visible" : "hidden";
     node.append_attribute("composite-op") = blend_mode_ora_op(layer.blend());
-    node.append_attribute("brushpad:locked") = layer.locked() ? "true" : "false";
+    node.append_attribute("lundukepaint:locked") = layer.locked() ? "true" : "false";
   }
   std::ostringstream out;
   xml.save(out, "  ");
@@ -312,7 +312,13 @@ LoadedOra load_ora(const std::string& path) {
     snap.blend = blend_mode_from_ora(node.attribute("composite-op").as_string("svg:src-over"));
     const char* locked = node.attribute("locked").as_string(nullptr);
     if (locked == nullptr) {
-      locked = node.attribute("brushpad:locked").as_string("false");
+      locked = node.attribute("lundukepaint:locked").as_string(nullptr);
+    }
+    if (locked == nullptr) {
+      locked = node.attribute("brushpad:locked").as_string(nullptr);
+    }
+    if (locked == nullptr) {
+      locked = "false";
     }
     snap.locked = std::strcmp(locked, "true") == 0 || std::strcmp(locked, "1") == 0;
     const char* src = node.attribute("src").as_string("");
@@ -342,4 +348,4 @@ LoadedOra load_ora(const std::string& path) {
   return out;
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

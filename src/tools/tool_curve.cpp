@@ -15,7 +15,7 @@
 #include <cmath>
 #include <memory>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class CurveTool : public Tool {
 public:
@@ -243,4 +243,4 @@ Tool* create_curve_tool() {
   return new CurveTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

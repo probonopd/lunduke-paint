@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_APP_MAIN_WINDOW_HPP
-#define BRUSHPAD_APP_MAIN_WINDOW_HPP
+#ifndef LUNDUKEPAINT_APP_MAIN_WINDOW_HPP
+#define LUNDUKEPAINT_APP_MAIN_WINDOW_HPP
 
 #include "app/preferences.hpp"
 #include "doc/document.hpp"
@@ -33,7 +33,7 @@
 #include <gtkmm/selectiondata.h>
 #include <sigc++/connection.h>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class LivePreviewDialog;
 
@@ -216,6 +216,6 @@ private:
   sigc::connection recovery_timer_;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

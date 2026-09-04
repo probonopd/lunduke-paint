@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_RASTER_STROKE_HPP
-#define BRUSHPAD_RASTER_STROKE_HPP
+#ifndef LUNDUKEPAINT_RASTER_STROKE_HPP
+#define LUNDUKEPAINT_RASTER_STROKE_HPP
 
 #include "raster/types.hpp"
 
 #include <cstdint>
 
-namespace brushpad {
+namespace lundukepaint {
 
 // Hard square stamp, no anti-alias. size is N×N pixels.
 void stamp_square(std::uint8_t* rgba, int width, int height, int stride, int cx, int cy,
@@ -35,6 +35,6 @@ void color_erase_stroke(std::uint8_t* rgba, int width, int height, int stride, d
 void spray_dots(std::uint8_t* rgba, int width, int height, int stride, double cx, double cy,
                 int radius, int density, Color color, std::uint32_t* rng, Rect* dirty);
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

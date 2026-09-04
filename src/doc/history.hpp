@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_DOC_HISTORY_HPP
-#define BRUSHPAD_DOC_HISTORY_HPP
+#ifndef LUNDUKEPAINT_DOC_HISTORY_HPP
+#define LUNDUKEPAINT_DOC_HISTORY_HPP
 
 #include "doc/command.hpp"
 
@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Document;
 
@@ -49,6 +49,6 @@ private:
   int depth_ = kDefaultUndoDepth;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

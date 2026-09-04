@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 Rect canvas_rect(const Document& document) {
@@ -161,4 +161,4 @@ Rect AllLayersBufferCommand::dirty_rect() const {
   return {0, 0, std::max(old_w_, new_w_), std::max(old_h_, new_h_)};
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

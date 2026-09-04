@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-namespace brushpad {
+namespace lundukepaint {
 
 void blit_rgba_buffer(std::uint8_t* dest, int dw, int dh, int dstride, int dx, int dy,
                       const std::uint8_t* src, int sw, int sh, int sstride, bool skip_transparent,
@@ -56,4 +56,4 @@ void blit_rgba_buffer(std::uint8_t* dest, int dw, int dh, int dstride, int dx, i
   }
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

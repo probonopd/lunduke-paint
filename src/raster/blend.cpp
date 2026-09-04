@@ -6,7 +6,7 @@
 #include <cstring>
 #include <string>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 inline std::uint8_t clamp_u8(int v) {
@@ -178,4 +178,4 @@ void blend_layer_rect(std::uint8_t* dest, int dest_w, int dest_h, int dest_strid
   }
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

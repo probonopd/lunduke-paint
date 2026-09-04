@@ -4,7 +4,7 @@
 
 #include "tools/tool.hpp"
 
-namespace brushpad {
+namespace lundukepaint {
 
 ToolOptionsBar::ToolOptionsBar() : Gtk::Box(Gtk::ORIENTATION_HORIZONTAL, 6) {
   set_border_width(4);
@@ -33,4 +33,4 @@ void ToolOptionsBar::show_tool(Tool* tool) {
   }
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

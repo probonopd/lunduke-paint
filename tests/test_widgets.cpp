@@ -29,11 +29,11 @@
 
 namespace {
 
-using brushpad::CanvasView;
-using brushpad::Color;
-using brushpad::Document;
-using brushpad::Layer;
-using brushpad::Toolbox;
+using lundukepaint::CanvasView;
+using lundukepaint::Color;
+using lundukepaint::Document;
+using lundukepaint::Layer;
+using lundukepaint::Toolbox;
 
 int errors = 0;
 

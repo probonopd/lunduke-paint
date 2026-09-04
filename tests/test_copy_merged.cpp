@@ -8,9 +8,9 @@
 
 namespace {
 
-using brushpad::Color;
-using brushpad::Document;
-using brushpad::Rect;
+using lundukepaint::Color;
+using lundukepaint::Document;
+using lundukepaint::Rect;
 
 int expect(bool cond, const char* msg) {
   if (!cond) {
@@ -37,14 +37,14 @@ int main() {
   int w = 0;
   int h = 0;
   std::vector<std::uint8_t> rgba;
-  brushpad::copy_merged_rgba(doc->layers(), doc->selection(), doc->width(), doc->height(), w, h,
+  lundukepaint::copy_merged_rgba(doc->layers(), doc->selection(), doc->width(), doc->height(), w, h,
                              rgba);
   errors += expect(w == 4 && h == 2, "full size");
   errors += expect(get(rgba, w, 0, 0) == Color{0, 0, 255, 255}, "top pixel visible");
   errors += expect(get(rgba, w, 1, 0) == Color{255, 0, 0, 255}, "bottom layer shows");
 
   doc->selection().set_rect(Rect{0, 0, 1, 1});
-  brushpad::copy_merged_rgba(doc->layers(), doc->selection(), doc->width(), doc->height(), w, h,
+  lundukepaint::copy_merged_rgba(doc->layers(), doc->selection(), doc->width(), doc->height(), w, h,
                              rgba);
   errors += expect(w == 1 && h == 1, "clipped size");
   errors += expect(get(rgba, w, 0, 0) == Color{0, 0, 255, 255}, "clipped pixel");

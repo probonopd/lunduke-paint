@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_DOC_COMMANDS_PIXELS_HPP
-#define BRUSHPAD_DOC_COMMANDS_PIXELS_HPP
+#ifndef LUNDUKEPAINT_DOC_COMMANDS_PIXELS_HPP
+#define LUNDUKEPAINT_DOC_COMMANDS_PIXELS_HPP
 
 #include "doc/command.hpp"
 
@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Layer;
 
@@ -44,6 +44,6 @@ private:
   std::vector<Tile> tiles_;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

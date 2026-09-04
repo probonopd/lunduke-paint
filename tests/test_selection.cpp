@@ -10,12 +10,12 @@
 
 namespace {
 
-using brushpad::Color;
-using brushpad::Document;
-using brushpad::Layer;
-using brushpad::PixelPatchCommand;
-using brushpad::Rect;
-using brushpad::Selection;
+using lundukepaint::Color;
+using lundukepaint::Document;
+using lundukepaint::Layer;
+using lundukepaint::PixelPatchCommand;
+using lundukepaint::Rect;
+using lundukepaint::Selection;
 
 int expect(bool cond, const char* msg) {
   if (!cond) {
@@ -48,7 +48,7 @@ int main() {
   Layer before(layer.width(), layer.height(), Color::transparent(), "before");
   before.copy_from(layer);
   Rect dirty{};
-  brushpad::fill_selection(layer, sel, Color::transparent(), &dirty);
+  lundukepaint::fill_selection(layer, sel, Color::transparent(), &dirty);
   errors += expect(layer.pixel(2, 2).fully_transparent(), "delete punches transparency");
   errors += expect(layer.pixel(0, 0) == Color::white(), "outside selection stays");
   auto cmd = PixelPatchCommand::from_layers(before, layer, dirty, "Delete");
@@ -66,7 +66,7 @@ int main() {
   sel.set_rect({1, 1, 3, 3});
   // After redo the hole is transparent; recopy from a filled source.
   layer.fill_rect({1, 1, 3, 3}, Color{10, 20, 30, 255});
-  brushpad::copy_selection_rgba(layer, sel, 8, 6, cw, ch, copied);
+  lundukepaint::copy_selection_rgba(layer, sel, 8, 6, cw, ch, copied);
   errors += expect(cw == 3 && ch == 3, "copy size matches rect");
   errors += expect(copied.size() == 3u * 3u * 4u, "copy buffer size");
   errors += expect(copied[0] == 10 && copied[1] == 20 && copied[2] == 30 && copied[3] == 255,
@@ -78,7 +78,7 @@ int main() {
     const int ew = 12;
     const int eh = 10;
     std::vector<std::uint8_t> emask(static_cast<std::size_t>(ew * eh), 0);
-    brushpad::fill_ellipse_mask(emask.data(), ew, eh);
+    lundukepaint::fill_ellipse_mask(emask.data(), ew, eh);
     ellipse.set_mask({1, 1, ew, eh}, std::move(emask));
     errors += expect(ellipse.contains(1 + ew / 2, 1 + eh / 2), "ellipse center selected");
     errors += expect(!ellipse.contains(1, 1), "ellipse sharp corner not selected");
@@ -91,7 +91,7 @@ int main() {
     const int w = 8;
     const int h = 8;
     std::vector<std::uint8_t> lmask(static_cast<std::size_t>(w * h), 0);
-    brushpad::fill_polygon_mask(lmask.data(), w, h, xs, ys, 3);
+    lundukepaint::fill_polygon_mask(lmask.data(), w, h, xs, ys, 3);
     lasso.set_mask({2, 2, w, h}, std::move(lmask));
     errors += expect(lasso.contains(2 + 2, 2 + 4), "lasso interior selected");
     errors += expect(!lasso.contains(2 + 7, 2 + 0), "lasso far corner not selected");

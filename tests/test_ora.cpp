@@ -13,13 +13,13 @@
 
 namespace {
 
-using brushpad::BlendMode;
-using brushpad::Color;
-using brushpad::Document;
-using brushpad::Layer;
-using brushpad::LoadedOra;
-using brushpad::load_ora;
-using brushpad::save_ora;
+using lundukepaint::BlendMode;
+using lundukepaint::Color;
+using lundukepaint::Document;
+using lundukepaint::Layer;
+using lundukepaint::LoadedOra;
+using lundukepaint::load_ora;
+using lundukepaint::save_ora;
 
 int expect(bool cond, const char* msg) {
   if (!cond) {
@@ -30,7 +30,7 @@ int expect(bool cond, const char* msg) {
 }
 
 std::string temp_ora_path() {
-  char path[] = "/tmp/brushpad-ora-XXXXXX";
+  char path[] = "/tmp/lunduke-paint-ora-XXXXXX";
   const int fd = mkstemp(path);
   if (fd >= 0) {
     close(fd);

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_UI_TOOL_SELECTION_HPP
-#define BRUSHPAD_UI_TOOL_SELECTION_HPP
+#ifndef LUNDUKEPAINT_UI_TOOL_SELECTION_HPP
+#define LUNDUKEPAINT_UI_TOOL_SELECTION_HPP
 
 #include <cstddef>
 #include <string>
@@ -8,7 +8,7 @@
 
 // Widget-free bookkeeping for the toolbox' selected-tool highlight, so the
 // "which button is lit" logic can be tested without a display.
-namespace brushpad {
+namespace lundukepaint {
 namespace toolbox_style {
 
 // CSS class carried by every tool button (reserves the selected border so the
@@ -96,6 +96,6 @@ private:
   std::string active_id_;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

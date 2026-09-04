@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_UI_DIALOGS_ADJUST_HPP
-#define BRUSHPAD_UI_DIALOGS_ADJUST_HPP
+#ifndef LUNDUKEPAINT_UI_DIALOGS_ADJUST_HPP
+#define LUNDUKEPAINT_UI_DIALOGS_ADJUST_HPP
 
 #include <functional>
 #include <glibmm/ustring.h>
@@ -12,7 +12,7 @@
 #include <gtkmm/spinbutton.h>
 #include <gtkmm/window.h>
 
-namespace brushpad {
+namespace lundukepaint {
 
 // Shared "Live Preview" plumbing for the adjustment dialogs. With the check
 // button on, every slider tick fires on_preview so the caller can repaint the
@@ -86,6 +86,6 @@ private:
   Gtk::SpinButton radius_;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

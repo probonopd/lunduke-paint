@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_APP_APPLICATION_HPP
-#define BRUSHPAD_APP_APPLICATION_HPP
+#ifndef LUNDUKEPAINT_APP_APPLICATION_HPP
+#define LUNDUKEPAINT_APP_APPLICATION_HPP
 
 #include <giomm/file.h>
 #include <glibmm/refptr.h>
 #include <gtkmm/application.h>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class MainWindow;
 
@@ -36,6 +36,6 @@ private:
   MainWindow* window_{nullptr};
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

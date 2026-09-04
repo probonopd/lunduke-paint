@@ -11,11 +11,11 @@
 
 namespace {
 
-using brushpad::Color;
-using brushpad::Document;
-using brushpad::Layer;
-using brushpad::PixelPatchCommand;
-using brushpad::Rect;
+using lundukepaint::Color;
+using lundukepaint::Document;
+using lundukepaint::Layer;
+using lundukepaint::PixelPatchCommand;
+using lundukepaint::Rect;
 
 int expect(bool cond, const char* msg) {
   if (!cond) {
@@ -50,7 +50,7 @@ int main() {
     Layer before(layer.width(), layer.height(), Color::transparent(), "before");
     before.copy_from(layer);
     Rect dirty{};
-    brushpad::stroke_pencil(layer.pixels(), layer.width(), layer.height(), layer.stride(), 1, 1, 10,
+    lundukepaint::stroke_pencil(layer.pixels(), layer.width(), layer.height(), layer.stride(), 1, 1, 10,
                             7, 2, Color::black(), &dirty);
     Layer after(layer.width(), layer.height(), Color::transparent(), "after");
     after.copy_from(layer);
@@ -76,7 +76,7 @@ int main() {
     Layer before(layer.width(), layer.height(), Color::transparent(), "before");
     before.copy_from(layer);
     Rect dirty{};
-    brushpad::flood_fill(layer.pixels(), layer.width(), layer.height(), layer.stride(), 0, 0,
+    lundukepaint::flood_fill(layer.pixels(), layer.width(), layer.height(), layer.stride(), 0, 0,
                          Color{0, 128, 255, 255}, 0, &dirty);
     Layer after(layer.width(), layer.height(), Color::transparent(), "after");
     after.copy_from(layer);
@@ -101,7 +101,7 @@ int main() {
     Layer before1(layer.width(), layer.height(), Color::transparent(), "b1");
     before1.copy_from(layer);
     Rect dirty1{};
-    brushpad::stroke_pencil(layer.pixels(), layer.width(), layer.height(), layer.stride(), 2, 2, 6,
+    lundukepaint::stroke_pencil(layer.pixels(), layer.width(), layer.height(), layer.stride(), 2, 2, 6,
                             4, 1, Color::black(), &dirty1);
     Layer after1(layer.width(), layer.height(), Color::transparent(), "a1");
     after1.copy_from(layer);
@@ -112,7 +112,7 @@ int main() {
     Layer before2(layer.width(), layer.height(), Color::transparent(), "b2");
     before2.copy_from(layer);
     Rect dirty2{};
-    brushpad::flood_fill(layer.pixels(), layer.width(), layer.height(), layer.stride(), 0, 0,
+    lundukepaint::flood_fill(layer.pixels(), layer.width(), layer.height(), layer.stride(), 0, 0,
                          Color{0, 128, 255, 255}, 0, &dirty2);
     Layer after2(layer.width(), layer.height(), Color::transparent(), "a2");
     after2.copy_from(layer);

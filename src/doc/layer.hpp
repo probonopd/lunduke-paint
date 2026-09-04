@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_DOC_LAYER_HPP
-#define BRUSHPAD_DOC_LAYER_HPP
+#ifndef LUNDUKEPAINT_DOC_LAYER_HPP
+#define LUNDUKEPAINT_DOC_LAYER_HPP
 
 #include "raster/blend.hpp"
 #include "raster/types.hpp"
@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Layer;
 
@@ -99,6 +99,6 @@ private:
   mutable bool thumb_valid_ = false;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

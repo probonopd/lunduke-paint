@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_DOC_EFFECT_PREVIEW_HPP
-#define BRUSHPAD_DOC_EFFECT_PREVIEW_HPP
+#ifndef LUNDUKEPAINT_DOC_EFFECT_PREVIEW_HPP
+#define LUNDUKEPAINT_DOC_EFFECT_PREVIEW_HPP
 
 #include "raster/types.hpp"
 
@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Document;
 class Layer;
@@ -59,6 +59,6 @@ private:
   bool previewing_ = false;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_RASTER_TRANSFORM_HPP
-#define BRUSHPAD_RASTER_TRANSFORM_HPP
+#ifndef LUNDUKEPAINT_RASTER_TRANSFORM_HPP
+#define LUNDUKEPAINT_RASTER_TRANSFORM_HPP
 
 #include "raster/types.hpp"
 
 #include <cstdint>
 
-namespace brushpad {
+namespace lundukepaint {
 
 void flip_h(std::uint8_t* rgba, int width, int height, int stride);
 void flip_v(std::uint8_t* rgba, int width, int height, int stride);
@@ -32,6 +32,6 @@ void crop_rect(const std::uint8_t* src, int src_w, int src_h, int src_stride, Re
 // Trim uniform-color borders. Returns a 1×1 rect if the whole buffer is uniform.
 Rect autocrop_bounds(const std::uint8_t* rgba, int width, int height, int stride);
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

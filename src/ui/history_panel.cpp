@@ -7,7 +7,7 @@
 #include <gtkmm/label.h>
 #include <gtkmm/listboxrow.h>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 class HistoryRow : public Gtk::ListBoxRow {
@@ -87,4 +87,4 @@ void HistoryPanel::on_row_activated(Gtk::ListBoxRow* row) {
   on_jump(hrow->history_index);
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

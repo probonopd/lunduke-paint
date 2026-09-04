@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_UI_HISTORY_PANEL_HPP
-#define BRUSHPAD_UI_HISTORY_PANEL_HPP
+#ifndef LUNDUKEPAINT_UI_HISTORY_PANEL_HPP
+#define LUNDUKEPAINT_UI_HISTORY_PANEL_HPP
 
 #include <functional>
 #include <gtkmm/box.h>
 #include <gtkmm/listbox.h>
 #include <gtkmm/scrolledwindow.h>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Document;
 
@@ -31,6 +31,6 @@ private:
   Gtk::ListBox list_;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

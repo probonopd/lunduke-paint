@@ -4,7 +4,7 @@
 
 #include <stdexcept>
 
-namespace brushpad {
+namespace lundukepaint {
 
 Document& Workspace::active() {
   return at(active_);
@@ -98,4 +98,4 @@ bool Workspace::is_placeholder(int index) const {
          doc.layers().count() == 1;
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

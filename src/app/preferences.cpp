@@ -9,7 +9,7 @@
 #include <glibmm/keyfile.h>
 #include <glibmm/miscutils.h>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 std::string color_to_hex(Color c) {
@@ -44,7 +44,7 @@ std::string Preferences::config_dir() {
 }
 
 std::string Preferences::config_path() {
-  return Glib::build_filename(config_dir(), "brushpad.ini");
+  return Glib::build_filename(config_dir(), "lunduke-paint.ini");
 }
 
 void Preferences::load() {
@@ -52,7 +52,18 @@ void Preferences::load() {
   try {
     key.load_from_file(config_path());
   } catch (const Glib::Error&) {
-    return;
+    // One-shot migration from the legacy config filename.
+    try {
+      const std::string legacy =
+          Glib::build_filename(config_dir(), "brushpad.ini");
+      key.load_from_file(legacy);
+      try {
+        key.save_to_file(config_path());
+      } catch (const Glib::Error&) {
+      }
+    } catch (const Glib::Error&) {
+      return;
+    }
   }
 
   try {
@@ -149,4 +160,4 @@ bool Preferences::save() const {
   }
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

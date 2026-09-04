@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_RASTER_EFFECTS_HPP
-#define BRUSHPAD_RASTER_EFFECTS_HPP
+#ifndef LUNDUKEPAINT_RASTER_EFFECTS_HPP
+#define LUNDUKEPAINT_RASTER_EFFECTS_HPP
 
 #include <cstdint>
 
-namespace brushpad {
+namespace lundukepaint {
 
 // In-place adjustments. Alpha is left unchanged.
 void invert_rgba(std::uint8_t* rgba, int width, int height, int stride);
@@ -29,6 +29,6 @@ void sharpen_rgba(const std::uint8_t* src, int width, int height, int src_stride
 void emboss_rgba(const std::uint8_t* src, int width, int height, int src_stride,
                  std::uint8_t* dest, int dest_stride);
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

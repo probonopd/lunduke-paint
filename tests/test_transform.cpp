@@ -9,10 +9,10 @@
 
 namespace {
 
-using brushpad::Color;
-using brushpad::Document;
-using brushpad::Layer;
-using brushpad::LayerBufferCommand;
+using lundukepaint::Color;
+using lundukepaint::Document;
+using lundukepaint::Layer;
+using lundukepaint::LayerBufferCommand;
 
 int expect(bool cond, const char* msg) {
   if (!cond) {
@@ -53,21 +53,21 @@ int main() {
     set(0, 1, C);
     set(1, 1, D);
     std::vector<std::uint8_t> dest(16, 0);
-    brushpad::rotate_90_cw(src.data(), w, h, w * 4, dest.data(), h * 4);
+    lundukepaint::rotate_90_cw(src.data(), w, h, w * 4, dest.data(), h * 4);
     errors += expect(get(dest, 0, 0, 2) == C, "CW top-left is C");
     errors += expect(get(dest, 1, 0, 2) == A, "CW top-right is A");
     errors += expect(get(dest, 0, 1, 2) == D, "CW bottom-left is D");
     errors += expect(get(dest, 1, 1, 2) == B, "CW bottom-right is B");
 
     std::vector<std::uint8_t> ccw(16, 0);
-    brushpad::rotate_90_ccw(src.data(), w, h, w * 4, ccw.data(), h * 4);
+    lundukepaint::rotate_90_ccw(src.data(), w, h, w * 4, ccw.data(), h * 4);
     errors += expect(get(ccw, 0, 0, 2) == B, "CCW top-left is B");
     errors += expect(get(ccw, 1, 0, 2) == D, "CCW top-right is D");
     errors += expect(get(ccw, 0, 1, 2) == A, "CCW bottom-left is A");
     errors += expect(get(ccw, 1, 1, 2) == C, "CCW bottom-right is C");
 
     std::vector<std::uint8_t> flipped = src;
-    brushpad::flip_h(flipped.data(), w, h, w * 4);
+    lundukepaint::flip_h(flipped.data(), w, h, w * 4);
     errors += expect(get(flipped, 0, 0, 2) == B, "flip H top-left is B");
     errors += expect(get(flipped, 1, 0, 2) == A, "flip H top-right is A");
 
@@ -83,7 +83,7 @@ int main() {
     errors += expect(doc->layers().active_layer().pixel(1, 1) == B, "redo rotate");
 
     std::vector<std::uint8_t> after_flip = src;
-    brushpad::flip_v(after_flip.data(), w, h, w * 4);
+    lundukepaint::flip_v(after_flip.data(), w, h, w * 4);
     auto cmd2 = LayerBufferCommand::from_buffers("Flip vertical", 2, 2, dest.data(), 8, 2, 2,
                                                  after_flip.data(), 8, 0);
     doc->commit(std::move(cmd2));

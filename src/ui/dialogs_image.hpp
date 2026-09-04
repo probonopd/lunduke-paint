@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_UI_DIALOGS_IMAGE_HPP
-#define BRUSHPAD_UI_DIALOGS_IMAGE_HPP
+#ifndef LUNDUKEPAINT_UI_DIALOGS_IMAGE_HPP
+#define LUNDUKEPAINT_UI_DIALOGS_IMAGE_HPP
 
 #include "raster/types.hpp"
 
@@ -10,7 +10,7 @@
 #include <gtkmm/spinbutton.h>
 #include <gtkmm/window.h>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class CanvasSizeDialog : public Gtk::Dialog {
 public:
@@ -51,6 +51,6 @@ private:
   Gtk::RadioButton bilinear_;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

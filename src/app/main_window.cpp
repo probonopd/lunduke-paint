@@ -50,7 +50,7 @@
 #include <vector>
 #include <stdexcept>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 Gtk::Button* toolbar_button(const char* icon, const char* tooltip, const char* action) {
@@ -2003,8 +2003,8 @@ void MainWindow::rebuild_recent_menu() {
 }
 
 void MainWindow::offer_recovery() {
-  using brushpad::crash_recovery::autosave_path;
-  using brushpad::crash_recovery::exists;
+  using lundukepaint::crash_recovery::autosave_path;
+  using lundukepaint::crash_recovery::exists;
   if (!exists()) {
     return;
   }
@@ -2051,4 +2051,4 @@ void MainWindow::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& con
   context->drag_finish(ok, false, time);
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

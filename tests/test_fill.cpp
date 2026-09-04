@@ -7,8 +7,8 @@
 
 namespace {
 
-using brushpad::Color;
-using brushpad::Rect;
+using lundukepaint::Color;
+using lundukepaint::Rect;
 
 void fail(const char* msg) {
   std::fprintf(stderr, "test_fill: %s\n", msg);
@@ -54,7 +54,7 @@ int main() {
     set(buf, w, 4, 3, black);
     set(buf, w, 3, 4, gray);
     Rect dirty{};
-    brushpad::flood_fill(buf.data(), w, h, w * 4, 0, 0, red, 0, &dirty);
+    lundukepaint::flood_fill(buf.data(), w, h, w * 4, 0, 0, red, 0, &dirty);
     errors += expect(get(buf, w, 0, 0) == red, "fill (0,0) should be red");
     errors += expect(get(buf, w, 7, 7) == red, "connected white should fill");
     errors += expect(get(buf, w, 3, 3) == black, "black island stays black at tol 0");
@@ -74,7 +74,7 @@ int main() {
       set(buf, w, 6, y, red);
     }
     Rect dirty{};
-    brushpad::flood_fill(buf.data(), w, h, w * 4, 0, 0, white, 16, &dirty);
+    lundukepaint::flood_fill(buf.data(), w, h, w * 4, 0, 0, white, 16, &dirty);
     errors += expect(get(buf, w, 0, 0) == white, "seed filled");
     errors += expect(get(buf, w, 2, 2) == white, "gray within tolerance filled");
     errors += expect(get(buf, w, 6, 0) == red, "red wall not filled");

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_TOOLS_TOOL_HPP
-#define BRUSHPAD_TOOLS_TOOL_HPP
+#ifndef LUNDUKEPAINT_TOOLS_TOOL_HPP
+#define LUNDUKEPAINT_TOOLS_TOOL_HPP
 
 #include "raster/types.hpp"
 
@@ -9,7 +9,7 @@ class Widget;
 class Window;
 }
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Document;
 
@@ -82,6 +82,6 @@ protected:
   bool ensure_editable();
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

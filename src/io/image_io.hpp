@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_IO_IMAGE_IO_HPP
-#define BRUSHPAD_IO_IMAGE_IO_HPP
+#ifndef LUNDUKEPAINT_IO_IMAGE_IO_HPP
+#define LUNDUKEPAINT_IO_IMAGE_IO_HPP
 
 #include "raster/types.hpp"
 
@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 struct LoadedImage {
   int width = 0;
@@ -34,6 +34,6 @@ bool encode_png_memory(const std::uint8_t* rgba, int width, int height, int stri
                        std::vector<std::uint8_t>& out, std::string& error);
 bool decode_png_memory(const std::uint8_t* data, std::size_t size, LoadedImage& out);
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

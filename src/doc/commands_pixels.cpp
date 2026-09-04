@@ -9,7 +9,7 @@
 #include <cstring>
 #include <utility>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 bool tiles_equal(const std::uint8_t* a, const std::uint8_t* b, int w, int h, int stride_a,
@@ -101,4 +101,4 @@ void PixelPatchCommand::undo(Document& document) {
   }
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

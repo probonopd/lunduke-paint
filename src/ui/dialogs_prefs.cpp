@@ -5,7 +5,7 @@
 #include <gtkmm/grid.h>
 #include <gtkmm/label.h>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 Gdk::RGBA color_to_rgba(Color c) {
@@ -85,4 +85,4 @@ void PreferencesDialog::apply_to(Preferences& prefs) const {
   prefs.grid_threshold = grid_threshold_.get_value_as_int();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

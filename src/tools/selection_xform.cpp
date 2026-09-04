@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 int handle_hit_px(double zoom) {
@@ -269,4 +269,4 @@ void SelectionXform::on_cancel(ToolHost* host) {
   orig_pixels_.clear();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

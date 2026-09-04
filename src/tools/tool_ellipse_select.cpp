@@ -14,7 +14,7 @@
 #include <memory>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class EllipseSelectTool : public Tool {
 public:
@@ -236,4 +236,4 @@ Tool* create_ellipse_select_tool() {
   return new EllipseSelectTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

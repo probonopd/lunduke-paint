@@ -16,7 +16,7 @@
 #include <cmath>
 #include <memory>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class EllipseTool : public Tool {
 public:
@@ -184,4 +184,4 @@ Tool* create_ellipse_tool() {
   return new EllipseTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

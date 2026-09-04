@@ -14,7 +14,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class SprayTool : public Tool {
 public:
@@ -149,4 +149,4 @@ Tool* create_spray_tool() {
   return new SprayTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

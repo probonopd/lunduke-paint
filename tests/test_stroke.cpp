@@ -9,9 +9,9 @@
 
 namespace {
 
-using brushpad::Color;
-using brushpad::Rect;
-using brushpad::ShapeFillMode;
+using lundukepaint::Color;
+using lundukepaint::Rect;
+using lundukepaint::ShapeFillMode;
 
 int expect(bool cond, const char* msg) {
   if (!cond) {
@@ -52,7 +52,7 @@ int main() {
       }
     }
     Rect dirty{};
-    brushpad::color_erase_stamp(buf.data(), w, h, w * 4, 4.0, 4.0, 6, red, Color::transparent(), 0,
+    lundukepaint::color_erase_stamp(buf.data(), w, h, w * 4, 4.0, 4.0, 6, red, Color::transparent(), 0,
                                 &dirty);
     errors += expect(get(buf, w, 4, 4).fully_transparent(), "erased red punch");
     errors += expect(get(buf, w, 12, 4) == blue, "blue far from stamp stays");
@@ -64,7 +64,7 @@ int main() {
     std::vector<std::uint8_t> buf(static_cast<std::size_t>(w * h * 4), 0);
     std::uint32_t rng = 1;
     Rect dirty{};
-    brushpad::spray_dots(buf.data(), w, h, w * 4, 8.0, 8.0, 4, 80, red, &rng, &dirty);
+    lundukepaint::spray_dots(buf.data(), w, h, w * 4, 8.0, 8.0, 4, 80, red, &rng, &dirty);
     int hits = 0;
     for (int y = 0; y < h; ++y) {
       for (int x = 0; x < w; ++x) {
@@ -84,7 +84,7 @@ int main() {
   {
     std::vector<std::uint8_t> buf(static_cast<std::size_t>(w * h * 4), 0);
     Rect dirty{};
-    brushpad::draw_rounded_rect(buf.data(), w, h, w * 4, 1, 1, 14, 14, 1, 6, red,
+    lundukepaint::draw_rounded_rect(buf.data(), w, h, w * 4, 1, 1, 14, 14, 1, 6, red,
                                 ShapeFillMode::Fill, false, &dirty);
     errors += expect(get(buf, w, 8, 8) == red, "rounded center filled");
     errors += expect(get(buf, w, 1, 1) != red, "sharp corner outside radius");
@@ -97,7 +97,7 @@ int main() {
     const int xs[3] = {2, 13, 2};
     const int ys[3] = {2, 8, 14};
     Rect dirty{};
-    brushpad::draw_polygon(buf.data(), w, h, w * 4, xs, ys, 3, 1, red, ShapeFillMode::Fill, false,
+    lundukepaint::draw_polygon(buf.data(), w, h, w * 4, xs, ys, 3, 1, red, ShapeFillMode::Fill, false,
                            &dirty);
     errors += expect(get(buf, w, 5, 8) == red, "polygon centroid filled");
     errors += expect(get(buf, w, 14, 1) != red, "outside triangle empty");
@@ -105,7 +105,7 @@ int main() {
   {
     std::vector<std::uint8_t> buf(static_cast<std::size_t>(w * h * 4), 0);
     Rect dirty{};
-    brushpad::draw_cubic_bezier(buf.data(), w, h, w * 4, 1, 8, 4, 1, 11, 1, 14, 8, 1, red, false,
+    lundukepaint::draw_cubic_bezier(buf.data(), w, h, w * 4, 1, 8, 4, 1, 11, 1, 14, 8, 1, red, false,
                                 &dirty);
     errors += expect(get(buf, w, 1, 8) == red, "bezier start");
     errors += expect(get(buf, w, 14, 8) == red, "bezier end");
@@ -125,7 +125,7 @@ int main() {
     glyph[6] = 0;
     glyph[7] = 0;
     Rect dirty{};
-    brushpad::blit_rgba_buffer(dest.data(), w, h, w * 4, 3, 3, glyph.data(), 2, 2, 8, true, &dirty);
+    lundukepaint::blit_rgba_buffer(dest.data(), w, h, w * 4, 3, 3, glyph.data(), 2, 2, 8, true, &dirty);
     errors += expect(get(dest, w, 3, 3) == red, "text blit wrote glyph pixel");
     errors += expect(get(dest, w, 4, 3) == Color{0, 0, 0, 0}, "text blit skipped transparent");
     errors += expect(dirty.x == 3 && dirty.y == 3, "text blit dirty origin");

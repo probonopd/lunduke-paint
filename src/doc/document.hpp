@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_DOC_DOCUMENT_HPP
-#define BRUSHPAD_DOC_DOCUMENT_HPP
+#ifndef LUNDUKEPAINT_DOC_DOCUMENT_HPP
+#define LUNDUKEPAINT_DOC_DOCUMENT_HPP
 
 #include "doc/history.hpp"
 #include "doc/layer_stack.hpp"
@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Document {
 public:
@@ -112,6 +112,6 @@ private:
   InvalidatedFn on_invalidated_;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

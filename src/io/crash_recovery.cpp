@@ -9,7 +9,7 @@
 #include <string>
 #include <unistd.h>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace crash_recovery {
 
 std::string state_dir() {
@@ -57,4 +57,4 @@ void clear() {
 }
 
 }  // namespace crash_recovery
-}  // namespace brushpad
+}  // namespace lundukepaint

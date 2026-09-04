@@ -9,7 +9,7 @@
     <p>
       Lunduke Paint is a traditional GTK 3 paint program for Linux X11.
       Look and feel: classic MS Paint plus KolourPaint, with user layers
-      and a visible history list. The project code name is Brushpad.
+      and a visible history list.
     </p>
     <p>
       It uses a window-manager title bar, a menu bar, and toolbars. The

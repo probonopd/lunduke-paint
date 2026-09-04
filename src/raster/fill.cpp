@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 Color get_pixel(const std::uint8_t* rgba, int stride, int x, int y) {
@@ -152,4 +152,4 @@ void flood_mask(const std::uint8_t* rgba, int width, int height, int stride, int
   }
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_APP_PREFERENCES_HPP
-#define BRUSHPAD_APP_PREFERENCES_HPP
+#ifndef LUNDUKEPAINT_APP_PREFERENCES_HPP
+#define LUNDUKEPAINT_APP_PREFERENCES_HPP
 
 #include "raster/types.hpp"
 
 #include <string>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Preferences {
 public:
@@ -27,6 +27,6 @@ public:
   static std::string config_path();
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

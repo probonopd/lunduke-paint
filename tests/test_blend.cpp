@@ -6,8 +6,8 @@
 
 namespace {
 
-using brushpad::BlendMode;
-using brushpad::blend_pixel;
+using lundukepaint::BlendMode;
+using lundukepaint::blend_pixel;
 
 int expect(bool cond, const char* msg) {
   if (!cond) {

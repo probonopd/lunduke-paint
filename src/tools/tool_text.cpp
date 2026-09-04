@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 bool render_text_rgba(const std::string& text, const std::string& family, int size_pt, bool bold,
@@ -350,4 +350,4 @@ Tool* create_text_tool() {
   return new TextTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

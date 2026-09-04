@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_DOC_SELECTION_HPP
-#define BRUSHPAD_DOC_SELECTION_HPP
+#ifndef LUNDUKEPAINT_DOC_SELECTION_HPP
+#define LUNDUKEPAINT_DOC_SELECTION_HPP
 
 #include "raster/types.hpp"
 
 #include <cstdint>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Layer;
 class LayerStack;
@@ -99,6 +99,6 @@ void copy_merged_rgba(const LayerStack& layers, const Selection& sel, int canvas
 void blit_rgba(Layer& dest, int dx, int dy, const std::uint8_t* src, int sw, int sh, int sstride,
                bool skip_transparent);
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

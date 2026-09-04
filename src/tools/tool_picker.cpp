@@ -6,7 +6,7 @@
 
 #include <cmath>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class PickerTool : public Tool {
 public:
@@ -40,4 +40,4 @@ Tool* create_picker_tool() {
   return new PickerTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

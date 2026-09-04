@@ -13,7 +13,7 @@
 
 #include <memory>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class EraserTool : public Tool {
 public:
@@ -151,4 +151,4 @@ Tool* create_eraser_tool() {
   return new EraserTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

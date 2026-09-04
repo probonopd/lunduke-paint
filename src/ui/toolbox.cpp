@@ -8,7 +8,7 @@
 
 #include <cmath>
 
-namespace brushpad {
+namespace lundukepaint {
 
 namespace {
 constexpr int kWellSize = 22;
@@ -392,4 +392,4 @@ bool Toolbox::on_trans_press(GdkEventButton* event) {
   return false;
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

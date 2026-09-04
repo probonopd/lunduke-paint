@@ -25,7 +25,7 @@
 #include <gtk/gtk.h>
 #include <gtkmm/cellrenderertext.h>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 Glib::RefPtr<Gdk::Pixbuf> thumb_pixbuf(const Layer& layer) {
@@ -415,4 +415,4 @@ void LayersPanel::refresh() {
   update_buttons();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

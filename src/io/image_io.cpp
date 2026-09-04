@@ -9,7 +9,7 @@
 #include <cctype>
 #include <cstring>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 std::string lower_ext(const std::string& path) {
@@ -268,4 +268,4 @@ bool decode_png_memory(const std::uint8_t* data, std::size_t size, LoadedImage& 
   return out.ok();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

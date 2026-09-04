@@ -4,7 +4,7 @@
 
 #include <cstdio>
 
-namespace brushpad {
+namespace lundukepaint {
 
 StatusBar::StatusBar() : Gtk::Box(Gtk::ORIENTATION_HORIZONTAL, 8) {
   set_border_width(3);
@@ -78,4 +78,4 @@ void StatusBar::show_message(const Glib::ustring& message) {
   hint_.set_text(message);
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

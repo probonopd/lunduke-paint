@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_DOC_COMMAND_HPP
-#define BRUSHPAD_DOC_COMMAND_HPP
+#ifndef LUNDUKEPAINT_DOC_COMMAND_HPP
+#define LUNDUKEPAINT_DOC_COMMAND_HPP
 
 #include "raster/types.hpp"
 
 #include <string>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Document;
 
@@ -20,6 +20,6 @@ public:
   virtual Rect dirty_rect() const = 0;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

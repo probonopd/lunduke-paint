@@ -14,7 +14,7 @@
 #include <memory>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class LassoTool : public Tool {
 public:
@@ -318,4 +318,4 @@ Tool* create_lasso_tool() {
   return new LassoTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

@@ -12,7 +12,7 @@
 #include <cmath>
 #include <memory>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class RectSelectTool : public Tool {
 public:
@@ -237,4 +237,4 @@ Tool* create_rect_select_tool() {
   return new RectSelectTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

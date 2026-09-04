@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_DOC_WORKSPACE_HPP
-#define BRUSHPAD_DOC_WORKSPACE_HPP
+#ifndef LUNDUKEPAINT_DOC_WORKSPACE_HPP
+#define LUNDUKEPAINT_DOC_WORKSPACE_HPP
 
 #include "doc/document.hpp"
 
 #include <memory>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Workspace {
 public:
@@ -36,6 +36,6 @@ private:
   int active_ = -1;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

@@ -6,7 +6,7 @@
 #include <cstring>
 #include <stdexcept>
 
-namespace brushpad {
+namespace lundukepaint {
 
 void LayerStack::reset(int width, int height, Color fill, const std::string& layer_name) {
   width_ = width;
@@ -296,4 +296,4 @@ void LayerStack::replace_stack(int width, int height, std::vector<std::unique_pt
   resize_scratch(width_, height_);
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

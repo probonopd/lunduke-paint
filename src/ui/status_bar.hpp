@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_UI_STATUS_BAR_HPP
-#define BRUSHPAD_UI_STATUS_BAR_HPP
+#ifndef LUNDUKEPAINT_UI_STATUS_BAR_HPP
+#define LUNDUKEPAINT_UI_STATUS_BAR_HPP
 
 #include <glibmm/ustring.h>
 #include <gtkmm/box.h>
 #include <gtkmm/label.h>
 #include <gtkmm/separator.h>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class StatusBar : public Gtk::Box {
 public:
@@ -31,6 +31,6 @@ private:
   Gtk::Label modified_;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

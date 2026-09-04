@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_UI_TOOL_OPTIONS_BAR_HPP
-#define BRUSHPAD_UI_TOOL_OPTIONS_BAR_HPP
+#ifndef LUNDUKEPAINT_UI_TOOL_OPTIONS_BAR_HPP
+#define LUNDUKEPAINT_UI_TOOL_OPTIONS_BAR_HPP
 
 #include <gtkmm/box.h>
 #include <gtkmm/label.h>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class Tool;
 
@@ -20,6 +20,6 @@ private:
   Gtk::Widget* current_{nullptr};
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

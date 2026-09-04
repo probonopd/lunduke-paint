@@ -14,7 +14,7 @@
 #include <memory>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class MagicWandTool : public Tool {
 public:
@@ -122,4 +122,4 @@ Tool* create_magic_wand_tool() {
   return new MagicWandTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

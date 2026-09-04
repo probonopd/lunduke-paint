@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-#ifndef BRUSHPAD_DOC_LAYER_STACK_HPP
-#define BRUSHPAD_DOC_LAYER_STACK_HPP
+#ifndef LUNDUKEPAINT_DOC_LAYER_STACK_HPP
+#define LUNDUKEPAINT_DOC_LAYER_STACK_HPP
 
 #include "doc/layer.hpp"
 
@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class LayerStack {
 public:
@@ -78,6 +78,6 @@ private:
   int name_serial_ = 1;
 };
 
-}  // namespace brushpad
+}  // namespace lundukepaint
 
 #endif

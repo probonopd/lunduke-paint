@@ -2,7 +2,7 @@
 
 #include "ui/colors_panel.hpp"
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 // Classic 48-color Paint / KolourPaint-style palette, last cell transparent.
@@ -125,4 +125,4 @@ bool ColorsPanel::on_swatch_press(GdkEventButton* event, int index) {
   return false;
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

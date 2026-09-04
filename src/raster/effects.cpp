@@ -6,7 +6,7 @@
 #include <cmath>
 #include <vector>
 
-namespace brushpad {
+namespace lundukepaint {
 namespace {
 
 int clamp_byte(int v) {
@@ -317,4 +317,4 @@ void emboss_rgba(const std::uint8_t* src, int width, int height, int src_stride,
   conv3(src, width, height, src_stride, dest, dest_stride, k, 128, true);
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint

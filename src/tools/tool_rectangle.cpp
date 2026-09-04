@@ -16,7 +16,7 @@
 #include <cmath>
 #include <memory>
 
-namespace brushpad {
+namespace lundukepaint {
 
 class RectangleTool : public Tool {
 public:
@@ -184,4 +184,4 @@ Tool* create_rectangle_tool() {
   return new RectangleTool();
 }
 
-}  // namespace brushpad
+}  // namespace lundukepaint
