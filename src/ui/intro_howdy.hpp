@@ -4,7 +4,7 @@
 
 #include <cairo.h>
 
-// Cursive howdy: smooth cubics fitted to refs/howdy-reference-exact.jpeg letterforms.
+// Cursive howdy: cubics from data/howdy.svg matched to refs/howdy-reference-exact.jpeg.
 // The overlay is revealed by travelled length over exactly one second.
 // Nothing here touches the document or any font.
 namespace lundukepaint {
