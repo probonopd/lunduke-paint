@@ -26,9 +26,9 @@ struct Curve {
 // Open teardrop h / open y descender; thin monoline; one L→R stroke.
 // JPEG ink ≈817px, stroke diam ≈40px (DT) → ratio ≈0.049.
 // kPen ≈ ratio * design_W ≈ 0.049*406.9 ≈ 20 overfills this path's
-// counters; tuned to 10.00 so height-matched vs-ref diam/width ≈ 0.048
-// (JPEG ≈ 0.050) with open h/y loops (user 54/816 overfills). Verify by vs-ref.
-constexpr double kPen = 10.00;
+// counters; tuned to 12.00 so vs-ref stroke ratio≈0.048 matches JPEG≈0.049;
+// loops stay open (user 54/816≈0.066 / 0.066*W overfills).
+constexpr double kPen = 12.00;
 constexpr double kDesignHeight = 250.0;
 constexpr Point kStart{28.00, 130.59};
 constexpr std::array<Curve, 28> kCurves{{
