@@ -75,8 +75,8 @@ void Application::on_activate() {
   const bool created = ensure_window();
   window_->present();
   if (created) {
-    // Fresh launch with an empty canvas: say howdy. A second activation that
-    // only re-presents the existing window must not replay it.
+    // Fresh empty launch: play_intro() is a no-op unless LUNDUKEPAINT_HOWDY_INTRO
+    // is enabled. A second activation that only re-presents must not replay.
     window_->play_intro();
   }
 }

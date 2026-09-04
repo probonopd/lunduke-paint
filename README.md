@@ -19,7 +19,7 @@ user layers.
 
 ## 0.3
 
-Mac-style howdy intro (stays after the 1s stroke), Foreground/Background well labels, equal-width tool columns. Keeps the 0.2 feature set.
+Foreground/Background well labels, equal-width tool columns. Keeps the 0.2 feature set. (Howdy intro sources retained but launch-gated off by default.)
 
 ## 0.2
 

@@ -7,6 +7,13 @@
 // Cursive howdy: cubics from data/howdy.svg matched to refs/howdy-reference-exact.jpeg.
 // The overlay is revealed by travelled length over exactly one second.
 // Nothing here touches the document or any font.
+//
+// Launch gate (default OFF). Sources + data/howdy.svg (+ jpeg twin) stay in-tree
+// so the greeting can be revived later. Set to 1 to play on fresh empty launch.
+#ifndef LUNDUKEPAINT_HOWDY_INTRO
+#define LUNDUKEPAINT_HOWDY_INTRO 0
+#endif
+
 namespace lundukepaint {
 namespace intro {
 

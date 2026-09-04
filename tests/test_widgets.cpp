@@ -9,8 +9,8 @@
 //     loaded (the "opening an image balloons the window" bug),
 //   * canvas_to_screen() staying self-consistent with the centred canvas
 //     (the text tool popup position),
-//   * the startup greeting running for one second, being cancellable, and never
-//     dirtying the document or the layer pixels.
+//   * the startup greeting API (start/skip/cancel) when exercised directly —
+//     empty Application launch does not require howdy (gated off by default).
 
 #include "doc/document.hpp"
 #include "doc/layer.hpp"

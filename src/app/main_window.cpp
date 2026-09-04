@@ -17,6 +17,7 @@
 #include "ui/dialogs_image.hpp"
 #include "ui/dialogs_new.hpp"
 #include "ui/dialogs_prefs.hpp"
+#include "ui/intro_howdy.hpp"
 #include "tools/tools.hpp"
 
 #include <glibmm/error.h>
@@ -427,6 +428,7 @@ void MainWindow::adopt_document(std::unique_ptr<Document> document, bool prefer_
 }
 
 void MainWindow::play_intro() {
+#if LUNDUKEPAINT_HOWDY_INTRO
   if (intro_played_) {
     return;
   }
@@ -440,6 +442,10 @@ void MainWindow::play_intro() {
     return;
   }
   canvas_.start_intro();
+#else
+  // Howdy intro shelved (LUNDUKEPAINT_HOWDY_INTRO=0): fresh launch stays blank.
+  (void)intro_played_;
+#endif
 }
 
 void MainWindow::show_status(const Glib::ustring& message) {
