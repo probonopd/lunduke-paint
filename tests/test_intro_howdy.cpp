@@ -66,7 +66,7 @@ int main() {
 
   expect(path_length() > 0.0, "bundled path has positive length");
   expect(curve_count() >= 12, "path has enough letter segments for howdy");
-  expect(curve_count() <= 30, "hand-fit path stays small (not a noisy skeleton trace)");
+  expect(curve_count() <= 30, "path segment count stays small (not a raw noisy skeleton)");
   expect(revealed_length(0.0) == 0.0, "nothing revealed at t=0");
   expect(std::fabs(revealed_length(1.0) - path_length()) < 1e-6, "full length at t=1");
   expect(std::fabs(revealed_length(0.5) - path_length() * 0.5) < 1e-6, "half length at t=0.5");

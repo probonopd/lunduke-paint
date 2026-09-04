@@ -4,7 +4,7 @@
 
 #include <cairo.h>
 
-// Cursive howdy: hand-fit smooth cubics matching refs/howdy-editor-ref.png letterforms.
+// Cursive howdy: dense centerline fitted to refs/howdy-reference-exact.png letterforms.
 // The overlay is revealed by travelled length over exactly one second.
 // Nothing here touches the document or any font.
 namespace brushpad {
@@ -21,7 +21,7 @@ bool finished(long elapsed_us);
 double path_length();
 // Distance travelled at clamped animation progress in [0, 1].
 double revealed_length(double progress_value);
-// Number of cubic segments in writing order (h, o, w, d, y).
+// Logical letter-construction segment count (path is a dense polished polyline).
 int curve_count();
 
 struct Ink {
