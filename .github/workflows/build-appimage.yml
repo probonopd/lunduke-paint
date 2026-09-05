@@ -49,9 +49,7 @@ jobs:
       - name: Deploy
         run: |
           export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
-          cd AppDir
-          ../squashfs-root/usr/bin/appimagetool -s deploy usr/share/applications/org.lunduke.LundukePaint.desktop
-          cd ..
+          ./squashfs-root/usr/bin/appimagetool -s deploy AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop
 
       - name: Bundle AppImage
         env:
@@ -109,9 +107,7 @@ jobs:
       - name: Deploy
         run: |
           export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
-          cd AppDir
-          ../squashfs-root/usr/bin/appimagetool -s deploy usr/share/applications/org.lunduke.LundukePaint.desktop
-          cd ..
+          ./squashfs-root/usr/bin/appimagetool -s deploy AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop
 
       - name: Bundle AppImage
         env:
