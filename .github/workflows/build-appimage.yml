@@ -117,6 +117,10 @@ jobs:
               cp -r /tmp/adwaita/AdwaitaLegacy AppDir/usr/share/icons/
             fi
           fi
+          # Copy hicolor icon theme (includes index.theme)
+          if [ -d /usr/share/icons/hicolor ]; then
+            cp -r /usr/share/icons/hicolor AppDir/usr/share/icons/
+          fi
 
       - name: Download appimagetool
         run: |
