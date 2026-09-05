@@ -67,6 +67,10 @@ jobs:
           APPIMAGE_URL=$(wget -q https://github.com/probonopd/go-appimage/releases/expanded_assets/continuous -O - | grep "appimagetool-.*-x86_64.AppImage" | head -n 1 | cut -d '"' -f 2)
           wget -c "https://github.com/${APPIMAGE_URL}" -O appimagetool
           chmod +x appimagetool
+          ./appimagetool --appimage-extract
+          rm appimagetool
+          mv squashfs-root/appimagetool .
+          rm -rf squashfs-root
 
       - name: Load FUSE
         run: |
@@ -167,6 +171,10 @@ jobs:
           APPIMAGE_URL=$(wget -q https://github.com/probonopd/go-appimage/releases/expanded_assets/continuous -O - | grep "appimagetool-.*-x86_64.AppImage" | head -n 1 | cut -d '"' -f 2)
           wget -c "https://github.com/${APPIMAGE_URL}" -O appimagetool
           chmod +x appimagetool
+          ./appimagetool --appimage-extract
+          rm appimagetool
+          mv squashfs-root/appimagetool .
+          rm -rf squashfs-root
 
       - name: Deploy
         run: |
