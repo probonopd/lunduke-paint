@@ -1,10 +1,9 @@
 #!/bin/sh
 set -e
 
-# Setup AppDir structure with only the binary
-rm -rf .AppDir
-mkdir -p .AppDir/usr/bin
-cp /tmp/lunduke-install/usr/bin/lunduke-paint .AppDir/usr/bin/
-
-# Copy desktop file to root for AppRun
-cp /tmp/lunduke-install/usr/share/applications/*.desktop .AppDir/
+# Create minimal AppDir with just the binary and desktop file
+rm -rf AppDir
+mkdir -p AppDir/usr/bin
+mkdir -p AppDir/usr/share/applications
+cp /tmp/lunduke-install/usr/bin/lunduke-paint AppDir/usr/bin/
+cp /tmp/lunduke-install/usr/share/applications/*.desktop AppDir/usr/share/applications/
