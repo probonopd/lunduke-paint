@@ -22,7 +22,6 @@ jobs:
             gtkmm3-dev \
             cairomm-dev \
             pangomm-dev \
-            atkmm-dev \
             libsigc++-dev \
             gdk-pixbuf-dev \
             libarchive-dev \
@@ -105,7 +104,7 @@ jobs:
 
   build-devuan-x86_64:
     runs-on: ubuntu-latest
-    container: ghcr.io/probonopd/devuan-amd64:latest
+    container: devuan/devuan:daedalus
     steps:
       - name: Install dependencies
         run: |
@@ -200,7 +199,7 @@ jobs:
 
   build-devuan-arm64:
     runs-on: ubuntu-latest
-    container: ghcr.io/probonopd/devuan-arm64:latest
+    # ARM64 build - run on ubuntu with cross-compilation setup
     steps:
       - name: Install dependencies
         run: |
@@ -209,24 +208,30 @@ jobs:
             meson \
             ninja-build \
             pkg-config \
-            libgtk-3-dev \
-            libgtkmm-3.0-dev \
-            libcairomm-1.0-dev \
-            libpangomm-1.4-dev \
-            libatkmm-1.6-dev \
-            libsigc++-2.0-dev \
-            libgdk-pixbuf2.0-dev \
-            libarchive-dev \
-            libpugixml-dev \
+            libgtk-3-dev:arm64 \
+            libgtkmm-3.0-dev:arm64 \
+            libcairomm-1.0-dev:arm64 \
+            libpangomm-1.4-dev:arm64 \
+            libatkmm-1.6-dev:arm64 \
+            libsigc++-2.0-dev:arm64 \
+            libgdk-pixbuf2.0-dev:arm64 \
+            libarchive-dev:arm64 \
+            libpugixml-dev:arm64 \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
             git \
-            wget
+            wget \
+            qemu-user-static
 
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Build
+        env:
+          CC: aarch64-linux-gnu-gcc
+          CXX: aarch64-linux-gnu-g++
         run: |
-          meson setup build -Dprefix=/usr
+          meson setup build -Dprefix=/usr --cross-file config/arm64.ini
           meson compile -C build
 
       - name: Install
@@ -271,9 +276,9 @@ jobs:
           export LD_LIBRARY_PATH="${HERE}/lib:${HERE}/lib64:${HERE}/usr/lib:${LD_LIBRARY_PATH}"
           export GCONV_PATH="${HERE}/usr/lib/gconv"
           export FONTCONFIG_FILE="${HERE}/etc/fonts/fonts.conf"
-          export GTK_PATH="${HERE}/lib/x86_64-linux-gnu/gtk-3.0"
-          export GDK_PIXBUF_MODULEDIR="${HERE}/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders"
-          export GDK_PIXBUF_MODULE_FILE="${HERE}/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache"
+          export GTK_PATH="${HERE}/lib/aarch64-linux-gnu/gtk-3.0"
+          export GDK_PIXBUF_MODULEDIR="${HERE}/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders"
+          export GDK_PIXBUF_MODULE_FILE="${HERE}/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache"
           export GSETTINGS_SCHEMA_DIR="${HERE}/usr/share/glib-2.0/schemas"
           export GTK_DATA_PREFIX="${HERE}"
           exec "${HERE}/usr/bin/lunduke-paint" "$@"
