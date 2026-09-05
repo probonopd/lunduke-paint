@@ -63,14 +63,14 @@ jobs:
 
       - name: Download appimagetool
         run: |
-          wget -q https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          wget -q -L https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
           chmod +x appimagetool
 
       - name: Deploy
         run: |
           ./appimagetool -s deploy .AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop 2>&1 || true
 
-      - name: Fix AppRun
+      - name: Write AppRun
         run: |
           cat > .AppDir/AppRun << 'APPRUN'
           #!/bin/bash
@@ -158,14 +158,14 @@ jobs:
 
       - name: Download appimagetool
         run: |
-          wget -q https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          wget -q -L https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
           chmod +x appimagetool
 
       - name: Deploy
         run: |
           ./appimagetool -s deploy .AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop 2>&1 || true
 
-      - name: Fix AppRun
+      - name: Write AppRun
         run: |
           cat > .AppDir/AppRun << 'APPRUN'
           #!/bin/bash
