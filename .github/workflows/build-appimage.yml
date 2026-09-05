@@ -69,13 +69,11 @@ jobs:
           wget -c "https://github.com/${APPIMAGE_URL}" -O appimagetool
           chmod +x appimagetool
           ./appimagetool --appimage-extract
-          rm appimagetool
-          mv squashfs-root/usr/bin/appimagetool .
-          rm -rf squashfs-root
 
       - name: Deploy
         run: |
-          ./appimagetool -s deploy .AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop 2>&1 || true
+          export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
+          ./squashfs-root/usr/bin/appimagetool -s deploy .AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop 2>&1 || true
 
       - name: Write AppRun
         run: |
@@ -101,7 +99,8 @@ jobs:
           ARCH: x86_64
           VERSION: 0.3
         run: |
-          ./appimagetool .AppDir
+          export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
+          ./squashfs-root/usr/bin/appimagetool .AppDir
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
@@ -171,13 +170,11 @@ jobs:
           wget -c "https://github.com/${APPIMAGE_URL}" -O appimagetool
           chmod +x appimagetool
           ./appimagetool --appimage-extract
-          rm appimagetool
-          mv squashfs-root/usr/bin/appimagetool .
-          rm -rf squashfs-root
 
       - name: Deploy
         run: |
-          ./appimagetool -s deploy .AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop 2>&1 || true
+          export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
+          ./squashfs-root/usr/bin/appimagetool -s deploy .AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop 2>&1 || true
 
       - name: Write AppRun
         run: |
@@ -203,7 +200,8 @@ jobs:
           ARCH: x86_64
           VERSION: 0.3
         run: |
-          ./appimagetool .AppDir
+          export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
+          ./squashfs-root/usr/bin/appimagetool .AppDir
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
