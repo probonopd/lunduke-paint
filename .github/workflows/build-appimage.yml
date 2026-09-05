@@ -56,11 +56,13 @@ jobs:
           mkdir -p .AppDir/usr/share/icons/hicolor/48x48/apps
           mkdir -p .AppDir/usr/share/icons/hicolor/96x96/apps
           mkdir -p .AppDir/usr/share/mime/packages
+          mkdir -p .AppDir/usr/share/gtk-3.0
           cp /tmp/lunduke-install/usr/bin/lunduke-paint .AppDir/usr/bin/
           cp /tmp/lunduke-install/usr/share/applications/*.desktop .AppDir/usr/share/applications/
           cp /tmp/lunduke-install/usr/share/metainfo/*.xml .AppDir/usr/share/metainfo/
           cp -r /tmp/lunduke-install/usr/share/icons/hicolor/* .AppDir/usr/share/icons/hicolor/
           cp /tmp/lunduke-install/usr/share/mime/packages/*.xml .AppDir/usr/share/mime/packages/
+          cp -r /tmp/lunduke-install/usr/share/gtk-3.0/* .AppDir/usr/share/gtk-3.0/ 2>/dev/null || true
           cp .AppDir/usr/share/applications/*.desktop .AppDir/
 
       - name: Download appimagetool
@@ -139,11 +141,13 @@ jobs:
           mkdir -p .AppDir/usr/share/icons/hicolor/48x48/apps
           mkdir -p .AppDir/usr/share/icons/hicolor/96x96/apps
           mkdir -p .AppDir/usr/share/mime/packages
+          mkdir -p .AppDir/usr/share/gtk-3.0
           cp /tmp/lunduke-install/usr/bin/lunduke-paint .AppDir/usr/bin/
           cp /tmp/lunduke-install/usr/share/applications/*.desktop .AppDir/usr/share/applications/
           cp /tmp/lunduke-install/usr/share/metainfo/*.xml .AppDir/usr/share/metainfo/
           cp -r /tmp/lunduke-install/usr/share/icons/hicolor/* .AppDir/usr/share/icons/hicolor/
           cp /tmp/lunduke-install/usr/share/mime/packages/*.xml .AppDir/usr/share/mime/packages/
+          cp -r /tmp/lunduke-install/usr/share/gtk-3.0/* .AppDir/usr/share/gtk-3.0/ 2>/dev/null || true
           cp .AppDir/usr/share/applications/*.desktop .AppDir/
 
       - name: Download appimagetool
