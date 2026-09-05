@@ -77,6 +77,7 @@ jobs:
             libgtk-3-dev libgtkmm-3.0-dev libcairomm-1.0-dev libpangomm-1.4-dev libatkmm-1.6-dev libsigc++-2.0-dev \
             libgdk-pixbuf2.0-dev libgdk-pixbuf2.0-0 \
             libarchive-dev libpugixml-dev \
+            libpixbufloader-png gir1.2-gdkpixbuf-2.0 \
             git wget file squashfs-tools
 
       - name: Checkout
