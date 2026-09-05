@@ -69,7 +69,7 @@ jobs:
           chmod +x appimagetool
           ./appimagetool --appimage-extract
           rm appimagetool
-          mv squashfs-root/appimagetool .
+          mv squashfs-root/usr/bin/appimagetool .
           rm -rf squashfs-root
 
       - name: Load FUSE
@@ -173,7 +173,7 @@ jobs:
           chmod +x appimagetool
           ./appimagetool --appimage-extract
           rm appimagetool
-          mv squashfs-root/appimagetool .
+          mv squashfs-root/usr/bin/appimagetool .
           rm -rf squashfs-root
 
       - name: Deploy
