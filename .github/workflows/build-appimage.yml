@@ -38,6 +38,14 @@ jobs:
         run: |
           chmod +x .github/setup-appdir.sh
           ./.github/setup-appdir.sh
+          # Find and copy GTK UI files from system
+          if [ -d /usr/share/gtk-3.0 ] && [ "$(ls -A /usr/share/gtk-3.0/ 2>/dev/null)" ]; then
+            for item in /usr/share/gtk-3.0/*/; do
+              if [ -d "$item" ] && [ "$(ls -A "$item" 2>/dev/null)" ]; then
+                cp -r "$item" AppDir/usr/share/gtk-3.0/ 2>/dev/null || true
+              fi
+            done
+          fi
 
       - name: Download appimagetool
         run: |
@@ -96,6 +104,14 @@ jobs:
         run: |
           chmod +x .github/setup-appdir.sh
           ./.github/setup-appdir.sh
+          # Find and copy GTK UI files from system
+          if [ -d /usr/share/gtk-3.0 ] && [ "$(ls -A /usr/share/gtk-3.0/ 2>/dev/null)" ]; then
+            for item in /usr/share/gtk-3.0/*/; do
+              if [ -d "$item" ] && [ "$(ls -A "$item" 2>/dev/null)" ]; then
+                cp -r "$item" AppDir/usr/share/gtk-3.0/ 2>/dev/null || true
+              fi
+            done
+          fi
 
       - name: Download appimagetool
         run: |
