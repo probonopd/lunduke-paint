@@ -108,9 +108,14 @@ jobs:
 
       - name: Add icon theme
         run: |
-          # Copy AdwaitaLegacy icon theme for legacy icons
-          if [ -d /usr/share/icons/AdwaitaLegacy ]; then
-            cp -r /usr/share/icons/AdwaitaLegacy AppDir/usr/share/icons/
+          # Download Adwaita icon theme for legacy icons
+          wget -q "https://gitlab.gnome.org/GNOME/adwaita-icon-theme/-/archive/46.2/adwaita-icon-theme-46.2.tar.gz" -O /tmp/adwaita.tar.gz || true
+          if [ -f /tmp/adwaita.tar.gz ]; then
+            mkdir -p /tmp/adwaita
+            tar -xzf /tmp/adwaita.tar.gz -C /tmp/adwaita --strip-components=1
+            if [ -d /tmp/adwaita/AdwaitaLegacy ]; then
+              cp -r /tmp/adwaita/AdwaitaLegacy AppDir/usr/share/icons/
+            fi
           fi
 
       - name: Add gdk-pixbuf PNG loader
