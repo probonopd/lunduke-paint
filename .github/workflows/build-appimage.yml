@@ -27,8 +27,9 @@ jobs:
             libarchive-dev \
             pugixml-dev \
             git \
-            curl \
-            xz
+            wget \
+            xz \
+            fuse
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,6 +67,10 @@ jobs:
           APPIMAGE_URL=$(wget -q https://github.com/probonopd/go-appimage/releases/expanded_assets/continuous -O - | grep "appimagetool-.*-x86_64.AppImage" | head -n 1 | cut -d '"' -f 2)
           wget -c "https://github.com/${APPIMAGE_URL}" -O appimagetool
           chmod +x appimagetool
+
+      - name: Load FUSE
+        run: |
+          modprobe fuse || true
 
       - name: Deploy
         run: |
@@ -124,7 +129,7 @@ jobs:
             libarchive-dev \
             libpugixml-dev \
             git \
-            curl
+            wget
 
       - name: Checkout
         uses: actions/checkout@v4
