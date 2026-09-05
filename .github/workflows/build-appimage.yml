@@ -107,6 +107,7 @@ jobs:
             libatkmm-1.6-dev \
             libsigc++-2.0-dev \
             libgdk-pixbuf2.0-dev \
+            libgdk-pixbuf2.0-0 \
             libarchive-dev \
             libpugixml-dev \
             git \
