@@ -75,34 +75,6 @@ jobs:
           export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
           ./squashfs-root/usr/bin/appimagetool -s deploy .AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop 2>&1 || true
 
-      - name: Patch binary interpreter
-        run: |
-          export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
-          if [ -f .AppDir/lib/ld-musl-x86_64.so.1 ]; then
-            patchelf --set-interpreter .AppDir/lib/ld-musl-x86_64.so.1 .AppDir/usr/bin/lunduke-paint
-          elif [ -f .AppDir/lib64/ld-linux-x86-64.so.2 ]; then
-            patchelf --set-interpreter .AppDir/lib64/ld-linux-x86-64.so.2 .AppDir/usr/bin/lunduke-paint
-          fi
-
-      - name: Write AppRun
-        run: |
-          cat > .AppDir/AppRun << 'APPRUN'
-          #!/bin/bash
-          HERE="$(dirname "$(readlink -f "${0}")")"
-          export GDK_BACKEND=x11
-          export XDG_DATA_DIRS="${HERE}/usr/share:${HERE}/usr/share/icons:${XDG_DATA_DIRS:-/usr/share:/usr/local/share}"
-          export LD_LIBRARY_PATH="${HERE}/lib:${HERE}/lib64:${HERE}/usr/lib:${LD_LIBRARY_PATH}"
-          export GCONV_PATH="${HERE}/usr/lib/gconv"
-          export FONTCONFIG_FILE="${HERE}/etc/fonts/fonts.conf"
-          export GTK_PATH="${HERE}/lib/x86_64-linux-gnu/gtk-3.0"
-          export GDK_PIXBUF_MODULEDIR="${HERE}/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders"
-          export GDK_PIXBUF_MODULE_FILE="${HERE}/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache"
-          export GSETTINGS_SCHEMA_DIR="${HERE}/usr/share/glib-2.0/schemas"
-          export GTK_DATA_PREFIX="${HERE}"
-          exec "${HERE}/usr/bin/lunduke-paint" "$@"
-          APPRUN
-          chmod +x .AppDir/AppRun
-
       - name: Bundle AppImage
         env:
           ARCH: x86_64
@@ -184,34 +156,6 @@ jobs:
         run: |
           export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
           ./squashfs-root/usr/bin/appimagetool -s deploy .AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop 2>&1 || true
-
-      - name: Patch binary interpreter
-        run: |
-          export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
-          if [ -f .AppDir/lib/ld-musl-x86_64.so.1 ]; then
-            patchelf --set-interpreter .AppDir/lib/ld-musl-x86_64.so.1 .AppDir/usr/bin/lunduke-paint
-          elif [ -f .AppDir/lib64/ld-linux-x86-64.so.2 ]; then
-            patchelf --set-interpreter .AppDir/lib64/ld-linux-x86-64.so.2 .AppDir/usr/bin/lunduke-paint
-          fi
-
-      - name: Write AppRun
-        run: |
-          cat > .AppDir/AppRun << 'APPRUN'
-          #!/bin/bash
-          HERE="$(dirname "$(readlink -f "${0}")")"
-          export GDK_BACKEND=x11
-          export XDG_DATA_DIRS="${HERE}/usr/share:${HERE}/usr/share/icons:${XDG_DATA_DIRS:-/usr/share:/usr/local/share}"
-          export LD_LIBRARY_PATH="${HERE}/lib:${HERE}/lib64:${HERE}/usr/lib:${LD_LIBRARY_PATH}"
-          export GCONV_PATH="${HERE}/usr/lib/gconv"
-          export FONTCONFIG_FILE="${HERE}/etc/fonts/fonts.conf"
-          export GTK_PATH="${HERE}/lib/x86_64-linux-gnu/gtk-3.0"
-          export GDK_PIXBUF_MODULEDIR="${HERE}/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders"
-          export GDK_PIXBUF_MODULE_FILE="${HERE}/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache"
-          export GSETTINGS_SCHEMA_DIR="${HERE}/usr/share/glib-2.0/schemas"
-          export GTK_DATA_PREFIX="${HERE}"
-          exec "${HERE}/usr/bin/lunduke-paint" "$@"
-          APPRUN
-          chmod +x .AppDir/AppRun
 
       - name: Bundle AppImage
         env:
