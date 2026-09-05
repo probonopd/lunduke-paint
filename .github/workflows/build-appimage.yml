@@ -66,6 +66,9 @@ jobs:
           cp -r /tmp/lunduke-install/usr/share/icons/hicolor/* .AppDir/usr/share/icons/hicolor/
           cp /tmp/lunduke-install/usr/share/mime/packages/*.xml .AppDir/usr/share/mime/packages/
           cp -r /tmp/lunduke-install/usr/share/gtk-3.0/* .AppDir/usr/share/gtk-3.0/ 2>/dev/null || true
+          if [ -d /usr/share/icons/hicolor ]; then
+            cp -r /usr/share/icons/hicolor/* .AppDir/usr/share/icons/hicolor/
+          fi
           cp .AppDir/usr/share/applications/*.desktop .AppDir/
 
       - name: Download appimagetool
@@ -151,6 +154,9 @@ jobs:
           cp -r /tmp/lunduke-install/usr/share/icons/hicolor/* .AppDir/usr/share/icons/hicolor/
           cp /tmp/lunduke-install/usr/share/mime/packages/*.xml .AppDir/usr/share/mime/packages/
           cp -r /tmp/lunduke-install/usr/share/gtk-3.0/* .AppDir/usr/share/gtk-3.0/ 2>/dev/null || true
+          if [ -d /usr/share/icons/hicolor ]; then
+            cp -r /usr/share/icons/hicolor/* .AppDir/usr/share/icons/hicolor/
+          fi
           cp .AppDir/usr/share/applications/*.desktop .AppDir/
 
       - name: Download appimagetool
