@@ -38,13 +38,17 @@ jobs:
         run: |
           chmod +x .github/setup-appdir.sh
           ./.github/setup-appdir.sh
-          # Find and copy GTK UI files from system
-          if [ -d /usr/share/gtk-3.0 ] && [ "$(ls -A /usr/share/gtk-3.0/ 2>/dev/null)" ]; then
-            for item in /usr/share/gtk-3.0/*/; do
-              if [ -d "$item" ] && [ "$(ls -A "$item" 2>/dev/null)" ]; then
-                cp -r "$item" AppDir/usr/share/gtk-3.0/ 2>/dev/null || true
-              fi
-            done
+          # Download GTK source and extract UI files (Alpine doesn't ship them)
+          GTK_VER=$(pkg-config --modversion gtk+-3.0 2>/dev/null || echo "3.24.41")
+          wget -q "https://download.gnome.org/sources/gtk+/3.0/gtk+-${GTK_VER}.tar.xz" -O /tmp/gtk.tar.xz
+          if [ -f /tmp/gtk.tar.xz ]; then
+            mkdir -p /tmp/gtk-src
+            tar -xf /tmp/gtk.tar.xz -C /tmp/gtk-src --strip-components=1 2>/dev/null
+            if [ -d /tmp/gtk-src/gtk/ui ]; then
+              mkdir -p AppDir/usr/share/gtk-3.0
+              cp -r /tmp/gtk-src/gtk/ui AppDir/usr/share/gtk-3.0/
+              cp -r /tmp/gtk-src/gtk/gresource AppDir/usr/share/gtk-3.0/ 2>/dev/null || true
+            fi
           fi
 
       - name: Download appimagetool
