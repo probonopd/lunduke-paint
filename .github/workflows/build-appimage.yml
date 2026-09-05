@@ -65,9 +65,9 @@ jobs:
           name: Lunduke_Paint-alpine-x86_64
           path: Lunduke_Paint-*.AppImage
 
-  build-devuan-x86_64:
+  build-ubuntu-x86_64:
     runs-on: ubuntu-latest
-    container: devuan/devuan:daedalus
+    container: ubuntu:22.04
     steps:
       - name: Install dependencies
         run: |
@@ -117,17 +117,6 @@ jobs:
             fi
           fi
 
-      - name: Add gdk-pixbuf PNG loader
-        run: |
-          # Copy PNG loader from system gdk-pixbuf
-          for dir in /usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders /usr/lib/gdk-pixbuf-2.0/2.10.0/loaders; do
-            if [ -d "$dir" ]; then
-              mkdir -p AppDir/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders
-              cp "$dir"/libpixbufloader-png.so AppDir/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders/ 2>/dev/null || true
-              break
-            fi
-          done
-
       - name: Download appimagetool
         run: |
           APPIMAGE_URL=$(wget -q https://github.com/probonopd/go-appimage/releases/expanded_assets/continuous -O - | grep "appimagetool-.*-x86_64.AppImage" | head -n 1 | cut -d '"' -f 2)
@@ -151,11 +140,11 @@ jobs:
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: Lunduke_Paint-devuan-x86_64
+          name: Lunduke_Paint-ubuntu-x86_64
           path: Lunduke_Paint-*.AppImage
 
   release:
-    needs: [build-alpine-x86_64, build-devuan-x86_64]
+    needs: [build-alpine-x86_64, build-ubuntu-x86_64]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master')
     steps:
