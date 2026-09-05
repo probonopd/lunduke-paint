@@ -19,13 +19,16 @@ jobs:
             ninja \
             pkgconf \
             gtk+3.0-dev \
+            gtk+3.0 \
             gtkmm3-dev \
             cairomm-dev \
             pangomm-dev \
             libsigc++-dev \
             gdk-pixbuf-dev \
+            gdk-pixbuf \
             libarchive-dev \
             pugixml-dev \
+            hicolor-icon-theme \
             git \
             wget \
             xz \
