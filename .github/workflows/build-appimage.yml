@@ -41,7 +41,7 @@ jobs:
       - name: Install
         run: |
           rm -rf /tmp/lunduke-install
-          meson install -C build --prefix=/tmp/lunduke-install
+          DESTDIR=/tmp/lunduke-install meson install -C build
 
       - name: Setup AppDir
         run: |
@@ -54,11 +54,11 @@ jobs:
           mkdir -p .AppDir/usr/share/icons/hicolor/48x48/apps
           mkdir -p .AppDir/usr/share/icons/hicolor/96x96/apps
           mkdir -p .AppDir/usr/share/mime/packages
-          cp /tmp/lunduke-install/bin/lunduke-paint .AppDir/usr/bin/
-          cp /tmp/lunduke-install/share/applications/*.desktop .AppDir/usr/share/applications/
-          cp /tmp/lunduke-install/share/metainfo/*.xml .AppDir/usr/share/metainfo/
-          cp -r /tmp/lunduke-install/share/icons/hicolor/* .AppDir/usr/share/icons/hicolor/
-          cp /tmp/lunduke-install/share/mime/packages/*.xml .AppDir/usr/share/mime/packages/
+          cp /tmp/lunduke-install/usr/bin/lunduke-paint .AppDir/usr/bin/
+          cp /tmp/lunduke-install/usr/share/applications/*.desktop .AppDir/usr/share/applications/
+          cp /tmp/lunduke-install/usr/share/metainfo/*.xml .AppDir/usr/share/metainfo/
+          cp -r /tmp/lunduke-install/usr/share/icons/hicolor/* .AppDir/usr/share/icons/hicolor/
+          cp /tmp/lunduke-install/usr/share/mime/packages/*.xml .AppDir/usr/share/mime/packages/
           cp .AppDir/usr/share/applications/*.desktop .AppDir/
 
       - name: Download appimagetool
@@ -136,7 +136,7 @@ jobs:
       - name: Install
         run: |
           rm -rf /tmp/lunduke-install
-          meson install -C build --prefix=/tmp/lunduke-install
+          DESTDIR=/tmp/lunduke-install meson install -C build
 
       - name: Setup AppDir
         run: |
@@ -149,11 +149,11 @@ jobs:
           mkdir -p .AppDir/usr/share/icons/hicolor/48x48/apps
           mkdir -p .AppDir/usr/share/icons/hicolor/96x96/apps
           mkdir -p .AppDir/usr/share/mime/packages
-          cp /tmp/lunduke-install/bin/lunduke-paint .AppDir/usr/bin/
-          cp /tmp/lunduke-install/share/applications/*.desktop .AppDir/usr/share/applications/
-          cp /tmp/lunduke-install/share/metainfo/*.xml .AppDir/usr/share/metainfo/
-          cp -r /tmp/lunduke-install/share/icons/hicolor/* .AppDir/usr/share/icons/hicolor/
-          cp /tmp/lunduke-install/share/mime/packages/*.xml .AppDir/usr/share/mime/packages/
+          cp /tmp/lunduke-install/usr/bin/lunduke-paint .AppDir/usr/bin/
+          cp /tmp/lunduke-install/usr/share/applications/*.desktop .AppDir/usr/share/applications/
+          cp /tmp/lunduke-install/usr/share/metainfo/*.xml .AppDir/usr/share/metainfo/
+          cp -r /tmp/lunduke-install/usr/share/icons/hicolor/* .AppDir/usr/share/icons/hicolor/
+          cp /tmp/lunduke-install/usr/share/mime/packages/*.xml .AppDir/usr/share/mime/packages/
           cp .AppDir/usr/share/applications/*.desktop .AppDir/
 
       - name: Download appimagetool
@@ -197,109 +197,8 @@ jobs:
           name: Lunduke_Paint-devuan-x86_64
           path: Lunduke_Paint-*.AppImage
 
-  build-devuan-arm64:
-    runs-on: ubuntu-latest
-    # ARM64 build - run on ubuntu with cross-compilation setup
-    steps:
-      - name: Install dependencies
-        run: |
-          apt-get update
-          apt-get install -y \
-            meson \
-            ninja-build \
-            pkg-config \
-            libgtk-3-dev:arm64 \
-            libgtkmm-3.0-dev:arm64 \
-            libcairomm-1.0-dev:arm64 \
-            libpangomm-1.4-dev:arm64 \
-            libatkmm-1.6-dev:arm64 \
-            libsigc++-2.0-dev:arm64 \
-            libgdk-pixbuf2.0-dev:arm64 \
-            libarchive-dev:arm64 \
-            libpugixml-dev:arm64 \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu \
-            git \
-            wget \
-            qemu-user-static
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build
-        env:
-          CC: aarch64-linux-gnu-gcc
-          CXX: aarch64-linux-gnu-g++
-        run: |
-          meson setup build -Dprefix=/usr --cross-file config/arm64.ini
-          meson compile -C build
-
-      - name: Install
-        run: |
-          rm -rf /tmp/lunduke-install
-          meson install -C build --prefix=/tmp/lunduke-install
-
-      - name: Setup AppDir
-        run: |
-          rm -rf .AppDir
-          mkdir -p .AppDir/usr/bin
-          mkdir -p .AppDir/usr/share/applications
-          mkdir -p .AppDir/usr/share/metainfo
-          mkdir -p .AppDir/usr/share/icons/hicolor/scalable/apps
-          mkdir -p .AppDir/usr/share/icons/hicolor/32x32/apps
-          mkdir -p .AppDir/usr/share/icons/hicolor/48x48/apps
-          mkdir -p .AppDir/usr/share/icons/hicolor/96x96/apps
-          mkdir -p .AppDir/usr/share/mime/packages
-          cp /tmp/lunduke-install/bin/lunduke-paint .AppDir/usr/bin/
-          cp /tmp/lunduke-install/share/applications/*.desktop .AppDir/usr/share/applications/
-          cp /tmp/lunduke-install/share/metainfo/*.xml .AppDir/usr/share/metainfo/
-          cp -r /tmp/lunduke-install/share/icons/hicolor/* .AppDir/usr/share/icons/hicolor/
-          cp /tmp/lunduke-install/share/mime/packages/*.xml .AppDir/usr/share/mime/packages/
-          cp .AppDir/usr/share/applications/*.desktop .AppDir/
-
-      - name: Download appimagetool
-        run: |
-          wget -q https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-aarch64.AppImage -O appimagetool
-          chmod +x appimagetool
-
-      - name: Deploy
-        run: |
-          ./appimagetool -s deploy .AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop 2>&1 || true
-
-      - name: Fix AppRun
-        run: |
-          cat > .AppDir/AppRun << 'APPRUN'
-          #!/bin/bash
-          HERE="$(dirname "$(readlink -f "${0}")")"
-          export GDK_BACKEND=x11
-          export XDG_DATA_DIRS="${HERE}/usr/share:${HERE}/usr/share/icons:${XDG_DATA_DIRS:-/usr/share:/usr/local/share}"
-          export LD_LIBRARY_PATH="${HERE}/lib:${HERE}/lib64:${HERE}/usr/lib:${LD_LIBRARY_PATH}"
-          export GCONV_PATH="${HERE}/usr/lib/gconv"
-          export FONTCONFIG_FILE="${HERE}/etc/fonts/fonts.conf"
-          export GTK_PATH="${HERE}/lib/aarch64-linux-gnu/gtk-3.0"
-          export GDK_PIXBUF_MODULEDIR="${HERE}/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders"
-          export GDK_PIXBUF_MODULE_FILE="${HERE}/lib/aarch64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache"
-          export GSETTINGS_SCHEMA_DIR="${HERE}/usr/share/glib-2.0/schemas"
-          export GTK_DATA_PREFIX="${HERE}"
-          exec "${HERE}/usr/bin/lunduke-paint" "$@"
-          APPRUN
-          chmod +x .AppDir/AppRun
-
-      - name: Bundle AppImage
-        env:
-          ARCH: aarch64
-          VERSION: 0.3
-        run: |
-          ./appimagetool .AppDir
-
-      - name: Upload AppImage
-        uses: actions/upload-artifact@v4
-        with:
-          name: Lunduke_Paint-devuan-arm64
-          path: Lunduke_Paint-*.AppImage
-
   release:
-    needs: [build-alpine-x86_64, build-devuan-x86_64, build-devuan-arm64]
+    needs: [build-alpine-x86_64, build-devuan-x86_64]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master')
     steps:
