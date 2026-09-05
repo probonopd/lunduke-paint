@@ -75,6 +75,15 @@ jobs:
           export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
           ./squashfs-root/usr/bin/appimagetool -s deploy .AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop 2>&1 || true
 
+      - name: Patch binary interpreter
+        run: |
+          export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
+          if [ -f .AppDir/lib/ld-musl-x86_64.so.1 ]; then
+            patchelf --set-interpreter .AppDir/lib/ld-musl-x86_64.so.1 .AppDir/usr/bin/lunduke-paint
+          elif [ -f .AppDir/lib64/ld-linux-x86-64.so.2 ]; then
+            patchelf --set-interpreter .AppDir/lib64/ld-linux-x86-64.so.2 .AppDir/usr/bin/lunduke-paint
+          fi
+
       - name: Write AppRun
         run: |
           cat > .AppDir/AppRun << 'APPRUN'
@@ -175,6 +184,15 @@ jobs:
         run: |
           export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
           ./squashfs-root/usr/bin/appimagetool -s deploy .AppDir/usr/share/applications/org.lunduke.LundukePaint.desktop 2>&1 || true
+
+      - name: Patch binary interpreter
+        run: |
+          export PATH="${PWD}/squashfs-root/usr/bin:${PATH}"
+          if [ -f .AppDir/lib/ld-musl-x86_64.so.1 ]; then
+            patchelf --set-interpreter .AppDir/lib/ld-musl-x86_64.so.1 .AppDir/usr/bin/lunduke-paint
+          elif [ -f .AppDir/lib64/ld-linux-x86-64.so.2 ]; then
+            patchelf --set-interpreter .AppDir/lib64/ld-linux-x86-64.so.2 .AppDir/usr/bin/lunduke-paint
+          fi
 
       - name: Write AppRun
         run: |
