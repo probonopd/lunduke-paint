@@ -117,6 +117,17 @@ jobs:
             done
           fi
 
+      - name: Add gdk-pixbuf PNG loader
+        run: |
+          # Copy PNG loader from system gdk-pixbuf
+          for dir in /usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders /usr/lib/gdk-pixbuf-2.0/2.10.0/loaders; do
+            if [ -d "$dir" ]; then
+              mkdir -p AppDir/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders
+              cp "$dir"/libpixbufloader-png.so AppDir/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders/ 2>/dev/null || true
+              break
+            fi
+          done
+
       - name: Download appimagetool
         run: |
           APPIMAGE_URL=$(wget -q https://github.com/probonopd/go-appimage/releases/expanded_assets/continuous -O - | grep "appimagetool-.*-x86_64.AppImage" | head -n 1 | cut -d '"' -f 2)
