@@ -29,7 +29,8 @@ jobs:
             git \
             wget \
             xz \
-            squashfs-tools
+            squashfs-tools \
+            desktop-file-utils
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -130,7 +131,8 @@ jobs:
             libpugixml-dev \
             git \
             wget \
-            file
+            file \
+            squashfs-tools
 
       - name: Checkout
         uses: actions/checkout@v4
